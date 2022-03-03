@@ -7,7 +7,7 @@ Community Solid Server configured to expose LDES.
 ```bash
 git clone https://github.com/TREEcg/ldes-solid-server
 npm i
-npm build
+npm run build
 
 cd server
 npm i
