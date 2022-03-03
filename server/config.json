@@ -63,7 +63,7 @@
                     }
                 },
                 {
-                    "RegexRouterRule:_storeMap_key": "/ldes",
+                    "RegexRouterRule:_storeMap_key": "^/ldes/(?!.*acl$).*$",
                     "RegexRouterRule:_storeMap_value": {
                         "@id": "urn:solid-server:default:LDESResourceStore"
                     }

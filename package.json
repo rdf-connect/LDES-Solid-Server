@@ -22,6 +22,7 @@
     },
     "dependencies": {
         "@solid/community-server": "^3.0.0",
+        "@treecg/types": "^0.2.2",
         "componentsjs": "^4.5.0"
     },
     "devDependencies": {
