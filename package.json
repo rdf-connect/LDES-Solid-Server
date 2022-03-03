@@ -1,0 +1,32 @@
+{
+    "name": "ldes-solid-server",
+    "version": "0.0.1",
+    "types": "./dist/index.d.ts",
+    "main": "./dist/index.js",
+    "lsd:module": "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server",
+    "lsd:components": "dist/components/components.jsonld",
+    "lsd:contexts": {
+        "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld": "dist/components/context.jsonld"
+    },
+    "lsd:importPaths": {
+        "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/": "dist/components/",
+        "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/config/": "config/",
+        "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/dist/": "dist/"
+    },
+    "scripts": {
+        "build": "npm run build:ts && npm run build:components",
+        "build:ts": "tsc",
+        "live": "tsc -w",
+        "build:components": "componentsjs-generator -s src -c dist/components -r lss --typeScopedContexts",
+        "prepare": "npm run build"
+    },
+    "dependencies": {
+        "@solid/community-server": "^3.0.0",
+        "componentsjs": "^4.5.0"
+    },
+    "devDependencies": {
+        "@tsconfig/node12": "^1.0.9",
+        "componentsjs-generator": "^2.6.1",
+        "typescript": "=4.4"
+    }
+}
