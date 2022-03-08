@@ -7,7 +7,16 @@
       "comment": "A default store setup with a file system backend.",
       "@id": "urn:solid-server:default:LDESResourceStore",
       "@type": "LDESAccessorBasedStore",
-      "way": "this"
+      "fragmentFetcher": {
+        "@id": "urn:solid-server:default:FragmentFetcher"
+      },
+      "streamWriter": {
+        "@id": "urn:solid-server:default:FragmentFetcher"
+      }
+    },
+    {
+      "@id": "urn:solid-server:default:FragmentFetcher",
+      "@type": "EasyStore"
     }
   ]
 }

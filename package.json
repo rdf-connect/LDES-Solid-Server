@@ -3,6 +3,15 @@
     "version": "0.0.1",
     "types": "./dist/index.d.ts",
     "main": "./dist/index.js",
+    "engines": {
+        "node": ">=8.0"
+    },
+    "files": [
+        "bin",
+        "dist",
+        "config",
+        "templates"
+    ],
     "lsd:module": "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server",
     "lsd:components": "dist/components/components.jsonld",
     "lsd:contexts": {
@@ -14,20 +23,25 @@
         "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/dist/": "dist/"
     },
     "scripts": {
+        "test": "jest",
         "build": "npm run build:ts && npm run build:components",
         "build:ts": "tsc",
         "live": "tsc -w",
-        "build:components": "componentsjs-generator -s src -c dist/components -r lss --typeScopedContexts",
-        "prepare": "npm run build"
+        "build:components": "componentsjs-generator -s src -c dist/components -r lss --typeScopedContexts"
     },
     "dependencies": {
+        "@comunica/bus-init": "=1.20.0",
+        "@comunica/core": "=1.20.0",
         "@solid/community-server": "^3.0.0",
-        "@treecg/types": "^0.2.2",
-        "componentsjs": "^4.5.0"
+        "@treecg/actor-init-ldes-client": "^2.5.8"
     },
     "devDependencies": {
         "@tsconfig/node12": "^1.0.9",
+        "@types/jest": "^27.0.0",
+        "@types/node": "^14.0.0",
         "componentsjs-generator": "^2.6.1",
+        "jest": "^27.0.1",
+        "ts-jest": "^27.1.3",
         "typescript": "=4.4"
     }
 }
