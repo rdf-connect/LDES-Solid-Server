@@ -1,6 +1,7 @@
 {
   "@context": [
-    "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
+    "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld",
+    "https://linkedsoftwaredependencies.org/bundles/npm/@treecg/actor-init-ldes-client/^2.0.0/components/context.jsonld"
   ],
   "@graph": [
     {
@@ -12,11 +13,37 @@
       },
       "streamWriter": {
         "@id": "urn:solid-server:default:FragmentFetcher"
+      },
+      "streamReader": {
+        "@id": "urn:solid-server:default:StreamReader"
       }
     },
     {
       "@id": "urn:solid-server:default:FragmentFetcher",
-      "@type": "EasyStore"
+      "@type": "Store",
+      "fragmentationStragety": {
+        "@type": "PathFragmentationStrategy",
+        "fields": [
+          {
+            "@type": "StringFragmentationStrategyField",
+            "field": "https://basisregisters.vlaanderen.be/ns/adres#Gemeente.officieleTaal"
+          }
+        ]
+      }
+    },
+    {
+      "@id": "urn:solid-server:default:StreamReader",
+      "@type": "LDESStreamClient",
+      "import": [
+        "files-ldes:config/config-default.json"
+      ],
+      "url": "https://smartdata.dev-vlaanderen.be/base/gemeente",
+      "init": {
+        "@id": "urn:comunica:my"
+      },
+      "ldesClient": {
+        "@id": "urn:comunica:myLDESClient"
+      }
     }
   ]
 }

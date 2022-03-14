@@ -67,13 +67,11 @@
                     "RegexRouterRule:_storeMap_value": {
                         "@type": "RepresentationConvertingStore",
                         "source": {
-
-                        "@id": "urn:solid-server:default:LDESResourceStore"
-
+                            "@id": "urn:solid-server:default:LDESResourceStore"
                         },
                         "options_outConverter": {
                             "@id": "urn:solid-server:default:RepresentationConverter"
-                        } 
+                        }
                     }
                 },
                 {

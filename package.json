@@ -4,7 +4,7 @@
     "types": "./dist/index.d.ts",
     "main": "./dist/index.js",
     "engines": {
-        "node": ">=8.0"
+        "node": "^16.13.0"
     },
     "files": [
         "bin",
@@ -31,8 +31,14 @@
     },
     "dependencies": {
         "@comunica/bus-init": "=1.20.0",
-        "@comunica/core": "=1.20.0",
         "@solid/community-server": "^3.0.0",
+        "@treecg/actor-rdf-filter-object-with-framing": "^2.3.6",
+        "@treecg/actor-rdf-filter-objects-with-quadstore": "^2.3.6",
+        "@treecg/actor-rdf-frame-with-json-ld-js": "^2.3.6",
+        "@treecg/actor-rdf-metadata-extract-tree": "^1.20.0",
+        "@treecg/bus-rdf-filter-object": "^2.3.6",
+        "@treecg/bus-rdf-frame": "^2.3.6",
+        "@treecg/types": "0.0.10",
         "@treecg/actor-init-ldes-client": "^2.5.8"
     },
     "devDependencies": {
