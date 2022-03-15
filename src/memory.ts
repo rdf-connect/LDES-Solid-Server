@@ -1,7 +1,7 @@
 import * as N3 from "n3";
 import { Alternative, FragmentFetcherBase, PathExtractor } from "./fetcher";
-import { StreamWriterBase } from "./streamWriter";
-import { RetentionPolicy } from "./types";
+import { QuadExtractor, StreamWriterBase } from "./streamWriter";
+import { RetentionPolicy, Wrapper } from "./types";
 
 const { namedNode, literal, blankNode, quad } = N3.DataFactory;
 
@@ -288,8 +288,20 @@ export interface ToString {
     toString(this: this): string;
 }
 
-type Data = { items: N3.Quad[][], children: { [key: string]: Data } };
+export interface Data {
+    items: N3.Quad[][];
+    children: { [key: string]: Data };
+};
+
+export class NewData implements Wrapper<Data> {
+    public inner = {items: [], children: {}};
+}
+
 export class SimpleMemoryWriter<Idx extends ToString> extends StreamWriterBase<Data, Idx>  {
+    constructor(state: Wrapper<Data>, extractors: QuadExtractor<Data, Idx>[]) {
+        super(state, extractors);
+    }
+
     async _add(quads: N3.Quad[], indices: Idx[], _retentionPolicy: RetentionPolicy): Promise<void> {
         let current = this.state;
         for (let index of indices) {
@@ -307,7 +319,7 @@ export class SimpleMemoryWriter<Idx extends ToString> extends StreamWriterBase<D
 export class SimpleMemoryFetcher<Idx extends ToString> extends FragmentFetcherBase<Data, Idx> {
     // TODO: actually use this
     private readonly itemsPerFragment;
-    constructor(state: Data, extractors: PathExtractor<Idx, Data>[], itemsPerFragment: number) {
+    constructor(state: Wrapper<Data>, extractors: PathExtractor<Idx, Data>[], itemsPerFragment: number) {
         super(state, extractors);
         this.itemsPerFragment = itemsPerFragment;
     }

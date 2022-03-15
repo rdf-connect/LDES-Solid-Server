@@ -1,16 +1,13 @@
 import { BasicRepresentation, Conditions, guardedStreamFrom, INTERNAL_QUADS, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore } from "@solid/community-server";
-import { FragmentFetcher, RetentionPolicy, RetentionPolicyImpl, StreamConstructor, StreamWriter } from "./types";
+import { FragmentFetcher, Initializable, ReadStream,  RetentionPolicyImpl, StreamConstructor, StreamWriter } from "./types";
 import { Readable } from "stream";
 import { PojoConfig } from "./memory";
 
 
-export interface ReadStream {
-    createReadStream(url: string, options?: any): Readable;
-}
-
-export interface Initializable {
-    initialize(): Promise<any>;
-}
+export * from './types'
+export * from './fetcher'
+export * from './streamWriter'
+export * from './memory'
 
 export class LDESStreamClient implements StreamConstructor {
     private url: string;
@@ -30,7 +27,7 @@ export class LDESStreamClient implements StreamConstructor {
 }
 
 
-export class LDESAccessorBasedStore<Idx = string, State = void> implements ResourceStore {
+export class LDESAccessorBasedStore implements ResourceStore {
     fragmentFetcher: FragmentFetcher;
     streamWriter: StreamWriter;
 
@@ -102,8 +99,3 @@ export class LDESAccessorBasedStore<Idx = string, State = void> implements Resou
         throw "Not implemented modify"
     }
 }
-
-export * from './types'
-export * from './memory'
-export * from './fetcher'
-export * from './streamWriter'

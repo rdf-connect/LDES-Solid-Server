@@ -1,15 +1,15 @@
 import * as N3 from "n3";
-import { RetentionPolicy, StreamWriter } from "./types";
+import { RetentionPolicy, StreamWriter, Wrapper } from "./types";
 
-export interface QuadExtractor<Idx = string, State = void> {
+export interface QuadExtractor<State = void, Idx = string> {
     extractQuads(quads: N3.Quad[], state: State): Idx;
 }
 
-export abstract class StreamWriterBase<State, Idx = string> implements StreamWriter {
+export abstract class StreamWriterBase<State extends any, Idx = string> implements StreamWriter {
     protected state: State;
-    protected quadExtractor: QuadExtractor<Idx, State>[];
-    constructor(state: State, extractors: QuadExtractor<Idx, State>[]) {
-        this.state = state;
+    protected quadExtractor: QuadExtractor<State, Idx>[];
+    constructor(state: Wrapper<State>, extractors: QuadExtractor<State, Idx>[]) {
+        this.state = state.inner;
         this.quadExtractor = extractors;
     }
 

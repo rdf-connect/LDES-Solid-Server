@@ -1,6 +1,6 @@
 import { ResourceIdentifier } from "@solid/community-server";
 import * as N3 from "n3";
-import { ConstraintType, Fragment, FragmentFetcher, TreeRelation } from "./types";
+import { ConstraintType, Fragment, FragmentFetcher, TreeRelation, Wrapper } from "./types";
 
 export class Params {
     private url: URL;
@@ -50,13 +50,13 @@ export interface PathExtractor<Idx = string, State = void> {
     numberSegsRequired(): number;
 }
 
-export abstract class FragmentFetcherBase<State = any, Idx = string> implements FragmentFetcher {
+export abstract class FragmentFetcherBase<State extends any, Idx = string> implements FragmentFetcher {
     protected state: State;
     protected pathExtractor: PathExtractor<Idx, State>[];
     private readonly pathSegments: number;
 
-    constructor(state: State, extractors: PathExtractor<Idx, State>[]) {
-        this.state = state;
+    constructor(state: Wrapper<State>, extractors: PathExtractor<Idx, State>[]) {
+        this.state = state.inner;
         this.pathExtractor = extractors;
         this.pathSegments = this.pathExtractor.reduce((x, y) => x + y.numberSegsRequired(), 0)
     }

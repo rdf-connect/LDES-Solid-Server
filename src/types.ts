@@ -3,6 +3,18 @@ import { ResourceIdentifier } from "@solid/community-server";
 import * as N3 from "n3";
 import { Readable } from "stream";
 
+export interface ReadStream {
+    createReadStream(url: string, options?: any): Readable;
+}
+
+export interface Initializable {
+    initialize(): Promise<any>;
+}
+
+export interface Wrapper<T extends any> {
+    inner: T;
+}
+
 export interface RetentionPolicy {
     get(): void;
 }
