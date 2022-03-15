@@ -293,13 +293,14 @@ export interface Data {
     children: { [key: string]: Data };
 };
 
-export class NewData implements Wrapper<Data> {
-    public inner = {items: [], children: {}};
+export class NewData implements Data {
+    public items = [];
+    public children = {};
 }
 
 export class SimpleMemoryWriter<Idx extends ToString> extends StreamWriterBase<Data, Idx>  {
-    constructor(state: Wrapper<Data>, extractors: QuadExtractor<Data, Idx>[]) {
-        super(state, extractors);
+    constructor(state: Wrapper<Data>, extractors?: QuadExtractor<Data, Idx>[]) {
+        super(state, extractors || []);
     }
 
     async _add(quads: N3.Quad[], indices: Idx[], _retentionPolicy: RetentionPolicy): Promise<void> {
@@ -319,8 +320,8 @@ export class SimpleMemoryWriter<Idx extends ToString> extends StreamWriterBase<D
 export class SimpleMemoryFetcher<Idx extends ToString> extends FragmentFetcherBase<Data, Idx> {
     // TODO: actually use this
     private readonly itemsPerFragment;
-    constructor(state: Wrapper<Data>, extractors: PathExtractor<Idx, Data>[], itemsPerFragment: number) {
-        super(state, extractors);
+    constructor(state: Wrapper<Data>, extractors?: PathExtractor<Idx, Data>[], itemsPerFragment: number = 5) {
+        super(state, extractors || []);
         this.itemsPerFragment = itemsPerFragment;
     }
 

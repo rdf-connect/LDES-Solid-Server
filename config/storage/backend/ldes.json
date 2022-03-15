@@ -12,7 +12,7 @@
         "@id": "urn:solid-server:default:FragmentFetcher"
       },
       "streamWriter": {
-        "@id": "urn:solid-server:default:FragmentFetcher"
+        "@id": "urn:solid-server:default:StreamWriter"
       },
       "streamReader": {
         "@id": "urn:solid-server:default:StreamReader"
@@ -20,16 +20,23 @@
     },
     {
       "@id": "urn:solid-server:default:FragmentFetcher",
-      "@type": "Store",
-      "fragmentationStragety": {
-        "@type": "PathFragmentationStrategy",
-        "fields": [
-          {
-            "@type": "StringFragmentationStrategyField",
-            "field": "https://basisregisters.vlaanderen.be/ns/adres#Gemeente.officieleTaal"
-          }
-        ]
-      }
+      "@type": "SimpleMemoryFetcher",
+      "state_inner": {
+        "@id": "urn:solid-server:default:Data"
+      },
+      "extractors": []
+    },
+    {
+      "@id": "urn:solid-server:default:StreamWriter",
+      "@type": "SimpleMemoryWriter",
+      "state_inner": {
+        "@id": "urn:solid-server:default:Data"
+      },
+      "extractors": []
+    },
+    {
+      "@id": "urn:solid-server:default:Data",
+      "@type": "NewData"
     },
     {
       "@id": "urn:solid-server:default:StreamReader",
