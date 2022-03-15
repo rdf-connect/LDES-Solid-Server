@@ -1,14 +1,14 @@
 import * as N3 from "n3";
 import { RetentionPolicy, StreamWriter, Wrapper } from "./types";
 
-export interface QuadExtractor<State = void, Idx = string> {
-    extractQuads(quads: N3.Quad[], state: State): Idx;
+export interface QuadExtractor<Idx = string> {
+    extractQuads(quads: N3.Quad[]): Idx;
 }
 
 export abstract class StreamWriterBase<State extends any, Idx = string> implements StreamWriter {
     protected state: State;
-    protected quadExtractor: QuadExtractor<State, Idx>[];
-    constructor(state: Wrapper<State>, extractors: QuadExtractor<State, Idx>[]) {
+    protected quadExtractor: QuadExtractor<Idx>[];
+    constructor(state: Wrapper<State>, extractors: QuadExtractor<Idx>[]) {
         this.state = state.inner;
         this.quadExtractor = extractors;
     }
@@ -16,7 +16,7 @@ export abstract class StreamWriterBase<State extends any, Idx = string> implemen
     push(quads: N3.Quad[], retentionPolicy: RetentionPolicy): Promise<void> {
         const indices = [];
         for (let extractor of this.quadExtractor) {
-            const index = extractor.extractQuads(quads, this.state);
+            const index = extractor.extractQuads(quads);
             indices.push(index);
         }
 

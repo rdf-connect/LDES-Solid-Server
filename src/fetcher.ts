@@ -44,18 +44,18 @@ export type Alternative<Idx> = {
     from: number,
 };
 
-export interface PathExtractor<Idx = string, State = void> {
-    extractPath(params: Params, base: number, state: State): Idx;
+export interface PathExtractor<Idx = string> {
+    extractPath(params: Params, base: number): Idx;
     setPath(index: Idx, old: Params, base: number): Params;
     numberSegsRequired(): number;
 }
 
 export abstract class FragmentFetcherBase<State extends any, Idx = string> implements FragmentFetcher {
     protected state: State;
-    protected pathExtractor: PathExtractor<Idx, State>[];
+    protected pathExtractor: PathExtractor<Idx>[];
     private readonly pathSegments: number;
 
-    constructor(state: Wrapper<State>, extractors: PathExtractor<Idx, State>[]) {
+    constructor(state: Wrapper<State>, extractors: PathExtractor<Idx>[]) {
         this.state = state.inner;
         this.pathExtractor = extractors;
         this.pathSegments = this.pathExtractor.reduce((x, y) => x + y.numberSegsRequired(), 0)
@@ -73,7 +73,7 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
         {
             let base = segments - this.pathSegments;
             for (let extractor of this.pathExtractor) {
-                const index = extractor.extractPath(params, base, this.state);
+                const index = extractor.extractPath(params, base);
                 base += extractor.numberSegsRequired();
                 indices.push(index);
             }

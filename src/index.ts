@@ -38,16 +38,6 @@ export class LDESAccessorBasedStore implements ResourceStore {
     ) {
         this.streamWriter = streamWriter;
         this.fragmentFetcher = fragmentFetcher;
-
-        const config = new PojoConfig();
-
-        this.streamWriter.push(config.toQuad({ x: 5, y: 6 }), new RetentionPolicyImpl())
-        this.streamWriter.push(config.toQuad({ x: 5, y: 7 }), new RetentionPolicyImpl())
-        this.streamWriter.push(config.toQuad({ x: 5, y: 8 }), new RetentionPolicyImpl())
-        this.streamWriter.push(config.toQuad({ x: 6, y: 6 }), new RetentionPolicyImpl())
-        this.streamWriter.push(config.toQuad({ x: 6, y: 7 }), new RetentionPolicyImpl())
-        this.streamWriter.push(config.toQuad({ x: 6, y: 8 }), new RetentionPolicyImpl())
-
         streamReader?.create().then(this.startStream.bind(this)).then(console.log);
     }
 

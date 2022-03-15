@@ -1,5 +1,5 @@
 import * as N3 from "n3";
-import { Alternative, FragmentFetcherBase, PathExtractor } from "./fetcher";
+import { Alternative, FragmentFetcherBase, Params, PathExtractor } from "./fetcher";
 import { QuadExtractor, StreamWriterBase } from "./streamWriter";
 import { RetentionPolicy, Wrapper } from "./types";
 
@@ -284,6 +284,37 @@ export class PojoConfig implements Config<any> {
 // }
 
 
+export class SimpleExtractor implements PathExtractor, QuadExtractor {
+    private readonly path: string;
+    constructor(path: string) {
+        this.path = path;
+    }
+
+    extractQuads(quads: N3.Quad[]): string {
+        for(let quad of quads) {
+            if(quad.predicate.value == this.path) {
+                return quad.object.value;
+            }
+        }
+        throw "Not found!"
+    }
+
+    extractPath(params: Params, base: number): string {
+        return decodeURI(params.path[base]);
+    }
+
+    setPath(index: string, old: Params, base: number): Params {
+        const out = old.copy();
+        out.path[base] = index;
+
+        return out;
+    }
+
+    numberSegsRequired(): number {
+        return 1;
+    }
+}
+
 export interface ToString {
     toString(this: this): string;
 }
@@ -299,7 +330,7 @@ export class NewData implements Data {
 }
 
 export class SimpleMemoryWriter<Idx extends ToString> extends StreamWriterBase<Data, Idx>  {
-    constructor(state: Wrapper<Data>, extractors?: QuadExtractor<Data, Idx>[]) {
+    constructor(state: Wrapper<Data>, extractors?: QuadExtractor<Idx>[]) {
         super(state, extractors || []);
     }
 
@@ -320,7 +351,7 @@ export class SimpleMemoryWriter<Idx extends ToString> extends StreamWriterBase<D
 export class SimpleMemoryFetcher<Idx extends ToString> extends FragmentFetcherBase<Data, Idx> {
     // TODO: actually use this
     private readonly itemsPerFragment;
-    constructor(state: Wrapper<Data>, extractors?: PathExtractor<Idx, Data>[], itemsPerFragment: number = 5) {
+    constructor(state: Wrapper<Data>, extractors?: PathExtractor<Idx>[], itemsPerFragment: number = 5) {
         super(state, extractors || []);
         this.itemsPerFragment = itemsPerFragment;
     }

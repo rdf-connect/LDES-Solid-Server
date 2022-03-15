@@ -24,7 +24,12 @@
       "state_inner": {
         "@id": "urn:solid-server:default:Data"
       },
-      "extractors": []
+      "extractors": [
+        {
+          "@type": "SimpleExtractor",
+          "path": "https://basisregisters.vlaanderen.be/ns/adres#Gemeente.officieleTaal"
+        }
+      ]
     },
     {
       "@id": "urn:solid-server:default:StreamWriter",
@@ -32,7 +37,12 @@
       "state_inner": {
         "@id": "urn:solid-server:default:Data"
       },
-      "extractors": []
+      "extractors": [
+        {
+          "@type": "SimpleExtractor",
+          "path": "https://basisregisters.vlaanderen.be/ns/adres#Gemeente.officieleTaal"
+        }
+      ]
     },
     {
       "@id": "urn:solid-server:default:Data",
