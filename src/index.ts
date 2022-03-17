@@ -1,7 +1,8 @@
 import { BasicRepresentation, Conditions, guardedStreamFrom, INTERNAL_QUADS, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore } from "@solid/community-server";
 import { FragmentFetcher, Member, StreamWriter } from "@treecg/types";
+import arrayifyStream from "arrayify-stream";
+import rdfParser, { ParseOptions } from "rdf-parse";
 import { Readable } from "stream";
-import { PojoConfig } from "./memory";
 import { Initializable, ReadStream, StreamConstructor } from "./types";
 
 export * from './fetcher';
@@ -43,12 +44,13 @@ export class LDESAccessorBasedStore implements ResourceStore {
 
     async startStream(stream: Readable) {
         console.log("starting stream reading")
-        const config = new PojoConfig();
 
         stream._read(1);
 
         for await (const chunk of stream) {
-            const quads = config.toQuad(JSON.parse(chunk));
+            const options: ParseOptions = { contentType: "application/ld+json" };
+            const quads = await arrayifyStream(rdfParser.parse(Readable.from(chunk), options));
+
             const member: Member = {
                 "id": quads[0].subject,
                 "quads": quads
@@ -65,6 +67,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
     getRepresentation = async (identifier: ResourceIdentifier, preferences: RepresentationPreferences, conditions?: Conditions | undefined): Promise<Representation> => {
         const fragment = await this.fragmentFetcher.fetch(identifier.path);
 
+        console.log(`Found ${fragment.members.length} items`)
         console.log(fragment.relations);
 
         // TODO: add quads to represent ldes

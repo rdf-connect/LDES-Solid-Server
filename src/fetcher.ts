@@ -16,7 +16,7 @@ export class Params {
         }
 
         // Drop empty hostname
-        const path = parsed.pathname.split("/").slice(1);
+        const path = parsed.pathname.split("/").slice(1).map(decodeURIComponent);
         this.path = path;
         this.query = query;
     }
@@ -79,23 +79,22 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
             }
         }
 
-        console.log(indices);
-
         const [members, rels] = await this._fetch(indices);
         // Inverse sort base on from (highest first)
         rels.sort((a, b) => b.from - a.from);
-        console.log(JSON.stringify(rels, null, 2))
 
         const relations: RelationParameters[] = [];
 
         let lastFrom = this.pathExtractor.length;
-        let base = this.pathSegments;
+        let base = segments;
 
         for (let rel of rels) {
             for (let i = lastFrom; i > rel.from; i--) {
                 base -= this.pathExtractor[i - 1].numberSegsRequired();
             }
+            lastFrom = rel.from;
 
+            console.log(base);
             const extractor = this.pathExtractor[rel.from];
             const newParams = extractor.setPath(rel.index, params, base);
 

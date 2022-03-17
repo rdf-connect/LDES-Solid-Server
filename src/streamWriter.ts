@@ -2,7 +2,7 @@ import { Member, StreamWriter } from "@treecg/types";
 import { Wrapper } from "./types";
 
 export interface QuadExtractor<Idx = string> {
-    extractQuads(quads: Member): Idx;
+    extractQuads(quads: Member): Idx[];
 }
 
 export abstract class StreamWriterBase<State extends any, Idx = string> implements StreamWriter {
@@ -28,5 +28,5 @@ export abstract class StreamWriterBase<State extends any, Idx = string> implemen
         return await this._add(member, indices);
     }
 
-    abstract _add(quads: Member, indices: Idx[]): Promise<void>;
+    abstract _add(quads: Member, indices: Idx[][]): Promise<void>;
 }

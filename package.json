@@ -39,7 +39,9 @@
         "@treecg/bus-rdf-filter-object": "^2.3.6",
         "@treecg/bus-rdf-frame": "^2.3.6",
         "@treecg/types": "ajuvercr/types.git#40b9b33",
-        "rdf-data-factory": "^1.1.0"
+        "arrayify-stream": "^1.0.0",
+        "rdf-data-factory": "^1.1.0",
+        "rdf-parse": "^1.9.1"
     },
     "devDependencies": {
         "@tsconfig/node12": "^1.0.9",

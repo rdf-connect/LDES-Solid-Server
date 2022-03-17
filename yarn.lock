@@ -2514,8 +2514,8 @@
     rdf-data-factory "^1.1.0"
 
 "@treecg/types@ajuvercr/types.git#40b9b33":
-  version "0.2.2"
-  resolved "https://codeload.github.com/ajuvercr/types/tar.gz/40b9b33f724254a0eaf2587898ed66ed20ac369d"
+  version "0.2.3"
+  resolved "git+ssh://git@github.com/ajuvercr/types.git#8cb37168b1626e43d2993473e398ba57f2d878df"
   dependencies:
     "@rdfjs/dataset" "^1.1.1"
     "@rdfjs/types" "*"

@@ -5,39 +5,6 @@ import { Alternative, FragmentFetcherBase, Params, PathExtractor } from "./fetch
 import { QuadExtractor, StreamWriterBase } from "./streamWriter";
 import { Wrapper } from "./types";
 
-
-export interface Config<T> {
-    toQuad(t: T): RDF.Quad[];
-    fromQuad(quads: RDF.Quad[]): T
-}
-
-export class PojoConfig implements Config<any> {
-    public readonly factory = new DataFactory();
-    toQuad(t: any): RDF.Quad[] {
-        console.log("Got t", t)
-        const quads: RDF.Quad[] = [];
-        const id = this.factory.blankNode();
-
-        for (let k in t) {
-            quads.push(this.factory.quad(
-                id, this.factory.namedNode(k), this.factory.literal(t[k])
-            ));
-        }
-
-        return quads;
-    }
-
-    fromQuad(quads: RDF.Quad[]): any {
-        const out: any = {};
-
-        for (let quad of quads) {
-            out[quad.predicate.value] = quad.object.value;
-        }
-
-        return out;
-    }
-}
-
 export class SimpleExtractor implements PathExtractor<SimpleIndex>, QuadExtractor<SimpleIndex> {
     public readonly factory: RDF.DataFactory;
     private readonly path: RDF.Quad_Predicate;
@@ -47,15 +14,19 @@ export class SimpleExtractor implements PathExtractor<SimpleIndex>, QuadExtracto
         this.path = this.factory.namedNode(path);
     }
 
-    extractQuads(member: Member): SimpleIndex {
+    extractQuads(member: Member): SimpleIndex[] {
+        const out = [];
         for (let quad of member.quads) {
             if (quad.predicate.value == this.path.value) {
-                return { value: quad.object, path: this.path };
+                out.push({ value: quad.object, path: this.path });
             }
         }
 
-        const msg = `Path nog found! ${this.path.value} in ${member.quads.map(x => x.predicate.value)}`
-        throw msg
+        if (out.length == 0) {
+            const msg = `Path nog found! ${this.path.value} in ${member.quads.map(x => x.predicate.value)}`
+            console.error(msg)
+        }
+        return out;
     }
 
     extractPath(params: Params, base: number): SimpleIndex {
@@ -95,21 +66,29 @@ export class SimpleMemoryWriter<Idx extends SimpleIndex> extends StreamWriterBas
         super(state, extractors || []);
     }
 
-    async _add(quads: Member, indices: Idx[]): Promise<void> {
-        let current = this.state;
+    async _add(quads: Member, indices: Idx[][]): Promise<void> {
+        let currents = [this.state];
 
         for (let i = 0; i < indices.length; i++) {
-            const index = indices[i];
-            const value = index.value.value;
+            const ncurrents = [];
 
-            if (!current.children[value]) {
-                current.children[value] = [index, { items: [], children: {} }];
+            for (let index of indices[i]) {
+                const value = index.value.value;
+
+                for (let current of currents) {
+                    if (!current.children[value]) {
+                        current.children[value] = [index, { items: [], children: {} }];
+                    }
+
+                    ncurrents.push(current.children[value][1]);
+                }
             }
-
-            current = current.children[value][1];
+            currents = ncurrents;
         }
 
-        current.items.push(quads);
+        currents.forEach(element => {
+            element.items.push(quads);
+        });
     }
 }
 
@@ -128,18 +107,19 @@ export class SimpleMemoryFetcher<Idx extends SimpleIndex> extends FragmentFetche
         for (let i = 0; i < indices.length; i++) {
             const index = indices[i];
             const key = index.value.value;
+            console.log("looking for", key, index)
+            console.log("options:", Object.keys(current.children))
 
             if (!current.children[key]) {
                 current.children[key] = [index, { items: [], children: {} }];
             }
-
 
             for (let other in current.children) {
                 if (other == key) continue;
                 const nIndex = current.children[other][0];
 
                 const alternative: Alternative<Idx> = {
-                    index: index,
+                    index: nIndex,
                     type: RelationType.EqualThan,
                     path: nIndex.path,
                     value: nIndex.value,
