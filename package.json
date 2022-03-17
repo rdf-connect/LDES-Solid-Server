@@ -9,8 +9,7 @@
     "files": [
         "bin",
         "dist",
-        "config",
-        "templates"
+        "config"
     ],
     "lsd:module": "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server",
     "lsd:components": "dist/components/components.jsonld",
@@ -27,22 +26,24 @@
         "build": "npm run build:ts && npm run build:components",
         "build:ts": "tsc",
         "live": "tsc -w",
-        "build:components": "componentsjs-generator -s src -c dist/components -r lss --typeScopedContexts"
+        "build:components": "componentsjs-generator -s src -c dist/components -i .componentsignore -r lss --typeScopedContexts"
     },
     "dependencies": {
         "@comunica/bus-init": "=1.20.0",
         "@solid/community-server": "^3.0.0",
+        "@treecg/actor-init-ldes-client": "^2.5.8",
         "@treecg/actor-rdf-filter-object-with-framing": "^2.3.6",
         "@treecg/actor-rdf-filter-objects-with-quadstore": "^2.3.6",
         "@treecg/actor-rdf-frame-with-json-ld-js": "^2.3.6",
         "@treecg/actor-rdf-metadata-extract-tree": "^1.20.0",
         "@treecg/bus-rdf-filter-object": "^2.3.6",
         "@treecg/bus-rdf-frame": "^2.3.6",
-        "@treecg/types": "0.0.10",
-        "@treecg/actor-init-ldes-client": "^2.5.8"
+        "@treecg/types": "ajuvercr/types.git#40b9b33",
+        "rdf-data-factory": "^1.1.0"
     },
     "devDependencies": {
         "@tsconfig/node12": "^1.0.9",
+        "@types/clownface": "^1.2.6",
         "@types/jest": "^27.0.0",
         "@types/node": "^14.0.0",
         "componentsjs-generator": "^2.6.1",

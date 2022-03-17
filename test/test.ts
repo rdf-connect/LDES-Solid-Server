@@ -1,11 +1,9 @@
 import { DataFactory, Literal, NamedNode, Quad } from "n3";
 import { stdout } from "process";
-import { ConstraintType, FragmentationStrategy } from "../src/fragments";
 const { namedNode, literal, blankNode, quad } = DataFactory;
 import * as N3 from "n3";
-
-import { newFragmentationStrategyField, PathFragmentationStrategy, Store, PojoConfig } from "../src/memory";
-import { guardedStreamFrom, guardStream } from "@solid/community-server";
+import { Params } from "../dist/fetcher";
+import { assert } from "console";
 
 test('two plus two', () => {
     const value = 2 + 2;
@@ -19,96 +17,28 @@ test('two plus two', () => {
     expect(value).toEqual(4);
 });
 
+test("Params works as epected", () => {
+    const url = "http://test.be/param1/param2?q=test";
 
-class Foo {
-    public readonly x: number;
-    public readonly y: number;
-    public readonly z: number;
-    constructor(x: number, y: number, z: number) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-}
+    const param = new Params(url);
 
-function newFragmentationStrategy(): FragmentationStrategy<Foo> {
-    const zConstraint =
-        newFragmentationStrategyField<Foo>("z", ConstraintType.GT, parseInt);
-    const yConstraint =
-        newFragmentationStrategyField<Foo>("y", ConstraintType.GT, parseInt);
-    const xConstraint =
-        newFragmentationStrategyField<Foo>("x", ConstraintType.GT, parseInt);
-    return new PathFragmentationStrategy([
-        zConstraint, yConstraint, xConstraint
-    ]);
-}
+    expect(param.path).toEqual(["param1", "param2"]);
+    expect(param.query).toEqual({"q": "test"})
 
-function newStore(items: number = 3): Store<Foo> {
-    return new Store(newFragmentationStrategy(), items, undefined);
-}
+    param.path[1] = "new"
+    expect(param.toUrl()).toEqual("http://test.be/param1/new?q=test")
 
-function preloadStore(store: Store<Foo>, items: number = 100) {
-    const config = new PojoConfig();
-    const n = (x: number, y: number, z: number) => config.toQuad(new Foo(x, y, z));
+    const copy = param.copy();
 
-    for (let i = 0; i < items; i++) {
-        store.push(n(i, Math.round(i / 5), i % 3), null);
-    }
-}
+    copy.path[1] = "42";
 
-test('what happens happens', async () => {
-    const store = newStore(5);
-    preloadStore(store, 100);
+    expect(param.toUrl()).toEqual("http://test.be/param1/new?q=test")
+    expect(copy.toUrl()).toEqual("http://test.be/param1/42?q=test")
 
-    const resp = await store.fetch({ "path": "/0/5/1" });
-    await new Promise(fulfull => {
+    copy.query['q2'] = "test2"
 
-        let string = '';
-        const stream = {
-            write: (quad: any) => { console.log(quad); string += quad.toString(); },
-            end: () => { console.log(string); fulfull(null); },
-        };
-
-        const writer = new N3.StreamWriter(stream, { end: true, prefixes: { c: 'http://example.org/cartoons#' } });
-        writer.import(guardedStreamFrom(resp.members));
-        writer.pipe(stdout);
-        writer.on("end", fulfull);
-
-    });
-
-    expect(false).toBe(true);
+    expect(param.toUrl()).toEqual("http://test.be/param1/new?q=test")
+    expect(copy.toUrl()).toEqual("http://test.be/param1/42?q=test&q2=test2")
 })
 
 
-test("writer can read", () => {
-    return;
-    let string = '';
-    const stream = {
-        write: (quad: any) => { console.log(quad); string += quad.toString(); },
-        end: () => { console.log(string); },
-    };
-
-    const writer = new N3.Writer(stream, { end: false, prefixes: { c: 'http://example.org/cartoons#' } });
-    writer.addQuad(
-        writer.blank(
-            new NamedNode('http://xmlns.com/foaf/0.1/givenName'),
-            new Literal('Tom')),
-        new NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-        new NamedNode('http://example.org/cartoons#Cat')
-    );
-    writer.addQuad(new Quad(
-        new NamedNode('http://example.org/cartoons#Jerry'),
-        new NamedNode('http://xmlns.com/foaf/0.1/knows'),
-        writer.blank([{
-            predicate: new NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-            object: new NamedNode('http://example.org/cartoons#Cat'),
-        }, {
-            predicate: new NamedNode('http://xmlns.com/foaf/0.1/givenName'),
-            object: new Literal('Tom'),
-        }])
-    ));
-
-    console.log("\n");
-
-    expect(false).toBe(true);
-})

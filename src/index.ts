@@ -1,13 +1,13 @@
 import { BasicRepresentation, Conditions, guardedStreamFrom, INTERNAL_QUADS, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore } from "@solid/community-server";
-import { FragmentFetcher, Initializable, ReadStream,  RetentionPolicyImpl, StreamConstructor, StreamWriter } from "./types";
+import { FragmentFetcher, Member, StreamWriter } from "@treecg/types";
 import { Readable } from "stream";
 import { PojoConfig } from "./memory";
+import { Initializable, ReadStream, StreamConstructor } from "./types";
 
-
-export * from './types'
-export * from './fetcher'
-export * from './streamWriter'
-export * from './memory'
+export * from './fetcher';
+export * from './memory';
+export * from './streamWriter';
+export * from './types';
 
 export class LDESStreamClient implements StreamConstructor {
     private url: string;
@@ -49,8 +49,12 @@ export class LDESAccessorBasedStore implements ResourceStore {
 
         for await (const chunk of stream) {
             const quads = config.toQuad(JSON.parse(chunk));
+            const member: Member = {
+                "id": quads[0].subject,
+                "quads": quads
+            }
             // TODO: generically interpret chunk as triple
-            this.streamWriter.push(quads, new RetentionPolicyImpl());
+            this.streamWriter.write(member);
         }
     }
 
@@ -59,12 +63,14 @@ export class LDESAccessorBasedStore implements ResourceStore {
     }
 
     getRepresentation = async (identifier: ResourceIdentifier, preferences: RepresentationPreferences, conditions?: Conditions | undefined): Promise<Representation> => {
-        const fragment = await this.fragmentFetcher.fetch(identifier);
+        const fragment = await this.fragmentFetcher.fetch(identifier.path);
+
+        console.log(fragment.relations);
 
         // TODO: add quads to represent ldes
 
         return new BasicRepresentation(
-            guardedStreamFrom(fragment.members),
+            guardedStreamFrom(fragment.members.flatMap(x => x.quads)),
             new RepresentationMetadata(INTERNAL_QUADS)
         );
     }

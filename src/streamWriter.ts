@@ -1,8 +1,8 @@
-import * as N3 from "n3";
-import { RetentionPolicy, StreamWriter, Wrapper } from "./types";
+import { Member, StreamWriter } from "@treecg/types";
+import { Wrapper } from "./types";
 
 export interface QuadExtractor<Idx = string> {
-    extractQuads(quads: N3.Quad[]): Idx;
+    extractQuads(quads: Member): Idx;
 }
 
 export abstract class StreamWriterBase<State extends any, Idx = string> implements StreamWriter {
@@ -13,16 +13,20 @@ export abstract class StreamWriterBase<State extends any, Idx = string> implemen
         this.quadExtractor = extractors;
     }
 
-    push(quads: N3.Quad[], retentionPolicy: RetentionPolicy): Promise<void> {
+    async write(member: Member): Promise<void> {
         const indices = [];
         for (let extractor of this.quadExtractor) {
-            const index = extractor.extractQuads(quads);
-            indices.push(index);
+            try {
+                const index = extractor.extractQuads(member);
+                indices.push(index);
+            } catch (e) {
+                console.error(e);
+                return;
+            }
         }
 
-        return this._add(quads, indices, retentionPolicy);
+        return await this._add(member, indices);
     }
 
-    abstract _add(quads: N3.Quad[], indices: Idx[], retentionPolicy: RetentionPolicy): Promise<void>;
+    abstract _add(quads: Member, indices: Idx[]): Promise<void>;
 }
-

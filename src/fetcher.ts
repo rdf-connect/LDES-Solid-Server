@@ -1,6 +1,6 @@
-import { ResourceIdentifier } from "@solid/community-server";
-import * as N3 from "n3";
-import { ConstraintType, Fragment, FragmentFetcher, TreeRelation, Wrapper } from "./types";
+import type * as RDF from '@rdfjs/types';
+import { Fragment, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
+import { Wrapper } from "./types";
 
 export class Params {
     private url: URL;
@@ -32,15 +32,15 @@ export class Params {
     }
 
     copy(): Params {
-        return new Params(this.url.toString());
+        return new Params(this.toUrl());
     }
 }
 
 export type Alternative<Idx> = {
     index: Idx,
-    type: ConstraintType,
-    path: N3.Term,
-    value: N3.Term,
+    type: RelationType,
+    path: RDF.Term,
+    value: RDF.Term,
     from: number,
 };
 
@@ -61,8 +61,8 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
         this.pathSegments = this.pathExtractor.reduce((x, y) => x + y.numberSegsRequired(), 0)
     }
 
-    async fetch(id: ResourceIdentifier): Promise<Fragment> {
-        const params = new Params(id.path);
+    async fetch(id: string): Promise<Fragment> {
+        const params = new Params(id);
         const segments = params.path.length;
 
         if (segments < this.pathSegments)
@@ -79,18 +79,21 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
             }
         }
 
+        console.log(indices);
+
         const [members, rels] = await this._fetch(indices);
         // Inverse sort base on from (highest first)
         rels.sort((a, b) => b.from - a.from);
+        console.log(JSON.stringify(rels, null, 2))
 
-        const relations: TreeRelation[] = [];
+        const relations: RelationParameters[] = [];
 
         let lastFrom = this.pathExtractor.length;
         let base = this.pathSegments;
 
         for (let rel of rels) {
             for (let i = lastFrom; i > rel.from; i--) {
-                base -= this.pathExtractor[i].numberSegsRequired();
+                base -= this.pathExtractor[i - 1].numberSegsRequired();
             }
 
             const extractor = this.pathExtractor[rel.from];
@@ -99,7 +102,7 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
             const relation = {
                 type: rel.type,
                 nodeId: newParams.toUrl(),
-                value: rel.value,
+                value: [rel.value],
                 path: rel.path
             };
             relations.push(relation);
@@ -113,5 +116,5 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
         };
     }
 
-    abstract _fetch(indices: Idx[]): Promise<[N3.Quad[], Alternative<Idx>[]]>;
+    abstract _fetch(indices: Idx[]): Promise<[Member[], Alternative<Idx>[]]>;
 }
