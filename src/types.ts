@@ -1,5 +1,4 @@
 import { StreamReader } from "@treecg/types";
-import { Readable } from "stream";
 
 export interface Initializable {
     initialize(): Promise<any>;

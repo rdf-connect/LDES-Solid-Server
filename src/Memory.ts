@@ -1,12 +1,17 @@
 import type * as RDF from '@rdfjs/types';
 import { Member, RelationType } from "@treecg/types";
 import { DataFactory } from "rdf-data-factory";
-import { Alternative, FragmentFetcherBase, Params, PathExtractor } from "./fetcher";
-import { QuadExtractor, StreamWriterBase } from "./streamWriter";
+import { Alternative, FragmentFetcherBase, Params, PathExtractor } from "./Fetcher";
+import { QuadExtractor, StreamWriterBase } from "./StreamWriter";
 import { Wrapper } from "./types";
 
+export interface SimpleIndex {
+    path: RDF.Quad_Predicate,
+    value: RDF.Quad_Object,
+}
+
 export class SimpleExtractor implements PathExtractor<SimpleIndex>, QuadExtractor<SimpleIndex> {
-    public readonly factory: RDF.DataFactory;
+    private readonly factory: RDF.DataFactory;
     private readonly path: RDF.Quad_Predicate;
 
     constructor(path: string) {
@@ -26,6 +31,7 @@ export class SimpleExtractor implements PathExtractor<SimpleIndex>, QuadExtracto
             const msg = `Path nog found! ${this.path.value} in ${member.quads.map(x => x.predicate.value)}`
             console.error(msg)
         }
+
         return out;
     }
 
@@ -43,11 +49,6 @@ export class SimpleExtractor implements PathExtractor<SimpleIndex>, QuadExtracto
     numberSegsRequired(): number {
         return 1;
     }
-}
-
-export interface SimpleIndex {
-    path: RDF.Quad_Predicate,
-    value: RDF.Quad_Object,
 }
 
 export interface Data<Idx> {
@@ -94,7 +95,8 @@ export class SimpleMemoryWriter<Idx extends SimpleIndex> extends StreamWriterBas
 
 export class SimpleMemoryFetcher<Idx extends SimpleIndex> extends FragmentFetcherBase<Data<Idx>, Idx> {
     // TODO: actually use this
-    private readonly itemsPerFragment;
+    private readonly itemsPerFragment: number;
+
     constructor(state: Wrapper<Data<Idx>>, extractors?: PathExtractor<Idx>[], itemsPerFragment: number = 5) {
         super(state, extractors || []);
         this.itemsPerFragment = itemsPerFragment;
@@ -107,8 +109,6 @@ export class SimpleMemoryFetcher<Idx extends SimpleIndex> extends FragmentFetche
         for (let i = 0; i < indices.length; i++) {
             const index = indices[i];
             const key = index.value.value;
-            console.log("looking for", key, index)
-            console.log("options:", Object.keys(current.children))
 
             if (!current.children[key]) {
                 current.children[key] = [index, { items: [], children: {} }];
