@@ -1,5 +1,6 @@
 [
   "FragmentFetcher",
   "StreamWriter",
-  "StreamReader"
+  "StreamReader",
+  "LDESClient"
 ]

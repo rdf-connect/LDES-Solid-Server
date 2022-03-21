@@ -8,6 +8,7 @@
       "comment": "A default store setup with a file system backend.",
       "@id": "urn:solid-server:default:LDESResourceStore",
       "@type": "LDESAccessorBasedStore",
+      "id": "https://test.bla/ldes",
       "fragmentFetcher": {
         "@id": "urn:solid-server:default:FragmentFetcher"
       },
