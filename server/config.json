@@ -22,7 +22,7 @@
         "files-scs:config/ldp/authorization/webacl.json",
         "files-scs:config/ldp/handler/default.json",
         "files-scs:config/ldp/metadata-parser/default.json",
-        "files-scs:config/ldp/metadata-writer/default.json",
+        "files-lss:config/ldp/metadata-writer/default.json",
         "files-scs:config/ldp/modes/default.json",
         "files-scs:config/storage/key-value/resource-store.json",
         "files-scs:config/storage/middleware/default.json",

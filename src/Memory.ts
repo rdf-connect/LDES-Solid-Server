@@ -1,10 +1,10 @@
 import type * as RDF from '@rdfjs/types';
 import { Member, RelationType } from "@treecg/types";
 import { DataFactory } from "rdf-data-factory";
-import { AlternativePath, FragmentFetcherBase, Params, PathExtractor } from "./Fetcher";
+import { AlternativePath, CacheExtractor, FragmentFetcherBase, Params, PathExtractor } from "./Fetcher";
 import { IndexExtractor, QuadExtractor, StreamWriterBase } from "./StreamWriter";
 import { Tree } from './Tree';
-import { Wrapper } from "./types";
+import { CacheInstructions, Wrapper } from "./types";
 
 export interface SimpleIndex {
     value: RDF.Quad_Object,
@@ -42,7 +42,7 @@ export class SimpleQueryExtractor implements PathExtractor<SimpleIndex> {
     }
 }
 
-export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExtractor<SimpleIndex> {
+export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExtractor<SimpleIndex>, CacheExtractor<SimpleIndex> {
     private factory = new DataFactory();
     private readonly itemsPerPage: number;
     private readonly sizeTree: Tree<SimpleIndex, number>;
@@ -50,6 +50,21 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
     constructor(itemsPerPage: number) {
         this.itemsPerPage = itemsPerPage;
         this.sizeTree = new Tree((index: SimpleIndex) => index.value.value);
+    }
+    getCacheDirectives(indices: SimpleIndex[], _members: Member[], _alternatives: AlternativePath<SimpleIndex>[]): CacheInstructions | undefined {
+        const path = indices[indices.length - 1];
+        const tree = indices.slice(0, -1).reduce((acc, ind) => acc.get(ind), this.sizeTree);
+        const inBucket = tree.get_v() || 0;
+
+        if ((parseInt(path.value.value) + 1) * this.itemsPerPage < inBucket) {
+            // cache please
+            return {
+                public: true,
+                immutable: true,
+                maxAge: 1500
+            };
+        }
+        return;
     }
 
     extractIndices(root: Tree<SimpleIndex, void>): void {
@@ -71,16 +86,13 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
     }
 
     extractPath(params: Params, base: number): SimpleIndex {
+        console.log("PARAMS", params)
         return { value: this.factory.literal(params.query["page"] || "0") };
     }
 
     setPath(index: SimpleIndex, old: Params, _base: number): Params {
-        console.log(">>>>>>>>")
-        console.log(old.toUrl());
         const out = old.copy();
         out.query["page"] = index.value.value;
-        console.log(out.toUrl());
-        console.log("<<<<<<<<")
         return out;
     }
 
@@ -158,14 +170,12 @@ export class SimpleMemoryWriter<Idx extends SimpleIndex> extends StreamWriterBas
 
 export class SimpleMemoryFetcher<Idx extends SimpleIndex> extends FragmentFetcherBase<Data<Idx>, Idx> {
     // TODO: actually use this
-    private readonly itemsPerFragment: number;
 
-    constructor(state: Wrapper<Data<Idx>>, extractors?: PathExtractor<Idx>[], itemsPerFragment: number = 5) {
-        super(state, extractors || []);
-        this.itemsPerFragment = itemsPerFragment;
+    constructor(state: Wrapper<Data<Idx>>, extractors: PathExtractor<Idx>[], cacheExtractor: CacheExtractor<Idx>) {
+        super(state, extractors, cacheExtractor);
     }
 
-    async _fetch(indices: Idx[]): Promise<[Member[], AlternativePath<Idx>[]]> {
+    async _fetch(indices: Idx[]): Promise<{ members: Member[], relations: AlternativePath<Idx>[] }> {
         let current = this.state;
         const alternatives: AlternativePath<Idx>[] = [];
 
@@ -195,6 +205,6 @@ export class SimpleMemoryFetcher<Idx extends SimpleIndex> extends FragmentFetche
             current = current.children[key][1];
         }
 
-        return [current.items, alternatives];
+        return { members: current.items, relations: alternatives };
     }
 }

@@ -1,6 +1,6 @@
 import type * as RDF from '@rdfjs/types';
-import { Fragment, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
-import { Wrapper } from "./types";
+import { CacheDirectives, Fragment, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
+import { CacheInstructions, Wrapper } from "./types";
 
 export class Params {
     private url: URL;
@@ -50,14 +50,26 @@ export interface PathExtractor<Idx = string> {
     numberSegsRequired(): number;
 }
 
+export interface CacheExtractor<Idx = string> {
+    getCacheDirectives(indices: Idx[], members: Member[], alternatives: AlternativePath<Idx>[]): CacheInstructions | undefined;
+}
+
+export class NeverCache<Idx = string> implements CacheExtractor<Idx> {
+    getCacheDirectives(_indices: Idx[], _members: Member[], _alternatives: AlternativePath<Idx>[]): CacheInstructions | undefined {
+        return;
+    }
+}
+
 export abstract class FragmentFetcherBase<State extends any, Idx = string> implements FragmentFetcher {
     protected state: State;
     protected pathExtractor: PathExtractor<Idx>[];
     private readonly totalPathSegments: number;
+    private readonly cacheExtractor: CacheExtractor<Idx>;
 
-    constructor(state: Wrapper<State>, extractors: PathExtractor<Idx>[]) {
+    constructor(state: Wrapper<State>, extractors: PathExtractor<Idx>[], cacheExtractor?: CacheExtractor<Idx>) {
         this.state = state.inner;
         this.pathExtractor = extractors;
+        this.cacheExtractor = cacheExtractor || new NeverCache();
         this.totalPathSegments = this.pathExtractor.reduce((x, y) => x + y.numberSegsRequired(), 0)
     }
 
@@ -69,7 +81,7 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
             throw "Not enough segments in path, expected " + this.totalPathSegments;
 
 
-        const indices = [];
+        const indices: Idx[] = [];
         {
             let base = segments - this.totalPathSegments;
             for (let extractor of this.pathExtractor) {
@@ -79,11 +91,12 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
             }
         }
 
-        const [members, rels] = await this._fetch(indices);
+        const { members, relations: rels } = await this._fetch(indices);
 
         // Inverse sort base on location in path (highest first)
         rels.sort((a, b) => b.from - a.from);
 
+        const cache = this.cacheExtractor.getCacheDirectives(indices, members, rels);
         const relations: RelationParameters[] = [];
 
         let lastFrom = this.pathExtractor.length;
@@ -109,13 +122,14 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
             relations.push(relation);
         }
 
+
         return {
             members,
             relations,
-            cache: null,
+            cache,
             metadata: null
         };
     }
 
-    abstract _fetch(indices: Idx[]): Promise<[Member[], AlternativePath<Idx>[]]>;
+    abstract _fetch(indices: Idx[]): Promise<{ members: Member[], relations: AlternativePath<Idx>[] }>;
 }

@@ -2,11 +2,12 @@
 import { IActionRdfMetadataExtract, IActorRdfMetadataExtractOutput } from "@comunica/bus-rdf-metadata-extract";
 import { ActionObserver, Actor, IActionObserverArgs, IActorTest } from "@comunica/core";
 import type * as RDF from '@rdfjs/types';
-import { BasicRepresentation, Conditions, guardedStreamFrom, INTERNAL_QUADS, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore } from "@solid/community-server";
+import { BasicRepresentation, Conditions, CONTENT_TYPE, guardedStreamFrom, INTERNAL_QUADS, MetadataRecord, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore, SOLID_HTTP } from "@solid/community-server";
 import { EventStream, LDESClient } from "@treecg/actor-init-ldes-client";
 import { FragmentFetcher, Member, RelationParameters, StreamWriter } from "@treecg/types";
 import { DataFactory, Quad } from "rdf-data-factory";
-import { Initializable, NS, StreamConstructor } from "./types";
+import { HTTP } from ".";
+import { CacheInstructions, cacheToLiteral, Initializable, NS, StreamConstructor } from "./types";
 
 const { Tree, LDES } = NS;
 
@@ -96,7 +97,6 @@ export class LDESStreamClient implements StreamConstructor {
     }
 }
 
-
 export class LDESAccessorBasedStore implements ResourceStore {
     private readonly factory = new DataFactory();
     private readonly id: string;
@@ -130,6 +130,12 @@ export class LDESAccessorBasedStore implements ResourceStore {
         return false;
     }
 
+    private getMetadata(cache?: CacheInstructions): MetadataRecord {
+        if (!cache) return { [CONTENT_TYPE]: INTERNAL_QUADS };
+
+        const cacheLit = cacheToLiteral(cache);
+        return { [HTTP.cache_control]: this.factory.literal(cacheLit), [CONTENT_TYPE]: INTERNAL_QUADS };
+    }
     getRepresentation = async (identifier: ResourceIdentifier, preferences: RepresentationPreferences, conditions?: Conditions | undefined): Promise<Representation> => {
         const fragment = await this.fragmentFetcher.fetch(identifier.path);
 
@@ -141,13 +147,16 @@ export class LDESAccessorBasedStore implements ResourceStore {
             this.factory.namedNode(identifier.path)
         ));
 
+
+
         this.addMeta(quads, this.metadata);
+
         fragment.relations.forEach(relation => this.addRelations(quads, identifier.path, relation));
         fragment.members.forEach(m => this.addMember(quads, m));
 
         return new BasicRepresentation(
             guardedStreamFrom(quads),
-            new RepresentationMetadata(INTERNAL_QUADS)
+            new RepresentationMetadata(this.getMetadata(fragment.cache))
         );
     }
 

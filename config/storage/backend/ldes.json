@@ -31,10 +31,12 @@
           "path": "https://basisregisters.vlaanderen.be/ns/adres#Gemeente.officieleTaal"
         },
         {
-          "@type": "SimplePageExtractor",
-          "itemsPerPage": 5
+          "@id": "urn:solid-server:default:SimplePageExtractor"
         }
-      ]
+      ],
+      "cacheExtractor": {
+        "@id": "urn:solid-server:default:SimplePageExtractor"
+      }
     },
     {
       "@id": "urn:solid-server:default:StreamWriter",
@@ -50,10 +52,14 @@
       ],
       "indexExtractors": [
         {
-          "@type": "SimplePageExtractor",
-          "itemsPerPage": 5
+          "@id": "urn:solid-server:default:SimplePageExtractor"
         }
       ]
+    },
+    {
+      "@id": "urn:solid-server:default:SimplePageExtractor",
+      "@type": "SimplePageExtractor",
+      "itemsPerPage": 5
     },
     {
       "@id": "urn:solid-server:default:Data",
