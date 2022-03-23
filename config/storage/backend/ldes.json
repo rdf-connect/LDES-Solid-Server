@@ -29,6 +29,10 @@
         {
           "@type": "SimpleExtractor",
           "path": "https://basisregisters.vlaanderen.be/ns/adres#Gemeente.officieleTaal"
+        },
+        {
+          "@type": "SimplePageExtractor",
+          "itemsPerPage": 5
         }
       ]
     },
@@ -42,6 +46,12 @@
         {
           "@type": "SimpleExtractor",
           "path": "https://basisregisters.vlaanderen.be/ns/adres#Gemeente.officieleTaal"
+        }
+      ],
+      "indexExtractors": [
+        {
+          "@type": "SimplePageExtractor",
+          "itemsPerPage": 5
         }
       ]
     },

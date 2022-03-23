@@ -36,12 +36,12 @@ export class Params {
     }
 }
 
-export type Alternative<Idx> = {
+export type AlternativePath<Idx> = {
     index: Idx,
     type: RelationType,
-    path: RDF.Term,
-    value: RDF.Term,
     from: number,
+    path?: RDF.Term,
+    value?: RDF.Term[],
 };
 
 export interface PathExtractor<Idx = string> {
@@ -53,25 +53,25 @@ export interface PathExtractor<Idx = string> {
 export abstract class FragmentFetcherBase<State extends any, Idx = string> implements FragmentFetcher {
     protected state: State;
     protected pathExtractor: PathExtractor<Idx>[];
-    private readonly pathSegments: number;
+    private readonly totalPathSegments: number;
 
     constructor(state: Wrapper<State>, extractors: PathExtractor<Idx>[]) {
         this.state = state.inner;
         this.pathExtractor = extractors;
-        this.pathSegments = this.pathExtractor.reduce((x, y) => x + y.numberSegsRequired(), 0)
+        this.totalPathSegments = this.pathExtractor.reduce((x, y) => x + y.numberSegsRequired(), 0)
     }
 
     async fetch(id: string): Promise<Fragment> {
         const params = new Params(id);
         const segments = params.path.length;
 
-        if (segments < this.pathSegments)
-            throw "Not enough segments in path, expected " + this.pathSegments;
+        if (segments < this.totalPathSegments)
+            throw "Not enough segments in path, expected " + this.totalPathSegments;
 
 
         const indices = [];
         {
-            let base = segments - this.pathSegments;
+            let base = segments - this.totalPathSegments;
             for (let extractor of this.pathExtractor) {
                 const index = extractor.extractPath(params, base);
                 base += extractor.numberSegsRequired();
@@ -80,7 +80,8 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
         }
 
         const [members, rels] = await this._fetch(indices);
-        // Inverse sort base on from (highest first)
+
+        // Inverse sort base on location in path (highest first)
         rels.sort((a, b) => b.from - a.from);
 
         const relations: RelationParameters[] = [];
@@ -92,16 +93,17 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
             for (let i = lastFrom; i > rel.from; i--) {
                 base -= this.pathExtractor[i - 1].numberSegsRequired();
             }
+
             lastFrom = rel.from;
 
-            console.log(base);
             const extractor = this.pathExtractor[rel.from];
+            console.log("extractor", extractor)
             const newParams = extractor.setPath(rel.index, params, base);
 
             const relation = {
                 type: rel.type,
                 nodeId: newParams.toUrl(),
-                value: [rel.value],
+                value: rel.value,
                 path: rel.path
             };
             relations.push(relation);
@@ -115,5 +117,5 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
         };
     }
 
-    abstract _fetch(indices: Idx[]): Promise<[Member[], Alternative<Idx>[]]>;
+    abstract _fetch(indices: Idx[]): Promise<[Member[], AlternativePath<Idx>[]]>;
 }
