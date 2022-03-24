@@ -1,0 +1,28 @@
+{
+    "@context": "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^3.0.0/components/context.jsonld",
+    "import": [
+        "files-scs:config/ldp/authorization/readers/acl.json",
+        "files-scs:config/ldp/authorization/readers/ownership.json"
+    ],
+    "@graph": [
+        {
+            "@id": "urn:ldes-server:default:LDESHttpHandler",
+            "@type": "RouterHandler",
+            "args_baseUrl": {
+                "@id": "urn:solid-server:default:variable:baseUrl"
+            },
+            "args_targetExtractor": {
+                "@id": "urn:solid-server:default:TargetExtractor"
+            },
+            "args_allowedMethods": [
+                "*"
+            ],
+            "args_allowedPathNames": [
+                "^/ldes/.*$"
+            ],
+            "args_handler": {
+                "@id": "urn:ldes-server:default:LdpHandler"
+            }
+        }
+    ]
+}

@@ -1,0 +1,47 @@
+{
+    "@context": "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^3.0.0/components/context.jsonld",
+    "import": [
+        "files-scs:config/ldp/metadata-writer/writers/constant.json",
+        "files-scs:config/ldp/metadata-writer/writers/link-rel.json",
+        "files-scs:config/ldp/metadata-writer/writers/mapped.json",
+        "files-scs:config/ldp/metadata-writer/writers/modified.json",
+        "files-scs:config/ldp/metadata-writer/writers/wac-allow.json",
+        "files-scs:config/ldp/metadata-writer/writers/www-auth.json"
+    ],
+    "@graph": [
+        {
+            "comment": "Adds metadata to the response based on the RDF metadata.",
+            "@id": "urn:solid-server:default:MetadataWriter",
+            "@type": "ParallelHandler",
+            "handlers": [
+                {
+                    "@type": "MappedMetadataWriter",
+                    "headerMap": [
+                        {
+                            "MappedMetadataWriter:_headerMap_key": "urn:npm:solid:community-server:http:cache_control",
+                            "MappedMetadataWriter:_headerMap_value": "cache-control"
+                        }
+                    ]
+                },
+                {
+                    "@id": "urn:solid-server:default:MetadataWriter_Constant"
+                },
+                {
+                    "@id": "urn:solid-server:default:MetadataWriter_Mapped"
+                },
+                {
+                    "@id": "urn:solid-server:default:MetadataWriter_Modified"
+                },
+                {
+                    "@id": "urn:solid-server:default:MetadataWriter_LinkRel"
+                },
+                {
+                    "@id": "urn:solid-server:default:MetadataWriter_WacAllow"
+                },
+                {
+                    "@id": "urn:solid-server:default:MetadataWriter_WwwAuth"
+                }
+            ]
+        }
+    ]
+}
