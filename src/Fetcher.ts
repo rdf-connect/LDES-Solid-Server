@@ -47,6 +47,7 @@ export type AlternativePath<Idx> = {
 export interface PathExtractor<Idx = string> {
     extractPath(params: Params, base: number): Idx;
     setPath(index: Idx, old: Params, base: number): Params;
+    setDefault(old: Params, base: number): Params;
     numberSegsRequired(): number;
 }
 
@@ -74,7 +75,7 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
     }
 
     async fetch(id: string): Promise<Fragment> {
-        const params = new Params(id);
+        let params = new Params(id);
         const segments = params.path.length;
 
         if (segments < this.totalPathSegments)
@@ -104,13 +105,14 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
 
         for (let rel of rels) {
             for (let i = lastFrom; i > rel.from; i--) {
-                base -= this.pathExtractor[i - 1].numberSegsRequired();
+                const extractor = this.pathExtractor[i - 1];
+                params = extractor.setDefault(params, base)
+                base -= extractor.numberSegsRequired();
             }
 
             lastFrom = rel.from;
 
             const extractor = this.pathExtractor[rel.from];
-            console.log("extractor", extractor)
             const newParams = extractor.setPath(rel.index, params, base);
 
             const relation = {

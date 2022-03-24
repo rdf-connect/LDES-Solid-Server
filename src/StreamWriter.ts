@@ -35,8 +35,6 @@ export abstract class StreamWriterBase<State extends any, Idx = string> implemen
             }
         }
 
-        console.log("Index Extractors", this.indexExtractors);
-
         try {
             this.indexExtractors.forEach(e => e.extractIndices(tree));
         } catch (e) {

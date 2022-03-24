@@ -19,7 +19,7 @@
                     "headerMap": [
                         {
                             "MappedMetadataWriter:_headerMap_key": "urn:npm:solid:community-server:http:cache_control",
-                            "MappedMetadataWriter:_headerMap_value": "cache-control"
+                            "MappedMetadataWriter:_headerMap_value": "Cache-Control"
                         }
                     ]
                 },

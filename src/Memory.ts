@@ -21,27 +21,6 @@ export class NewData<Idx> implements Data<Idx> {
     public children = {};
 }
 
-export class SimpleQueryExtractor implements PathExtractor<SimpleIndex> {
-    private readonly query_param: string;
-    private readonly default_value?: string;
-
-    constructor(query_param: string, default_value?: string) {
-        this.query_param = query_param;
-        this.default_value = default_value;
-    }
-
-    extractPath(params: Params, base: number): SimpleIndex {
-        throw new Error('Method not implemented.');
-    }
-
-    setPath(index: SimpleIndex, old: Params, base: number): Params {
-        throw new Error('Method not implemented.');
-    }
-    numberSegsRequired(): number {
-        return 0;
-    }
-}
-
 export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExtractor<SimpleIndex>, CacheExtractor<SimpleIndex> {
     private factory = new DataFactory();
     private readonly itemsPerPage: number;
@@ -51,6 +30,13 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
         this.itemsPerPage = itemsPerPage;
         this.sizeTree = new Tree((index: SimpleIndex) => index.value.value);
     }
+
+    setDefault(old: Params, base: number): Params {
+        const out = old.copy();
+        out.query["page"] = "0";
+        return out;
+    }
+
     getCacheDirectives(indices: SimpleIndex[], _members: Member[], _alternatives: AlternativePath<SimpleIndex>[]): CacheInstructions | undefined {
         const path = indices[indices.length - 1];
         const tree = indices.slice(0, -1).reduce((acc, ind) => acc.get(ind), this.sizeTree);
@@ -86,7 +72,6 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
     }
 
     extractPath(params: Params, base: number): SimpleIndex {
-        console.log("PARAMS", params)
         return { value: this.factory.literal(params.query["page"] || "0") };
     }
 
@@ -101,6 +86,28 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
     }
 }
 
+export class SimplerExtractor implements PathExtractor<SimpleIndex> {
+    private readonly factory: RDF.DataFactory = new DataFactory();
+
+    setDefault(old: Params, base: number): Params {
+        return old;
+    }
+
+    extractPath(params: Params, base: number): SimpleIndex {
+        return { value: this.factory.literal(decodeURI(params.path[base])) };
+    }
+
+    setPath(index: SimpleIndex, old: Params, base: number): Params {
+        const out = old.copy();
+        out.path[base] = index.value.value;
+        return out;
+    }
+
+    numberSegsRequired(): number {
+        return 1;
+    }
+}
+
 export class SimpleExtractor implements PathExtractor<SimpleIndex>, QuadExtractor<SimpleIndex> {
     private readonly factory: RDF.DataFactory;
     private readonly path: RDF.Quad_Predicate;
@@ -108,6 +115,9 @@ export class SimpleExtractor implements PathExtractor<SimpleIndex>, QuadExtracto
     constructor(path: string) {
         this.factory = new DataFactory();
         this.path = this.factory.namedNode(path);
+    }
+    setDefault(old: Params, base: number): Params {
+        return old;
     }
 
     extractQuads(member: Member): SimpleIndex[] {
@@ -147,10 +157,7 @@ export class SimpleMemoryWriter<Idx extends SimpleIndex> extends StreamWriterBas
     }
 
     async _add(quads: Member, tree: Tree<Idx, void>): Promise<void> {
-        console.log(tree)
-        for (let p of tree.paths()) {
-            console.log(p.indices.map(x => x.value.value));
-        }
+
         const x = tree.walkTreeWith<Data<Idx>, undefined>(this.state, (index, state, node) => {
             const value = index.value.value;
 
@@ -169,8 +176,6 @@ export class SimpleMemoryWriter<Idx extends SimpleIndex> extends StreamWriterBas
 }
 
 export class SimpleMemoryFetcher<Idx extends SimpleIndex> extends FragmentFetcherBase<Data<Idx>, Idx> {
-    // TODO: actually use this
-
     constructor(state: Wrapper<Data<Idx>>, extractors: PathExtractor<Idx>[], cacheExtractor: CacheExtractor<Idx>) {
         super(state, extractors, cacheExtractor);
     }

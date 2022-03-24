@@ -136,7 +136,8 @@ export class LDESAccessorBasedStore implements ResourceStore {
         const cacheLit = cacheToLiteral(cache);
         return { [HTTP.cache_control]: this.factory.literal(cacheLit), [CONTENT_TYPE]: INTERNAL_QUADS };
     }
-    getRepresentation = async (identifier: ResourceIdentifier, preferences: RepresentationPreferences, conditions?: Conditions | undefined): Promise<Representation> => {
+    getRepresentation = async (identifier: ResourceIdentifier, preferences: RepresentationPreferences, conditions?: Conditions): Promise<Representation> => {
+        console.log("Getting representation for ", identifier);
         const fragment = await this.fragmentFetcher.fetch(identifier.path);
 
         const quads: Array<RDF.Quad> = [];
@@ -146,8 +147,6 @@ export class LDESAccessorBasedStore implements ResourceStore {
             this.factory.namedNode(Tree.View),
             this.factory.namedNode(identifier.path)
         ));
-
-
 
         this.addMeta(quads, this.metadata);
 
