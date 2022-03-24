@@ -1,7 +1,6 @@
 {
   "@context": [
-    "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld",
-    "https://linkedsoftwaredependencies.org/bundles/npm/@treecg/actor-init-ldes-client/^2.0.0/components/context.jsonld"
+    "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
   ],
   "@graph": [
     {
@@ -69,14 +68,14 @@
       "@id": "urn:solid-server:default:StreamReader",
       "@type": "LDESStreamClient",
       "import": [
-        "files-ldes:config/config-default.json"
+        "files-lss:config/eventstream/default.json"
       ],
       "url": "https://smartdata.dev-vlaanderen.be/base/gemeente",
       "init": {
-        "@id": "urn:comunica:my"
+        "@id": "urn:comunica:my2"
       },
       "ldesClient": {
-        "@id": "urn:comunica:myLDESClient"
+        "@id": "urn:comunica:myLDESClient2"
       }
     }
   ]
