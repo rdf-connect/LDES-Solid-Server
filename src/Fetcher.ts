@@ -1,40 +1,7 @@
 import type * as RDF from '@rdfjs/types';
-import { CacheDirectives, Fragment, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
-import { CacheInstructions, Wrapper } from "./types";
-
-export class Params {
-    private url: URL;
-    public readonly path: string[];
-    public readonly query: { [key: string]: string };
-    constructor(url: string) {
-        const parsed = new URL(url);
-        this.url = parsed;
-
-        const query: { [key: string]: string } = {};
-        for (let [k, v] of parsed.searchParams.entries()) {
-            query[k] = v;
-        }
-
-        // Drop empty hostname
-        const path = parsed.pathname.split("/").slice(1).map(decodeURIComponent);
-        this.path = path;
-        this.query = query;
-    }
-
-    toUrl(): string {
-        for (let [k, v] of Object.entries(this.query)) {
-            this.url.searchParams.set(k, v);
-        }
-
-        this.url.pathname = "/" + this.path.join("/");
-
-        return this.url.toString();
-    }
-
-    copy(): Params {
-        return new Params(this.toUrl());
-    }
-}
+import { Fragment, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
+import { CacheExtractor, PathExtractor } from './extractor';
+import { CacheInstructions, Params, Wrapper } from "./types";
 
 export type AlternativePath<Idx> = {
     index: Idx,
@@ -44,19 +11,8 @@ export type AlternativePath<Idx> = {
     value?: RDF.Term[],
 };
 
-export interface PathExtractor<Idx = string> {
-    extractPath(params: Params, base: number): Idx;
-    setPath(index: Idx, old: Params, base: number): Params;
-    setDefault(old: Params, base: number): Params;
-    numberSegsRequired(): number;
-}
-
-export interface CacheExtractor<Idx = string> {
-    getCacheDirectives(indices: Idx[], members: Member[], alternatives: AlternativePath<Idx>[]): CacheInstructions | undefined;
-}
-
 export class NeverCache<Idx = string> implements CacheExtractor<Idx> {
-    getCacheDirectives(_indices: Idx[], _members: Member[], _alternatives: AlternativePath<Idx>[]): CacheInstructions | undefined {
+    getCacheDirectives(_indices: Idx[], _members: Member[]): CacheInstructions | undefined {
         return;
     }
 }
@@ -97,7 +53,7 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
         // Inverse sort base on location in path (highest first)
         rels.sort((a, b) => b.from - a.from);
 
-        const cache = this.cacheExtractor.getCacheDirectives(indices, members, rels);
+        const cache = this.cacheExtractor.getCacheDirectives(indices, members);
         const relations: RelationParameters[] = [];
 
         let lastFrom = this.pathExtractor.length;

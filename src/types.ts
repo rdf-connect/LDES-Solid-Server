@@ -30,7 +30,7 @@ export namespace NS {
 export interface CacheInstructions {
     public: boolean;
     maxAge?: number;
-    immutable: boolean;
+    immutable?: boolean;
 }
 export function cacheToLiteral(instruction: CacheInstructions): string {
     const pub = instruction.public ? ["public"] : ["private"];
@@ -39,3 +39,38 @@ export function cacheToLiteral(instruction: CacheInstructions): string {
 
     return [...pub, ...maxAge, ...immutable].join(", ");
 }
+
+export class Params {
+    private url: URL;
+    public readonly path: string[];
+    public readonly query: { [key: string]: string };
+    constructor(url: string) {
+        const parsed = new URL(url);
+        this.url = parsed;
+
+        const query: { [key: string]: string } = {};
+        for (let [k, v] of parsed.searchParams.entries()) {
+            query[k] = v;
+        }
+
+        // Drop empty hostname
+        const path = parsed.pathname.split("/").slice(1).map(decodeURIComponent);
+        this.path = path;
+        this.query = query;
+    }
+
+    toUrl(): string {
+        for (let [k, v] of Object.entries(this.query)) {
+            this.url.searchParams.set(k, v);
+        }
+
+        this.url.pathname = "/" + this.path.join("/");
+
+        return this.url.toString();
+    }
+
+    copy(): Params {
+        return new Params(this.toUrl());
+    }
+}
+

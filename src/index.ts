@@ -4,6 +4,7 @@ export const HTTP = createUriAndTermNamespace('urn:npm:solid:community-server:ht
     'cache_control',
 );
 
+export * from './extractor';
 export * from './Fetcher';
 export * from './Memory';
 export * from './StreamWriter';

@@ -1,14 +1,8 @@
 import { Member, StreamWriter } from "@treecg/types";
+import { IndexExtractor, QuadExtractor } from "./extractor";
 import { Tree } from "./Tree";
 import { Wrapper } from "./types";
 
-export interface QuadExtractor<Idx = string> {
-    extractQuads(quads: Member): Idx[];
-}
-
-export interface IndexExtractor<Idx = string> {
-    extractIndices(root: Tree<Idx, void>): void;
-}
 
 export abstract class StreamWriterBase<State extends any, Idx = string> implements StreamWriter {
     protected state: State;
