@@ -1,0 +1,21 @@
+{
+  "@context": [
+    "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
+  ],
+  "@graph": [
+    {
+      "@id": "urn:solid-server:default:StreamReader",
+      "@type": "LDESStreamClient",
+      "import": [
+        "files-lss:config/eventstream/default.json"
+      ],
+      "url": "https://smartdata.dev-vlaanderen.be/base/gemeente",
+      "init": {
+        "@id": "urn:comunica:my2"
+      },
+      "ldesClient": {
+        "@id": "urn:comunica:myLDESClient2"
+      }
+    }
+  ]
+}

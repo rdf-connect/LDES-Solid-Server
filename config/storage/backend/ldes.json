@@ -8,6 +8,7 @@
       "@id": "urn:solid-server:default:LDESResourceStore",
       "@type": "LDESAccessorBasedStore",
       "id": "https://test.bla/ldes",
+
       "fragmentFetcher": {
         "@id": "urn:solid-server:default:FragmentFetcher"
       },
@@ -16,66 +17,6 @@
       },
       "streamReader": {
         "@id": "urn:solid-server:default:StreamReader"
-      }
-    },
-    {
-      "@id": "urn:solid-server:default:FragmentFetcher",
-      "@type": "SimpleMemoryFetcher",
-      "state_inner": {
-        "@id": "urn:solid-server:default:Data"
-      },
-      "extractors": [
-        {
-          "@type": "SimpleExtractor",
-          "path": "https://basisregisters.vlaanderen.be/ns/adres#Gemeente.officieleTaal"
-        },
-        {
-          "@id": "urn:solid-server:default:SimplePageExtractor"
-        }
-      ],
-      "cacheExtractor": {
-        "@id": "urn:solid-server:default:SimplePageExtractor"
-      }
-    },
-    {
-      "@id": "urn:solid-server:default:StreamWriter",
-      "@type": "SimpleMemoryWriter",
-      "state_inner": {
-        "@id": "urn:solid-server:default:Data"
-      },
-      "extractors": [
-        {
-          "@type": "SimpleExtractor",
-          "path": "https://basisregisters.vlaanderen.be/ns/adres#Gemeente.officieleTaal"
-        }
-      ],
-      "indexExtractors": [
-        {
-          "@id": "urn:solid-server:default:SimplePageExtractor"
-        }
-      ]
-    },
-    {
-      "@id": "urn:solid-server:default:SimplePageExtractor",
-      "@type": "SimplePageExtractor",
-      "itemsPerPage": 5
-    },
-    {
-      "@id": "urn:solid-server:default:Data",
-      "@type": "NewData"
-    },
-    {
-      "@id": "urn:solid-server:default:StreamReader",
-      "@type": "LDESStreamClient",
-      "import": [
-        "files-lss:config/eventstream/default.json"
-      ],
-      "url": "https://smartdata.dev-vlaanderen.be/base/gemeente",
-      "init": {
-        "@id": "urn:comunica:my2"
-      },
-      "ldesClient": {
-        "@id": "urn:comunica:myLDESClient2"
       }
     }
   ]
