@@ -1,4 +1,4 @@
-import { StreamReader } from "@treecg/types";
+import { CacheDirectives, StreamReader } from "@treecg/types";
 
 export interface Wrapper<T extends any> {
     inner: T;
@@ -27,13 +27,8 @@ export namespace NS {
     }
 }
 
-export interface CacheInstructions {
-    public: boolean;
-    maxAge?: number;
-    immutable?: boolean;
-}
-export function cacheToLiteral(instruction: CacheInstructions): string {
-    const pub = instruction.public ? ["public"] : ["private"];
+export function cacheToLiteral(instruction: CacheDirectives): string {
+    const pub = instruction.pub ? ["public"] : ["private"];
     const maxAge = instruction.maxAge ? ["max-age=" + instruction.maxAge] : [];
     const immutable = instruction.immutable ? ["immutable"] : [];
 

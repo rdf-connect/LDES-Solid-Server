@@ -5,10 +5,10 @@ import type * as RDF from '@rdfjs/types';
 import { BasicRepresentation, Conditions, CONTENT_TYPE, guardedStreamFrom, INTERNAL_QUADS, MetadataRecord, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore } from "@solid/community-server";
 import { EventStream, LDESClient } from "@treecg/actor-init-ldes-client";
 import { ActorRdfMetadataExtractTree } from "@treecg/actor-rdf-metadata-extract-tree";
-import { FragmentFetcher, Member, RelationParameters, StreamWriter } from "@treecg/types";
+import { CacheDirectives, FragmentFetcher, Member, RelationParameters, StreamWriter } from "@treecg/types";
 import { DataFactory, Quad } from "rdf-data-factory";
 import { HTTP } from ".";
-import { CacheInstructions, cacheToLiteral, NS, StreamConstructor } from "./types";
+import { cacheToLiteral, NS, StreamConstructor } from "./types";
 
 const { Tree, LDES } = NS;
 
@@ -115,7 +115,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
         return false;
     }
 
-    private getMetadata(cache?: CacheInstructions): MetadataRecord {
+    private getMetadata(cache?: CacheDirectives): MetadataRecord {
         if (!cache) return { [CONTENT_TYPE]: INTERNAL_QUADS };
 
         const cacheLit = cacheToLiteral(cache);

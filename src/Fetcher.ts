@@ -1,7 +1,7 @@
 import type * as RDF from '@rdfjs/types';
-import { Fragment, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
+import { CacheDirectives, Fragment, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
 import { CacheExtractor, PathExtractor } from './extractor';
-import { CacheInstructions, Params, Wrapper } from "./types";
+import { Params } from "./types";
 
 export type AlternativePath<Idx> = {
     index: Idx,
@@ -12,7 +12,7 @@ export type AlternativePath<Idx> = {
 };
 
 export class NeverCache<Idx = string> implements CacheExtractor<Idx> {
-    getCacheDirectives(_indices: Idx[], _members: Member[]): CacheInstructions | undefined {
+    getCacheDirectives(_indices: Idx[], _members: Member[]): CacheDirectives | undefined {
         return;
     }
 }
@@ -23,8 +23,8 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
     private readonly totalPathSegments: number;
     private readonly cacheExtractor: CacheExtractor<Idx>;
 
-    constructor(state: Wrapper<State>, extractors: PathExtractor<Idx>[], cacheExtractor?: CacheExtractor<Idx>) {
-        this.state = state.inner;
+    constructor(state: State, extractors: PathExtractor<Idx>[], cacheExtractor?: CacheExtractor<Idx>) {
+        this.state = state;
         this.pathExtractor = extractors;
         this.cacheExtractor = cacheExtractor || new NeverCache();
         this.totalPathSegments = this.pathExtractor.reduce((x, y) => x + y.numberSegsRequired(), 0)
@@ -53,7 +53,7 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
         // Inverse sort base on location in path (highest first)
         rels.sort((a, b) => b.from - a.from);
 
-        const cache = this.cacheExtractor.getCacheDirectives(indices, members);
+        const cache = this.cacheExtractor.getCacheDirectives(indices, members)!;
         const relations: RelationParameters[] = [];
 
         let lastFrom = this.pathExtractor.length;

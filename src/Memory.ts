@@ -39,9 +39,9 @@ export class SimpleMemoryWriter<Idx extends SimpleIndex> extends StreamWriterBas
     }
 }
 
-export class SimpleMemoryFetcher<Idx extends SimpleIndex> extends FragmentFetcherBase<Data<Idx>, Idx> {
+export class SimpleMemoryFetcher<Idx extends SimpleIndex = SimpleIndex> extends FragmentFetcherBase<Data<Idx>, Idx> {
     constructor(state: Wrapper<Data<Idx>>, extractors: PathExtractor<Idx>[], cacheExtractor: CacheExtractor<Idx>) {
-        super(state, extractors, cacheExtractor);
+        super(state.inner, extractors, cacheExtractor);
     }
 
     async _fetch(indices: Idx[]): Promise<{ members: Member[], relations: AlternativePath<Idx>[] }> {

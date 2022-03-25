@@ -2476,7 +2476,7 @@
 
 "@treecg/actor-rdf-metadata-extract-tree@^1.20.0":
   version "1.20.0"
-  resolved "https://registry.npmjs.org/@treecg/actor-rdf-metadata-extract-tree/-/actor-rdf-metadata-extract-tree-1.20.0.tgz"
+  resolved "https://registry.yarnpkg.com/@treecg/actor-rdf-metadata-extract-tree/-/actor-rdf-metadata-extract-tree-1.20.0.tgz#3a158a07dc704bbc2882b4bec77d1287530879b5"
   integrity sha512-BUAbTsHczPR0GbAMznxIgzKm9BqB6B2Q9TQeNjsqDHpfVe0NffggGk3ma/P1XrerL+NsAxO5AS2z76MZtzFpBw==
   dependencies:
     "@comunica/bus-rdf-metadata-extract" "1.21.1"
@@ -2513,9 +2513,9 @@
     n3 "^1.11.1"
     rdf-data-factory "^1.1.0"
 
-"@treecg/types@ajuvercr/types.git#40b9b33":
-  version "0.2.3"
-  resolved "git+ssh://git@github.com/ajuvercr/types.git#8cb37168b1626e43d2993473e398ba57f2d878df"
+"@treecg/types@ajuvercr/types.git#5d29cab6d00f625678a69be9b2a9fc5c3cc40c06":
+  version "0.2.2"
+  resolved "https://codeload.github.com/ajuvercr/types/tar.gz/5d29cab6d00f625678a69be9b2a9fc5c3cc40c06"
   dependencies:
     "@rdfjs/dataset" "^1.1.1"
     "@rdfjs/types" "*"

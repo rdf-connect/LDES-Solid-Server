@@ -1,7 +1,7 @@
 import type * as RDF from '@rdfjs/types';
-import { Member } from "@treecg/types";
+import { CacheDirectives, Member } from "@treecg/types";
 import { Tree } from './Tree';
-import { CacheInstructions, Params } from "./types";
+import { Params } from "./types";
 
 export interface PathExtractor<Idx = string> {
     extractPath(params: Params, base: number): Idx;
@@ -11,7 +11,7 @@ export interface PathExtractor<Idx = string> {
 }
 
 export interface CacheExtractor<Idx = string> {
-    getCacheDirectives(indices: Idx[], members: Member[]): CacheInstructions | undefined;
+    getCacheDirectives(indices: Idx[], members: Member[]): CacheDirectives | undefined;
 }
 
 export interface QuadExtractor<Idx = string> {
@@ -52,7 +52,7 @@ export class CombinedExtractor<Idx = string> implements PathExtractor<Idx>, Quad
     extractQuads(quads: Member): Idx[] {
         return this.quadExtractor.extractQuads(quads);
     }
-    getCacheDirectives(indices: Idx[], members: Member[]): CacheInstructions | undefined {
+    getCacheDirectives(indices: Idx[], members: Member[]): CacheDirectives | undefined {
         return this.cacheExtractor?.getCacheDirectives(indices, members);
     }
 }

@@ -1,9 +1,9 @@
 
-import { Member } from "@treecg/types";
+import { CacheDirectives, Member } from "@treecg/types";
 import { DataFactory } from "rdf-data-factory";
 import { CacheExtractor, IndexExtractor, PathExtractor, SimpleIndex } from '../extractor';
 import { Tree } from '../Tree';
-import { CacheInstructions, Params } from "../types";
+import { Params } from "../types";
 
 
 export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExtractor<SimpleIndex>, CacheExtractor<SimpleIndex> {
@@ -22,7 +22,7 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
         return out;
     }
 
-    getCacheDirectives(indices: SimpleIndex[], _members: Member[]): CacheInstructions | undefined {
+    getCacheDirectives(indices: SimpleIndex[], _members: Member[]): CacheDirectives | undefined {
         const path = indices[indices.length - 1];
         const tree = indices.slice(0, -1).reduce((acc, ind) => acc.get(ind), this.sizeTree);
         const inBucket = tree.get_v() || 0;
@@ -30,7 +30,7 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
         if ((parseInt(path.value.value) + 1) * this.itemsPerPage < inBucket) {
             // cache please
             return {
-                public: true,
+                pub: true,
                 immutable: true,
                 maxAge: 1500
             };

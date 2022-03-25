@@ -1,7 +1,7 @@
 
-import { Member } from "@treecg/types";
+import { CacheDirectives, Member } from "@treecg/types";
 import { CacheExtractor, PathExtractor, QuadExtractor, SimpleIndex } from ".";
-import { CacheInstructions, Params } from "../types";
+import { Params } from "../types";
 import { SimplePathExtractor } from "./PathExtractor";
 import { SimpleQuadExtractor } from "./QuadExtractor";
 
@@ -30,7 +30,7 @@ export class CombinedExtractor<Idx = string> implements PathExtractor<Idx>, Quad
     extractQuads(quads: Member): Idx[] {
         return this.quadExtractor.extractQuads(quads);
     }
-    getCacheDirectives(indices: Idx[], members: Member[]): CacheInstructions | undefined {
+    getCacheDirectives(indices: Idx[], members: Member[]): CacheDirectives | undefined {
         return this.cacheExtractor?.getCacheDirectives(indices, members);
     }
 }
