@@ -1,9 +1,4 @@
 import { StreamReader } from "@treecg/types";
-import type * as RDF from '@rdfjs/types';
-
-export interface Initializable {
-    initialize(): Promise<any>;
-}
 
 export interface Wrapper<T extends any> {
     inner: T;

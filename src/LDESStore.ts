@@ -1,37 +1,40 @@
 
 import { IActionRdfMetadataExtract, IActorRdfMetadataExtractOutput } from "@comunica/bus-rdf-metadata-extract";
-import { ActionObserver, Actor, IActionObserverArgs, IActorTest } from "@comunica/core";
+import { Bus, IActorArgs, IActorTest } from "@comunica/core";
 import type * as RDF from '@rdfjs/types';
-import { BasicRepresentation, Conditions, CONTENT_TYPE, guardedStreamFrom, INTERNAL_QUADS, MetadataRecord, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore, SOLID_HTTP } from "@solid/community-server";
+import { BasicRepresentation, Conditions, CONTENT_TYPE, guardedStreamFrom, INTERNAL_QUADS, MetadataRecord, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore } from "@solid/community-server";
 import { EventStream, LDESClient } from "@treecg/actor-init-ldes-client";
+import { ActorRdfMetadataExtractTree } from "@treecg/actor-rdf-metadata-extract-tree";
 import { FragmentFetcher, Member, RelationParameters, StreamWriter } from "@treecg/types";
 import { DataFactory, Quad } from "rdf-data-factory";
 import { HTTP } from ".";
-import { CacheInstructions, cacheToLiteral, Initializable, NS, StreamConstructor } from "./types";
+import { CacheInstructions, cacheToLiteral, NS, StreamConstructor } from "./types";
 
 const { Tree, LDES } = NS;
 
 type QuadMap = Record<string, RDF.Term[]>;
-class EventStreamMetadataExtractor extends ActionObserver<IActionRdfMetadataExtract, IActorRdfMetadataExtractOutput> {
+interface FooArgs extends IActorArgs<IActionRdfMetadataExtract, IActorTest, IActorRdfMetadataExtractOutput> {
+    bus: Bus<ActorRdfMetadataExtractTree, IActionRdfMetadataExtract, IActorTest, IActorRdfMetadataExtractOutput>;
+    excluded: string[];
+}
+
+export class EventStreamMetadataExtractor extends ActorRdfMetadataExtractTree {
     private id?: string
     private readonly excluded: string[];
-    private handlers: ((metadata: QuadMap) => void)[] = [];
-
-    public constructor(args: IActionObserverArgs<IActionRdfMetadataExtract, IActorRdfMetadataExtractOutput>, excluded: string[]) {
-        super(args)
-        this.excluded = excluded;
+    constructor(args: FooArgs) {
+        super(args);
+        this.excluded = args.excluded;
     }
 
-    onRun(actor: Actor<IActionRdfMetadataExtract, IActorTest, IActorRdfMetadataExtractOutput>, action: IActionRdfMetadataExtract, output: Promise<IActorRdfMetadataExtractOutput>): void {
+    async run(action: IActionRdfMetadataExtract): Promise<IActorRdfMetadataExtractOutput> {
         const data: Record<string, QuadMap> = {};
         const handler = this.id == undefined ? this.onDataFull(data) : this.onDataWithId(data, this.id);
         action.metadata.on("data", handler);
 
-        action.metadata.on("end", () => {
-            if (this.id) {
-                this.handlers.forEach(x => x(data[this.id!]))
-            }
-        })
+        const out = await super.run(action);
+
+        out.metadata["mine"] = data[this.id!];
+        return out;
     }
 
     private onDataFull(data: Record<string, QuadMap>): (quad: RDF.Quad) => void {
@@ -61,39 +64,21 @@ class EventStreamMetadataExtractor extends ActionObserver<IActionRdfMetadataExtr
         const objects = subjectProperties[predicate] || (subjectProperties[predicate] = []);
         objects.push(quad.object);
     }
-
-    public on(_metadata: "metadata", handler: (metadata: QuadMap) => void) {
-        this.handlers.push(handler);
-    }
 }
 
 export class LDESStreamClient implements StreamConstructor {
     private readonly url: string;
     private readonly ldesClient: LDESClient;
-    private metadataExtractor: EventStreamMetadataExtractor;
+    // private metadataExtractor: EventStreamMetadataExtractor;
 
-    public constructor(url: string, ldesClient: LDESClient, init: Initializable) {
-        const excluded = [
-            Tree.Member,
-            Tree.View,
-        ];
-
-        // TODO: add this through config
-        this.metadataExtractor = new EventStreamMetadataExtractor({ name: "stream metadata extractor", bus: ldesClient.mediatorRdfMetadataExtractTree.bus }, excluded);
+    public constructor(url: string, ldesClient: LDESClient, init: any) {
         this.url = url;
         this.ldesClient = ldesClient;
-        this.ldesClient.mediatorRdfMetadataExtractTree.bus.subscribeObserver(
-            this.metadataExtractor
-        )
-        init.initialize();
+        // init.initialize();
     }
 
     async create(): Promise<EventStream> {
         return this.ldesClient.createReadStream(this.url, { representation: "Quads", disablePolling: true });
-    }
-
-    on(metadata: "metadata", handler: (metadata: QuadMap) => void) {
-        this.metadataExtractor.on(metadata, handler);
     }
 }
 
@@ -116,7 +101,6 @@ export class LDESAccessorBasedStore implements ResourceStore {
         this.streamWriter = streamWriter;
         if (streamReader) {
             streamReader.create().then(this.startStream.bind(this)).then(console.log);
-            streamReader.on("metadata", (metadata) => this.metadata = metadata);
         }
     }
 
@@ -124,6 +108,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
         stream.on("data", async member => {
             this.streamWriter.write(member);
         });
+        stream.on("metadata", metadata => this.metadata = metadata.mine);
     }
 
     resourceExists = async (identifier: ResourceIdentifier, conditions?: Conditions | undefined): Promise<boolean> => {
