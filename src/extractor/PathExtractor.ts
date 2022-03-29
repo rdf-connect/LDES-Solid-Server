@@ -6,15 +6,20 @@ import { Params } from "../types";
 export class SimplePathExtractor implements PathExtractor<SimpleIndex> {
     private readonly factory: RDF.DataFactory = new DataFactory();
     private readonly path?: RDF.Quad_Predicate;
+    private readonly def?: SimpleIndex;
 
-    constructor(path?: string) {
-        if (path) {
+    constructor(path?: string, def?: string) {
+        if (path)
             this.path = this.factory.namedNode(path);
-        }
+        if (def)
+            this.def = new SimpleIndex(this.factory.literal(def));
     }
 
     setDefault(old: Params, base: number): Params {
-        return old;
+        if (this.def)
+            return this.setPath(this.def, old, base);
+        else
+            return old;
     }
 
     extractPath(params: Params, base: number): SimpleIndex {

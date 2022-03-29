@@ -1,4 +1,4 @@
-import { Params } from "../dist/Fetcher";
+import { Params } from "../dist/types";
 
 test("Params works as epected", () => {
     const url = "http://test.be/param1/param2?q=test";

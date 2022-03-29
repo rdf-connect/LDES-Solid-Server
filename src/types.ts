@@ -75,6 +75,8 @@ export class Params {
 /// - WO output type of `with` function
 /// - FI input type of `finish` function
 /// - FO output type of `finish` function
+///
+/// `with` should make a copy without assumptions
 export interface Builder<WI, FI, WO, FO> {
     with(i: WI): Promise<{ builder: Builder<WI, FI, WO, FO>, value: WO }>;
     finish(i: FI): Promise<FO>;

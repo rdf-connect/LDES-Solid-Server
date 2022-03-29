@@ -15,9 +15,9 @@ function checkX(x: undefined | Member): x is Member {
 }
 
 // Make Builder more typable
-type Input<Idx> = { key: string; index: Idx };
-type Get = { 'type': 'GET' };
-type Add = { 'type': 'ADD' };
+export type Input<Idx> = { key: string; index: Idx };
+export type Get = { 'type': 'GET' };
+export type Add = { 'type': 'ADD' };
 function isAdd(x: Add | Get): x is Add {
     return x.type == "ADD";
 }
