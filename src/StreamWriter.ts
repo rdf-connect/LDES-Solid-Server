@@ -1,4 +1,3 @@
-import { StaticAssetHandler } from "@solid/community-server";
 import { Member, StreamWriter } from "@treecg/types";
 import { IndexExtractor, QuadExtractor } from "./extractor";
 import { Tree } from "./Tree";
@@ -47,17 +46,15 @@ export abstract class StreamWriterBase2<State extends any, Idx = string> extends
     abstract _writeBuilder(): Builder<Idx, Member, void, void>;
 
     async _add(quads: Member, tree: Tree<Idx, void>): Promise<void> {
-        let builder = this._writeBuilder();
-
-        tree.walkTreeWith(builder, async (index, builder, node) => {
-            const [nBuilder, _] = await builder.with(index);
+        tree.walkTreeWith(this._writeBuilder(), async (index, b, node) => {
+            const { builder } = await b.with(index);
 
             if (node.isLeaf()) {
-                await nBuilder.finish(quads);
+                await builder.finish(quads);
                 return ["end", undefined];
             }
 
-            return ["cont", nBuilder];
+            return ["cont", builder];
         })
     }
 }

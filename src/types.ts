@@ -69,44 +69,52 @@ export class Params {
     }
 }
 
-export interface Builder<I, II, A, O> {
-    with(i: I): Promise<[Builder<I, II, A, O>, A]>;
-    finish(i: II): Promise<O>;
+/// Builder type
+/// Generics:
+/// - WI input type of `with` function
+/// - WO output type of `with` function
+/// - FI input type of `finish` function
+/// - FO output type of `finish` function
+export interface Builder<WI, FI, WO, FO> {
+    with(i: WI): Promise<{ builder: Builder<WI, FI, WO, FO>, value: WO }>;
+    finish(i: FI): Promise<FO>;
 }
 
-export interface Transformers<I, II, A, O, I2 = I, II2 = II, A2 = A, O2 = O> {
-    iToI2?: (i: I) => I2,
-    iIToII2?: (i: II) => II2,
-    a2ToA?: (i: A2) => A,
-    o2ToO?: (i: O2) => O,
+/// Wrapper for all converting functions for BuilderTransformers
+/// converting Builder<WI2, FI2, WO2, FO2> to Builder<WI, FI, WO, FO>
+export interface Transformers<WI, FI, WO, FO, WI2 = WI, FI2 = FI, WO2 = WO, FO2 = FO> {
+    transformWithInput?: (i: WI) => WI2,
+    transformFinishInput?: (i: FI) => FI2,
+    transformWithOutput?: (i: WO2) => WO,
+    transformFinishOutput?: (i: FO2) => FO,
 }
-export type T<I, O> = (i: I) => O;
-export class BuilderTransformer<I, II, A, O, I2 = I, II2 = II, A2 = A, O2 = O> implements Builder<I, II, A, O> {
-    private inner: Builder<I2, II2, A2, O2>;
-    private transformers: Transformers<I, II, A, O, I2, II2, A2, O2>;
+
+export class BuilderTransformer<WI, FI, WO, FO, WI2 = WI, FI2 = FI, WO2 = WO, FO2 = FO> implements Builder<WI, FI, WO, FO> {
+    private inner: Builder<WI2, FI2, WO2, FO2>;
+    private transformers: Transformers<WI, FI, WO, FO, WI2, FI2, WO2, FO2>;
 
     constructor(
-        inner: Builder<I2, II2, A2, O2>,
-        transformers: Transformers<I, II, A, O, I2, II2, A2, O2>
+        inner: Builder<WI2, FI2, WO2, FO2>,
+        transformers: Transformers<WI, FI, WO, FO, WI2, FI2, WO2, FO2>,
     ) {
         this.inner = inner;
         this.transformers = transformers;
     }
 
-    async with(i: I): Promise<[Builder<I, II, A, O>, A]> {
-        const i2 = this.transformers.iToI2 ? this.transformers.iToI2(i) : <I2><unknown>i;
-        const [nb, a] = await this.inner.with(i2);
-        const a2 = this.transformers.a2ToA ? this.transformers.a2ToA(a) : <A><unknown>a;
-        return [
-            new BuilderTransformer<I, II, A, O, I2, II2, A2, O2>(nb, this.transformers),
-            a2
-        ]
+    async with(i: WI): Promise<{ builder: Builder<WI, FI, WO, FO>, value: WO }> {
+        const i2 = this.transformers.transformWithInput ? this.transformers.transformWithInput(i) : <WI2><unknown>i;
+        const { builder, value } = await this.inner.with(i2);
+        const a2 = this.transformers.transformWithOutput ? this.transformers.transformWithOutput(value) : <WO><unknown>value;
+        return {
+            builder: new BuilderTransformer(builder, this.transformers),
+            value: a2
+        }
     }
 
-    async finish(i: II): Promise<O> {
-        const i2 = this.transformers.iIToII2 ? this.transformers.iIToII2(i) : <II2><unknown>i;
+    async finish(i: FI): Promise<FO> {
+        const i2 = this.transformers.transformFinishInput ? this.transformers.transformFinishInput(i) : <FI2><unknown>i;
         const o2 = await this.inner.finish(i2);
-        const o = this.transformers.o2ToO ? this.transformers.o2ToO(o2) : <O><unknown>o2;
+        const o = this.transformers.transformFinishOutput ? this.transformers.transformFinishOutput(o2) : <FO><unknown>o2;
         return o;
     }
 }

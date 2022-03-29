@@ -92,7 +92,7 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
 }
 
 export abstract class FragmentFetcherBase2<State extends any, Idx = string> extends FragmentFetcherBase<State, Idx> {
-    abstract _fetchBuilder(): Builder<[Idx, number], void, AlternativePath<Idx>[], Member[]>;
+    abstract _fetchBuilder(): Builder<[Idx, number], undefined, Array<AlternativePath<Idx>>, Array<Member>>;
 
     async _fetch(indices: Idx[]): Promise<{ members: Member[], relations: AlternativePath<Idx>[] }> {
         let builder = this._fetchBuilder();
@@ -101,10 +101,10 @@ export abstract class FragmentFetcherBase2<State extends any, Idx = string> exte
         for (let i = 0; i < indices.length; i++) {
             const index = indices[i];
             const sub = await builder.with([index, i]);
-            alternatives.push(...sub[1]);
-            builder = sub[0];
+            alternatives.push(...sub.value);
+            builder = sub.builder;
         }
 
-        return { 'members': await builder.finish(), 'relations': alternatives };
+        return { 'members': await builder.finish(undefined), 'relations': alternatives };
     }
 }

@@ -35,13 +35,13 @@ export class SortedData<Idx extends Comparable> implements
         this.indices = new LinkedList<Idx>();
     }
 
-    async with(i: Input<Idx> & Add): Promise<[SortedData<Idx>, void]>;
-    async with(i: Input<Idx> & Get): Promise<[SortedData<Idx>, { type: RelationType; index: Idx; }[]]>;
-    async with(i: Input<Idx> & (Get | Add)): Promise<[SortedData<Idx>, { type: RelationType; index: Idx; }[]] | [SortedData<Idx>, void]> {
+    async with(i: Input<Idx> & Add): Promise<{ builder: SortedData<Idx>, value: undefined }>;
+    async with(i: Input<Idx> & Get): Promise<{ builder: SortedData<Idx>, value: { type: RelationType; index: Idx; }[] }>;
+    async with(i: Input<Idx> & (Get | Add)): Promise<{ builder: SortedData<Idx>, value: { type: RelationType; index: Idx; }[] } | { builder: SortedData<Idx>, value: undefined }> {
         if (isAdd(i)) {
             this.makeSureExists(i.key, i.index);
             const child = this.children[i.key];
-            return [child.inner, undefined];
+            return { builder: child.inner, value: undefined };
         } else {
             return this.get(i.key, i.index);
         }
@@ -59,7 +59,6 @@ export class SortedData<Idx extends Comparable> implements
     }
 
     private makeSureExists(key: string, index: Idx) {
-
         if (!this.children[key]) {
             const bigger = this.indices.findFirst(n => index.cmp(n.item) > 0);
             const node = bigger ? bigger.prepend(index) : this.indices.append(index);
@@ -72,15 +71,12 @@ export class SortedData<Idx extends Comparable> implements
         }
     }
 
-    add(key: string, index: Idx, quads: Member): SortedData<Idx> {
-        this.makeSureExists(key, index);
-
-        const child = this.children[key];
-        child.inner.items.push(quads);
-        return child.inner;
-    }
-
-    get(key: string, index: Idx): [SortedData<Idx>, { 'type': RelationType, 'index': Idx }[]] {
+    get(key: string, index: Idx): {
+        builder: SortedData<Idx>,
+        value: {
+            'type': RelationType, 'index': Idx
+        }[]
+    } {
         this.makeSureExists(key, index);
         const child = this.children[key];
 
@@ -98,7 +94,7 @@ export class SortedData<Idx extends Comparable> implements
             })
         }
 
-        return [child.inner, alters];
+        return { builder: child.inner, value: alters };
     }
 }
 
@@ -116,7 +112,7 @@ export class SimpleMemoryWriter<Idx extends SimpleIndex> extends StreamWriterBas
         return new BuilderTransformer(
             this.state,
             {
-                iToI2: (idx) => { return { type: "SET", key: idx.value.value, index: idx } },
+                transformWithInput: (idx) => { return { type: "SET", key: idx.value.value, index: idx } },
             }
         );
     }
@@ -128,12 +124,13 @@ export class SimpleMemoryFetcher<Idx extends SimpleIndex = SimpleIndex> extends 
     }
 
     _fetchBuilder(): Builder<[Idx, number], void, AlternativePath<Idx>[], Member[]> {
+        // BuilderTransformer state
         let _i = 0;
         return new BuilderTransformer(
             this.state,
             {
-                iToI2: ([idx, i]) => { _i = i; return { type: "GET", key: idx.value.value, index: idx } },
-                a2ToA: (x) => {
+                transformWithInput: ([idx, i]) => { _i = i; return { type: "GET", key: idx.value.value, index: idx } },
+                transformWithOutput: (x) => {
                     return x.map(x => {
                         return {
                             index: x.index,
