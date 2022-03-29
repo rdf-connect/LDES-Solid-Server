@@ -30,14 +30,14 @@ export class Tree<Index, T> {
         }
     }
 
-    walkTreeWith<Data, E>(data: Data, f: (index: Index, data: Data, node: Tree<Index, T>) => ["cont", Data] | ["end", E]): E[] {
+    async walkTreeWith<Data, E>(data: Data, f: (index: Index, data: Data, node: Tree<Index, T>) => Promise<["cont", Data] | ["end", E]>): Promise<E[]> {
         const out: E[] = [];
 
         for (let key in this.node) {
             const [index, tree] = this.node[key];
-            const foo = f(index, data, tree);
+            const foo = await f(index, data, tree);
             if (isCont<Data, E>(foo)) {
-                out.push(...tree.walkTreeWith(foo[1], f));
+                out.push(...await tree.walkTreeWith(foo[1], f));
             } else {
                 out.push(foo[1]);
             }

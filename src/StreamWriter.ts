@@ -1,7 +1,8 @@
+import { StaticAssetHandler } from "@solid/community-server";
 import { Member, StreamWriter } from "@treecg/types";
 import { IndexExtractor, QuadExtractor } from "./extractor";
 import { Tree } from "./Tree";
-import { Wrapper } from "./types";
+import { Builder, Wrapper } from "./types";
 
 
 export abstract class StreamWriterBase<State extends any, Idx = string> implements StreamWriter {
@@ -39,10 +40,24 @@ export abstract class StreamWriterBase<State extends any, Idx = string> implemen
         return await this._add(member, tree);
     }
 
-    // Idx[][] because on one layer of indices there might be multiple options
-    // For example:
-    //   Extract language form an item
-    //   but this item has multiple languages
-    //   So add this item for all languages
     abstract _add(quads: Member, tree: Tree<Idx, void>): Promise<void>;
+}
+
+export abstract class StreamWriterBase2<State extends any, Idx = string> extends StreamWriterBase<State, Idx> {
+    abstract _writeBuilder(): Builder<Idx, Member, void, void>;
+
+    async _add(quads: Member, tree: Tree<Idx, void>): Promise<void> {
+        let builder = this._writeBuilder();
+
+        tree.walkTreeWith(builder, async (index, builder, node) => {
+            const [nBuilder, _] = await builder.with(index);
+
+            if (node.isLeaf()) {
+                await nBuilder.finish(quads);
+                return ["end", undefined];
+            }
+
+            return ["cont", nBuilder];
+        })
+    }
 }

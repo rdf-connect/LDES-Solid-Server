@@ -11,3 +11,4 @@ export * from './StreamWriter';
 export * from './types';
 export * from './LDESStore';
 export * from './Tree';
+export { List as LinkedList, Node as LinkedNode } from './LinkedList'

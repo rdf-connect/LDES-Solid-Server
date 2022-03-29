@@ -5,7 +5,7 @@
     "@graph": [
         {
             "@id": "urn:solid-server:default:Data",
-            "@type": "NewData"
+            "@type": "SortedData"
         }
     ]
 }

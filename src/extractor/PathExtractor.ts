@@ -1,6 +1,6 @@
 import type * as RDF from '@rdfjs/types';
 import { DataFactory } from "rdf-data-factory";
-import { PathExtractor, SimpleIndex } from ".";
+import { PathExtractor, SimpleIndex } from "../extractor";
 import { Params } from "../types";
 
 export class SimplePathExtractor implements PathExtractor<SimpleIndex> {
@@ -18,7 +18,7 @@ export class SimplePathExtractor implements PathExtractor<SimpleIndex> {
     }
 
     extractPath(params: Params, base: number): SimpleIndex {
-        return { value: this.factory.literal(decodeURI(params.path[base])), path: this.path };
+        return new SimpleIndex(this.factory.literal(decodeURI(params.path[base])), this.path);
     }
 
     setPath(index: SimpleIndex, old: Params, base: number): Params {

@@ -1,79 +1,150 @@
 import { Member, RelationType } from "@treecg/types";
+import { LinkedList, LinkedNode } from ".";
 import { CacheExtractor, IndexExtractor, PathExtractor, QuadExtractor, SimpleIndex } from './extractor';
-import { AlternativePath, FragmentFetcherBase } from "./Fetcher";
-import { StreamWriterBase } from "./StreamWriter";
-import { Tree } from './Tree';
-import { Wrapper } from "./types";
+import { AlternativePath, FragmentFetcherBase2 } from "./Fetcher";
+import { StreamWriterBase2 } from "./StreamWriter";
+import { Builder, BuilderTransformer, Comparable, Wrapper } from "./types";
 
 export interface Data<Idx> {
     items: Member[];
     children: { [key: string]: [Idx, Data<Idx>] };
 };
 
+function checkX(x: undefined | Member): x is Member {
+    return !!x;
+}
+
+// Make Builder more typable
+type Input<Idx> = { key: string; index: Idx };
+type Get = { 'type': 'GET' };
+type Add = { 'type': 'ADD' };
+function isAdd(x: Add | Get): x is Add {
+    return x.type == "ADD";
+}
+
+export class SortedData<Idx extends Comparable> implements
+    Builder<Input<Idx> & Get, void, { 'type': RelationType, 'index': Idx }[], Member[]>,
+    Builder<Input<Idx> & Add, Member, void, void>
+{
+    public readonly items: Member[];
+    public readonly children: { [key: string]: { idx: Idx, node: LinkedNode<Idx>, inner: SortedData<Idx> } }
+    private readonly indices: LinkedList<Idx>;
+    constructor() {
+        this.items = [];
+        this.children = {};
+        this.indices = new LinkedList<Idx>();
+    }
+
+    async with(i: Input<Idx> & Add): Promise<[SortedData<Idx>, void]>;
+    async with(i: Input<Idx> & Get): Promise<[SortedData<Idx>, { type: RelationType; index: Idx; }[]]>;
+    async with(i: Input<Idx> & (Get | Add)): Promise<[SortedData<Idx>, { type: RelationType; index: Idx; }[]] | [SortedData<Idx>, void]> {
+        if (isAdd(i)) {
+            this.makeSureExists(i.key, i.index);
+            const child = this.children[i.key];
+            return [child.inner, undefined];
+        } else {
+            return this.get(i.key, i.index);
+        }
+    }
+
+    async finish(): Promise<Member[]>;
+    async finish(i: Member): Promise<undefined>;
+    async finish(i?: Member): Promise<undefined | Member[]> {
+        if (checkX(i)) {
+            this.items.push(i);
+            return;
+        } else {
+            return this.items;
+        }
+    }
+
+    private makeSureExists(key: string, index: Idx) {
+
+        if (!this.children[key]) {
+            const bigger = this.indices.findFirst(n => index.cmp(n.item) > 0);
+            const node = bigger ? bigger.prepend(index) : this.indices.append(index);
+
+            this.children[key] = {
+                idx: index,
+                node: node,
+                inner: new SortedData<Idx>(),
+            };
+        }
+    }
+
+    add(key: string, index: Idx, quads: Member): SortedData<Idx> {
+        this.makeSureExists(key, index);
+
+        const child = this.children[key];
+        child.inner.items.push(quads);
+        return child.inner;
+    }
+
+    get(key: string, index: Idx): [SortedData<Idx>, { 'type': RelationType, 'index': Idx }[]] {
+        this.makeSureExists(key, index);
+        const child = this.children[key];
+
+        const alters = [];
+        if (child.node.prev) {
+            alters.push({
+                'type': RelationType.LessThan,
+                'index': child.node.prev.item
+            })
+        }
+        if (child.node.next) {
+            alters.push({
+                'type': RelationType.GreaterThan,
+                'index': child.node.next.item
+            })
+        }
+
+        return [child.inner, alters];
+    }
+}
+
 export class NewData<Idx> implements Data<Idx> {
     public items = [];
     public children = {};
 }
 
-export class SimpleMemoryWriter<Idx extends SimpleIndex> extends StreamWriterBase<Data<Idx>, Idx>  {
-    constructor(state: Wrapper<Data<Idx>>, extractors: QuadExtractor<Idx>[] = [], indexExtractors: IndexExtractor<Idx>[] = []) {
+export class SimpleMemoryWriter<Idx extends SimpleIndex> extends StreamWriterBase2<SortedData<Idx>, Idx>  {
+    constructor(state: Wrapper<SortedData<Idx>>, extractors: QuadExtractor<Idx>[] = [], indexExtractors: IndexExtractor<Idx>[] = []) {
         super(state, extractors, indexExtractors);
     }
 
-    async _add(quads: Member, tree: Tree<Idx, void>): Promise<void> {
-
-        const x = tree.walkTreeWith<Data<Idx>, undefined>(this.state, (index, state, node) => {
-            const value = index.value.value;
-
-            if (!state.children[value]) {
-                state.children[value] = [index, { items: [], children: {} }];
+    _writeBuilder(): Builder<Idx, Member, void, void> {
+        return new BuilderTransformer(
+            this.state,
+            {
+                iToI2: (idx) => { return { type: "SET", key: idx.value.value, index: idx } },
             }
-
-            if (node.isLeaf()) {
-                state.children[value][1].items.push(quads);
-                return ["end", undefined];
-            }
-
-            return ["cont", state.children[value][1]];
-        })
+        );
     }
 }
 
-export class SimpleMemoryFetcher<Idx extends SimpleIndex = SimpleIndex> extends FragmentFetcherBase<Data<Idx>, Idx> {
-    constructor(state: Wrapper<Data<Idx>>, extractors: PathExtractor<Idx>[], cacheExtractor: CacheExtractor<Idx>) {
+export class SimpleMemoryFetcher<Idx extends SimpleIndex = SimpleIndex> extends FragmentFetcherBase2<SortedData<Idx>, Idx> {
+    constructor(state: Wrapper<SortedData<Idx>>, extractors: PathExtractor<Idx>[], cacheExtractor: CacheExtractor<Idx>) {
         super(state.inner, extractors, cacheExtractor);
     }
 
-    async _fetch(indices: Idx[]): Promise<{ members: Member[], relations: AlternativePath<Idx>[] }> {
-        let current = this.state;
-        const alternatives: AlternativePath<Idx>[] = [];
-
-        for (let i = 0; i < indices.length; i++) {
-            const index = indices[i];
-            const key = index.value.value;
-
-            if (!current.children[key]) {
-                current.children[key] = [index, { items: [], children: {} }];
+    _fetchBuilder(): Builder<[Idx, number], void, AlternativePath<Idx>[], Member[]> {
+        let _i = 0;
+        return new BuilderTransformer(
+            this.state,
+            {
+                iToI2: ([idx, i]) => { _i = i; return { type: "GET", key: idx.value.value, index: idx } },
+                a2ToA: (x) => {
+                    return x.map(x => {
+                        return {
+                            index: x.index,
+                            type: x.type,
+                            path: x.index.path,
+                            value: x.index.path ? [x.index.value] : [],
+                            from: _i
+                        }
+                    })
+                },
             }
-
-            for (let other in current.children) {
-                if (other == key) continue;
-                const nIndex = current.children[other][0];
-
-                const alternative: AlternativePath<Idx> = {
-                    index: nIndex,
-                    type: RelationType.EqualThan,
-                    path: nIndex.path,
-                    value: nIndex.path ? [nIndex.value] : [],
-                    from: i,
-                };
-
-                alternatives.push(alternative);
-            }
-
-            current = current.children[key][1];
-        }
-
-        return { members: current.items, relations: alternatives };
+        );
     }
 }

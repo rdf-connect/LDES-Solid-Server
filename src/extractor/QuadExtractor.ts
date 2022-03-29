@@ -1,7 +1,7 @@
 import type * as RDF from '@rdfjs/types';
 import { Member } from '@treecg/types';
 import { DataFactory } from "rdf-data-factory";
-import { QuadExtractor, SimpleIndex } from ".";
+import { QuadExtractor, SimpleIndex } from "../extractor";
 
 export class SimpleQuadExtractor implements QuadExtractor<SimpleIndex> {
     private readonly factory: RDF.DataFactory;
@@ -15,7 +15,7 @@ export class SimpleQuadExtractor implements QuadExtractor<SimpleIndex> {
         const out = [];
         for (let quad of member.quads) {
             if (quad.predicate.value == this.path.value) {
-                out.push({ value: quad.object, path: this.path });
+                out.push(new SimpleIndex(quad.object, this.path));
             }
         }
 

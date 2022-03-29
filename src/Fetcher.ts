@@ -1,7 +1,7 @@
 import type * as RDF from '@rdfjs/types';
 import { CacheDirectives, Fragment, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
 import { CacheExtractor, PathExtractor } from './extractor';
-import { Params } from "./types";
+import { Builder, Params } from "./types";
 
 export type AlternativePath<Idx> = {
     index: Idx,
@@ -80,7 +80,6 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
             relations.push(relation);
         }
 
-
         return {
             members,
             relations,
@@ -90,4 +89,22 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
     }
 
     abstract _fetch(indices: Idx[]): Promise<{ members: Member[], relations: AlternativePath<Idx>[] }>;
+}
+
+export abstract class FragmentFetcherBase2<State extends any, Idx = string> extends FragmentFetcherBase<State, Idx> {
+    abstract _fetchBuilder(): Builder<[Idx, number], void, AlternativePath<Idx>[], Member[]>;
+
+    async _fetch(indices: Idx[]): Promise<{ members: Member[], relations: AlternativePath<Idx>[] }> {
+        let builder = this._fetchBuilder();
+        const alternatives = [];
+
+        for (let i = 0; i < indices.length; i++) {
+            const index = indices[i];
+            const sub = await builder.with([index, i]);
+            alternatives.push(...sub[1]);
+            builder = sub[0];
+        }
+
+        return { 'members': await builder.finish(), 'relations': alternatives };
+    }
 }

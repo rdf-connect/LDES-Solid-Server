@@ -3,5 +3,9 @@
   "StreamWriter",
   "StreamReader",
   "LDESClient",
-  "Tree"
+  "Tree",
+  "LinkedList",
+  "LinkedNode",
+  "Quad_Object",
+  "Quad_Predicate"
 ]

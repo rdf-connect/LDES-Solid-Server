@@ -39,14 +39,14 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
     }
 
     extractIndices(root: Tree<SimpleIndex, void>): void {
-        root.walkTreeWith(this.sizeTree, (index, data, node) => {
+        root.walkTreeWith(this.sizeTree, async (index, data, node) => {
             if (node.isLeaf()) {
                 const leaf = data.get(index);
                 leaf.update(f => f ? f + 1 : 1);
 
                 const amount = leaf.get_v()!;
                 const l = Math.floor(amount / this.itemsPerPage);
-                node.get({ value: this.factory.literal(l.toString()) });
+                node.get(new SimpleIndex(this.factory.literal(l.toString())));
 
                 return ["end", undefined];
             }
@@ -57,7 +57,7 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
     }
 
     extractPath(params: Params, base: number): SimpleIndex {
-        return { value: this.factory.literal(params.query["page"] || "0") };
+        return new SimpleIndex(this.factory.literal(params.query["page"] || "0"));
     }
 
     setPath(index: SimpleIndex, old: Params, _base: number): Params {

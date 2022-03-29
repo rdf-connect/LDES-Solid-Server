@@ -1,6 +1,6 @@
 
 import { CacheDirectives, Member } from "@treecg/types";
-import { CacheExtractor, PathExtractor, QuadExtractor, SimpleIndex } from ".";
+import { CacheExtractor, PathExtractor, QuadExtractor, SimpleIndex } from "../extractor";
 import { Params } from "../types";
 import { SimplePathExtractor } from "./PathExtractor";
 import { SimpleQuadExtractor } from "./QuadExtractor";
