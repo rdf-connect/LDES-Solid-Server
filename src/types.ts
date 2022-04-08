@@ -1,11 +1,7 @@
-import { CacheDirectives, StreamReader } from "@treecg/types";
+import { CacheDirectives } from "@treecg/types";
 
 export interface Wrapper<T extends any = any> {
     inner: T;
-}
-
-export interface StreamConstructor {
-    create(): Promise<StreamReader>;
 }
 
 export namespace NS {

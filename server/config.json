@@ -1,6 +1,7 @@
 {
     "@context": [
         "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^3.0.0/components/context.jsonld",
+        "https://linkedsoftwaredependencies.org/bundles/npm/@connectors/ldes/^1.0.0/components/context.jsonld",
         "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
     ],
     "import": [
@@ -39,9 +40,9 @@
         "files-lss:config/ldes/data.json",
         "files-lss:config/ldes/fragment-fetcher.json",
         "files-lss:config/ldes/page-extractor.json",
-        "files-lss:config/ldes/stream-reader.json",
         "files-lss:config/ldes/stream-writer.json",
-        "files-lss:config/storage/backend/ldes.json"
+        "files-lss:config/storage/backend/ldes.json",
+        "files-cldes:config/default.json"
     ],
     "@graph": [
         {

@@ -1,114 +1,35 @@
 
-import { IActionRdfMetadataExtract, IActorRdfMetadataExtractOutput } from "@comunica/bus-rdf-metadata-extract";
-import { Bus, IActorArgs, IActorTest } from "@comunica/core";
+import { StreamReader } from "@connectors/types";
 import type * as RDF from '@rdfjs/types';
 import { BasicRepresentation, Conditions, CONTENT_TYPE, guardedStreamFrom, INTERNAL_QUADS, MetadataRecord, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore } from "@solid/community-server";
-import { EventStream, LDESClient } from "@treecg/actor-init-ldes-client";
-import { ActorRdfMetadataExtractTree } from "@treecg/actor-rdf-metadata-extract-tree";
-import { CacheDirectives, FragmentFetcher, Member, RelationParameters, StreamWriter } from "@treecg/types";
+import { CacheDirectives, FragmentFetcher, Member, MemberStore, Metadata, RelationParameters } from "@treecg/types";
 import { DataFactory, Quad } from "rdf-data-factory";
 import { HTTP } from ".";
-import { cacheToLiteral, NS, StreamConstructor } from "./types";
+import { cacheToLiteral, NS } from "./types";
 
 const { Tree, LDES } = NS;
 
 type QuadMap = Record<string, RDF.Term[]>;
-interface FooArgs extends IActorArgs<IActionRdfMetadataExtract, IActorTest, IActorRdfMetadataExtractOutput> {
-    bus: Bus<ActorRdfMetadataExtractTree, IActionRdfMetadataExtract, IActorTest, IActorRdfMetadataExtractOutput>;
-    excluded: string[];
-}
-
-export class EventStreamMetadataExtractor extends ActorRdfMetadataExtractTree {
-    private id?: string
-    private readonly excluded: string[];
-    constructor(args: FooArgs) {
-        super(args);
-        this.excluded = args.excluded;
-    }
-
-    async run(action: IActionRdfMetadataExtract): Promise<IActorRdfMetadataExtractOutput> {
-        const data: Record<string, QuadMap> = {};
-        const handler = this.id == undefined ? this.onDataFull(data) : this.onDataWithId(data, this.id);
-        action.metadata.on("data", handler);
-
-        const out = await super.run(action);
-
-        out.metadata["mine"] = data[this.id!];
-        return out;
-    }
-
-    private onDataFull(data: Record<string, QuadMap>): (quad: RDF.Quad) => void {
-        return (quad: RDF.Quad) => {
-            if (this.excluded.includes(quad.predicate.value)) return;
-            this.addQuad(data, quad);
-
-            if (quad.predicate.value == NS.Type && quad.object.value == LDES.EventStream) {
-                this.id = quad.subject.value;
-            }
-        };
-    }
-
-    private onDataWithId(data: Record<string, QuadMap>, id: string): (quad: RDF.Quad) => void {
-        return (quad: RDF.Quad) => {
-            if (this.excluded.includes(quad.predicate.value)) return;
-            if (quad.subject.value == id) {
-                this.addQuad(data, quad);
-            }
-        };
-    }
-
-    private addQuad(data: Record<string, QuadMap>, quad: RDF.Quad) {
-        const subject = quad.subject.value;
-        const predicate = quad.predicate.value;
-        const subjectProperties = data[subject] || (data[subject] = {});
-        const objects = subjectProperties[predicate] || (subjectProperties[predicate] = []);
-        objects.push(quad.object);
-    }
-}
-
-export class LDESStreamClient implements StreamConstructor {
-    private readonly url: string;
-    private readonly ldesClient: LDESClient;
-    // private metadataExtractor: EventStreamMetadataExtractor;
-
-    public constructor(url: string, ldesClient: LDESClient, init: any) {
-        this.url = url;
-        this.ldesClient = ldesClient;
-        // init.initialize();
-    }
-
-    async create(): Promise<EventStream> {
-        return this.ldesClient.createReadStream(this.url, { representation: "Quads", disablePolling: true });
-    }
-}
 
 export class LDESAccessorBasedStore implements ResourceStore {
     private readonly factory = new DataFactory();
     private readonly id: string;
     private readonly fragmentFetcher: FragmentFetcher;
-    private readonly streamWriter: StreamWriter;
-
-    private metadata: QuadMap = {};
+    private readonly streamWriter: MemberStore;
 
     constructor(
         id: string,
         fragmentFetcher: FragmentFetcher,
-        streamWriter: StreamWriter,
-        streamReader?: LDESStreamClient,
+        streamWriter: MemberStore,
+        streamReader?: StreamReader<Member, Metadata>,
     ) {
         this.id = id;
         this.fragmentFetcher = fragmentFetcher;
         this.streamWriter = streamWriter;
         if (streamReader) {
-            streamReader.create().then(this.startStream.bind(this)).then(console.log);
+            streamReader.getMetadataStream().on("data", meta => this.streamWriter.writeMetadata(meta))
+            streamReader.getStream().on("data", member => this.streamWriter.write(member));
         }
-    }
-
-    async startStream(stream: EventStream) {
-        stream.on("data", async member => {
-            this.streamWriter.write(member);
-        });
-        stream.on("metadata", metadata => this.metadata = metadata.mine);
     }
 
     resourceExists = async (identifier: ResourceIdentifier, conditions?: Conditions | undefined): Promise<boolean> => {
@@ -121,10 +42,11 @@ export class LDESAccessorBasedStore implements ResourceStore {
         const cacheLit = cacheToLiteral(cache);
         return { [HTTP.cache_control]: this.factory.literal(cacheLit), [CONTENT_TYPE]: INTERNAL_QUADS };
     }
+
     getRepresentation = async (identifier: ResourceIdentifier, preferences: RepresentationPreferences, conditions?: Conditions): Promise<Representation> => {
         console.log("Getting representation for ", identifier);
         const fragment = await this.fragmentFetcher.fetch(identifier.path);
-
+        const metadata = fragment.metadata;
         const quads: Array<RDF.Quad> = [];
 
         quads.push(this.factory.quad(
@@ -133,7 +55,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
             this.factory.namedNode(identifier.path)
         ));
 
-        this.addMeta(quads, this.metadata);
+        this.addMeta(quads, metadata.mine);
 
         fragment.relations.forEach(relation => this.addRelations(quads, identifier.path, relation));
         fragment.members.forEach(m => this.addMember(quads, m));

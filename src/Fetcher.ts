@@ -1,5 +1,5 @@
 import type * as RDF from '@rdfjs/types';
-import { CacheDirectives, Fragment, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
+import { CacheDirectives, Fragment, FragmentFetcher, Member, Metadata, RelationParameters, RelationType } from "@treecg/types";
 import { CacheExtractor, PathExtractor } from './extractor';
 import { Builder, Params } from "./types";
 
@@ -84,14 +84,16 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
             members,
             relations,
             cache,
-            metadata: null
+            metadata: await this._getMetadata()
         };
     }
+
+    abstract _getMetadata(): Promise<Metadata>;
 
     abstract _fetch(indices: Idx[]): Promise<{ members: Member[], relations: AlternativePath<Idx>[] }>;
 }
 
-export abstract class FragmentFetcherBase2<State extends any, Idx = string> extends FragmentFetcherBase<State, Idx> {
+export abstract class FragmentFetcherBaseWithBuilder<State extends any, Idx = string> extends FragmentFetcherBase<State, Idx> {
     abstract _fetchBuilder(): Builder<[Idx, number], undefined, Array<AlternativePath<Idx>>, Array<Member>>;
 
     async _fetch(indices: Idx[]): Promise<{ members: Member[], relations: AlternativePath<Idx>[] }> {

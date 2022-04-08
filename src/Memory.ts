@@ -1,8 +1,8 @@
 import { Member, RelationType } from "@treecg/types";
 import { LinkedList, LinkedNode } from ".";
 import { CacheExtractor, IndexExtractor, PathExtractor, QuadExtractor, SimpleIndex } from './extractor';
-import { AlternativePath, FragmentFetcherBase2 } from "./Fetcher";
-import { StreamWriterBase2 } from "./StreamWriter";
+import { AlternativePath, FragmentFetcherBaseWithBuilder } from "./Fetcher";
+import { MemberStoreBaseWithBuilder } from "./StreamWriter";
 import { Builder, BuilderTransformer, Comparable, Wrapper } from "./types";
 
 export interface Data<Idx> {
@@ -98,19 +98,28 @@ export class SortedData<Idx extends Comparable> implements
     }
 }
 
-export class NewData<Idx> implements Data<Idx> {
-    public items = [];
-    public children = {};
+export interface SimpleMemoryData<Idx extends SimpleIndex> {
+    data: SortedData<Idx>,
+    metadata?: any
+};
+
+export class DataImpl implements SimpleMemoryData<SimpleIndex> {
+    public data: SortedData<SimpleIndex> = new SortedData<SimpleIndex>();
+    public metadata?: any;
 }
 
-export class SimpleMemoryWriter<Idx extends SimpleIndex> extends StreamWriterBase2<SortedData<Idx>, Idx>  {
-    constructor(state: Wrapper<SortedData<Idx>>, extractors: QuadExtractor<Idx>[] = [], indexExtractors: IndexExtractor<Idx>[] = []) {
+export class SimpleMemoryWriter<Idx extends SimpleIndex> extends MemberStoreBaseWithBuilder<SimpleMemoryData<Idx>, Idx>  {
+    constructor(state: Wrapper<SimpleMemoryData<Idx>>, extractors: QuadExtractor<Idx>[] = [], indexExtractors: IndexExtractor<Idx>[] = []) {
         super(state, extractors, indexExtractors);
+    }
+
+    async writeMetadata(metadata: any): Promise<void> {
+        this.state.metadata = metadata;
     }
 
     _writeBuilder(): Builder<Idx, Member, void, void> {
         return new BuilderTransformer(
-            this.state,
+            this.state.data,
             {
                 transformWithInput: (idx) => { return { type: "SET", key: idx.value.value, index: idx } },
             }
@@ -118,16 +127,20 @@ export class SimpleMemoryWriter<Idx extends SimpleIndex> extends StreamWriterBas
     }
 }
 
-export class SimpleMemoryFetcher<Idx extends SimpleIndex = SimpleIndex> extends FragmentFetcherBase2<SortedData<Idx>, Idx> {
-    constructor(state: Wrapper<SortedData<Idx>>, extractors: PathExtractor<Idx>[], cacheExtractor: CacheExtractor<Idx>) {
+export class SimpleMemoryFetcher<Idx extends SimpleIndex = SimpleIndex> extends FragmentFetcherBaseWithBuilder<SimpleMemoryData<Idx>, Idx> {
+    constructor(state: Wrapper<SimpleMemoryData<Idx>>, extractors: PathExtractor<Idx>[], cacheExtractor: CacheExtractor<Idx>) {
         super(state.inner, extractors, cacheExtractor);
+    }
+
+    async _getMetadata(): Promise<any> {
+        return this.state.metadata;
     }
 
     _fetchBuilder(): Builder<[Idx, number], void, AlternativePath<Idx>[], Member[]> {
         // BuilderTransformer state
         let _i = 0;
         return new BuilderTransformer(
-            this.state,
+            this.state.data,
             {
                 transformWithInput: ([idx, i]) => { _i = i; return { type: "GET", key: idx.value.value, index: idx } },
                 transformWithOutput: (x) => {

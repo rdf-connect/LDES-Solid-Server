@@ -1,10 +1,9 @@
-import { Member, StreamWriter } from "@treecg/types";
+import { Member, MemberStore } from "@treecg/types";
 import { IndexExtractor, QuadExtractor } from "./extractor";
 import { Tree } from "./Tree";
 import { Builder, Wrapper } from "./types";
 
-
-export abstract class StreamWriterBase<State extends any, Idx = string> implements StreamWriter {
+export abstract class MemberStoreBase<State extends any, Idx = string> implements MemberStore {
     protected state: State;
 
     protected quadExtractor: QuadExtractor<Idx>[];
@@ -14,6 +13,8 @@ export abstract class StreamWriterBase<State extends any, Idx = string> implemen
         this.quadExtractor = extractors;
         this.indexExtractors = indexExtractors;
     }
+
+    abstract writeMetadata(metadata: any): Promise<void>;
 
     async write(member: Member): Promise<void> {
         const tree = new Tree<Idx, void>();
@@ -42,7 +43,7 @@ export abstract class StreamWriterBase<State extends any, Idx = string> implemen
     abstract _add(quads: Member, tree: Tree<Idx, void>): Promise<void>;
 }
 
-export abstract class StreamWriterBase2<State extends any, Idx = string> extends StreamWriterBase<State, Idx> {
+export abstract class MemberStoreBaseWithBuilder<State extends any, Idx = string> extends MemberStoreBase<State, Idx> {
     abstract _writeBuilder(): Builder<Idx, Member, void, void>;
 
     async _add(quads: Member, tree: Tree<Idx, void>): Promise<void> {

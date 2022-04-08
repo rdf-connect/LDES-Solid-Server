@@ -1887,6 +1887,9 @@
     "@comunica/context-entries" "^1.22.0"
     asynciterator "^3.2.0"
 
+"@connectors/types@file:../connectors/packages/types":
+  version "1.0.0"
+
 "@dabh/diagnostics@^2.0.2":
   version "2.0.3"
   resolved "https://registry.npmjs.org/@dabh/diagnostics/-/diagnostics-2.0.3.tgz"
@@ -2513,9 +2516,8 @@
     n3 "^1.11.1"
     rdf-data-factory "^1.1.0"
 
-"@treecg/types@ajuvercr/types.git#5d29cab6d00f625678a69be9b2a9fc5c3cc40c06":
+"@treecg/types@file:../types":
   version "0.2.2"
-  resolved "https://codeload.github.com/ajuvercr/types/tar.gz/5d29cab6d00f625678a69be9b2a9fc5c3cc40c06"
   dependencies:
     "@rdfjs/dataset" "^1.1.1"
     "@rdfjs/types" "*"

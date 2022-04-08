@@ -12,6 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "@solid/community-server": "^3.0.0",
-    "ldes-solid-server": "file:.."
+    "@connectors/ldes": "file:../../connectors/packages/ldes",
+    "@connectors/types": "file:../../connectors/packages/types",
+    "ldes-solid-server": "./.."
   }
 }
