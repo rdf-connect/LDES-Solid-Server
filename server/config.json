@@ -37,10 +37,8 @@
         "files-scs:config/util/variables/default.json",
         "files-scs:config/storage/backend/data-accessors/sparql-endpoint.json",
         "files-scs:config/storage/backend/data-accessors/file.json",
-        "files-lss:config/ldes/data.json",
-        "files-lss:config/ldes/fragment-fetcher.json",
+        "files-lss:config/ldes/mongo.json",
         "files-lss:config/ldes/page-extractor.json",
-        "files-lss:config/ldes/stream-writer.json",
         "files-lss:config/storage/backend/ldes.json",
         "files-cldes:config/default.json"
     ],

@@ -7,6 +7,7 @@ export const HTTP = createUriAndTermNamespace('urn:npm:solid:community-server:ht
 export * from './extractor';
 export * from './Fetcher';
 export * from './store/Memory';
+export * from './store/Mongo';
 export * from './StreamWriter';
 export * from './types';
 export * from './LDESStore';

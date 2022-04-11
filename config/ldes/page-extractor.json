@@ -6,7 +6,8 @@
     {
       "@id": "urn:solid-server:default:SimplePageExtractor",
       "@type": "SimplePageExtractor",
-      "itemsPerPage": 5
+      "itemsPerPage": 5,
+      "pathName": "page"
     }
   ]
 }

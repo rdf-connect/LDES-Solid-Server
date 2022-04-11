@@ -4,6 +4,10 @@
   ],
   "@graph": [
     {
+      "@id": "urn:solid-server:default:Data",
+      "@type": "DataImpl"
+    },
+    {
       "@id": "urn:solid-server:default:FragmentFetcher",
       "@type": "SimpleMemoryFetcher",
       "state_inner": {
@@ -21,6 +25,24 @@
       "cacheExtractor": {
         "@id": "urn:solid-server:default:SimplePageExtractor"
       }
+    },
+    {
+      "@id": "urn:solid-server:default:StreamWriter",
+      "@type": "SimpleMemoryWriter",
+      "state_inner": {
+        "@id": "urn:solid-server:default:Data"
+      },
+      "extractors": [
+        {
+          "@type": "SimpleQuadExtractor",
+          "path": "https://basisregisters.vlaanderen.be/ns/adres#Gemeente.officieleTaal"
+        }
+      ],
+      "indexExtractors": [
+        {
+          "@id": "urn:solid-server:default:SimplePageExtractor"
+        }
+      ]
     }
   ]
 }
