@@ -5,9 +5,10 @@ import { BasicRepresentation, Conditions, CONTENT_TYPE, guardedStreamFrom, INTER
 import { CacheDirectives, FragmentFetcher, Member, MemberStore, Metadata, RelationParameters } from "@treecg/types";
 import { DataFactory, Quad } from "rdf-data-factory";
 import { HTTP } from ".";
+import { test } from "./store/Mongo";
 import { cacheToLiteral, NS } from "./types";
 
-const { Tree, LDES } = NS;
+const { Tree } = NS;
 
 type QuadMap = Record<string, RDF.Term[]>;
 
@@ -23,6 +24,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
         streamWriter: MemberStore,
         streamReader?: StreamReader<Member, Metadata>,
     ) {
+        test();
         this.id = id;
         this.fragmentFetcher = fragmentFetcher;
         this.streamWriter = streamWriter;

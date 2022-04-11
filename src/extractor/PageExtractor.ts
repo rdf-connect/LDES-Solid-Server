@@ -1,17 +1,21 @@
 
 import { CacheDirectives, Member } from "@treecg/types";
 import { DataFactory } from "rdf-data-factory";
+import { RdfParser } from "rdf-parse";
 import { CacheExtractor, IndexExtractor, PathExtractor, SimpleIndex } from '../extractor';
 import { Tree } from '../Tree';
 import { Params } from "../types";
+import type * as RDF from '@rdfjs/types';
 
 
 export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExtractor<SimpleIndex>, CacheExtractor<SimpleIndex> {
     private factory = new DataFactory();
     private readonly itemsPerPage: number;
     private readonly sizeTree: Tree<SimpleIndex, number>;
+    private readonly path: RDF.Quad_Predicate; 
 
-    constructor(itemsPerPage: number) {
+    constructor(itemsPerPage: number, pathName: string) {
+        this.path = this.factory.namedNode(pathName);
         this.itemsPerPage = itemsPerPage;
         this.sizeTree = new Tree((index: SimpleIndex) => index.value.value);
     }
@@ -46,7 +50,7 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
 
                 const amount = leaf.get_v()!;
                 const l = Math.floor(amount / this.itemsPerPage);
-                node.get(new SimpleIndex(this.factory.literal(l.toString())));
+                node.get(new SimpleIndex(this.factory.literal(l.toString()), this.path, false));
 
                 return ["end", undefined];
             }
@@ -57,7 +61,7 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
     }
 
     extractPath(params: Params, base: number): SimpleIndex {
-        return new SimpleIndex(this.factory.literal(params.query["page"] || "0"));
+        return new SimpleIndex(this.factory.literal(params.query["page"] || "0"), this.path, false);
     }
 
     setPath(index: SimpleIndex, old: Params, _base: number): Params {

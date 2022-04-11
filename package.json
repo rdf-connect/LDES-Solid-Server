@@ -29,10 +29,10 @@
         "build:components": "componentsjs-generator -s src -c dist/components -i .componentsignore -r lss --typeScopedContexts"
     },
     "dependencies": {
-        "@connectors/types": "file:../connectors/packages/types",
         "@comunica/bus-init": "=1.20.0",
         "@comunica/bus-rdf-metadata-extract": "1.21.1",
         "@comunica/core": "1.21.1",
+        "@connectors/types": "file:../connectors/packages/types",
         "@solid/community-server": "^3.0.0",
         "@treecg/actor-init-ldes-client": "^2.5.8",
         "@treecg/actor-rdf-filter-object-with-framing": "^2.3.6",
@@ -43,6 +43,7 @@
         "@treecg/bus-rdf-frame": "^2.3.6",
         "@treecg/types": "file:../types",
         "arrayify-stream": "^1.0.0",
+        "mongodb": "^4.5.0",
         "rdf-data-factory": "^1.1.0",
         "rdf-parse": "^1.9.1"
     },

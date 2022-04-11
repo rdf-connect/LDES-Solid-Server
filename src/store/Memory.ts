@@ -1,9 +1,9 @@
 import { Member, RelationType } from "@treecg/types";
-import { LinkedList, LinkedNode } from ".";
-import { CacheExtractor, IndexExtractor, PathExtractor, QuadExtractor, SimpleIndex } from './extractor';
-import { AlternativePath, FragmentFetcherBaseWithBuilder } from "./Fetcher";
-import { MemberStoreBaseWithBuilder } from "./StreamWriter";
-import { Builder, BuilderTransformer, Comparable, Wrapper } from "./types";
+import { LinkedList, LinkedNode } from "..";
+import { CacheExtractor, IndexExtractor, PathExtractor, QuadExtractor, SimpleIndex } from '../extractor';
+import { AlternativePath, FragmentFetcherBaseWithBuilder } from "../Fetcher";
+import { MemberStoreBaseWithBuilder } from "../StreamWriter";
+import { Builder, BuilderTransformer, Comparable, Wrapper } from "../types";
 
 export interface Data<Idx> {
     items: Member[];
@@ -148,8 +148,8 @@ export class SimpleMemoryFetcher<Idx extends SimpleIndex = SimpleIndex> extends 
                         return {
                             index: x.index,
                             type: x.type,
-                            path: x.index.path,
-                            value: x.index.path ? [x.index.value] : [],
+                            path: x.index.useInRelation ? x.index.path : undefined,
+                            value: x.index.useInRelation ? [x.index.value] : [],
                             from: _i
                         }
                     })

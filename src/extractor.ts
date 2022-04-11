@@ -28,10 +28,12 @@ export interface IndexExtractor<Idx = string> {
 
 export class SimpleIndex implements Comparable {
     public readonly value: RDF.Quad_Object;
-    public readonly path?: RDF.Quad_Predicate;
-    constructor(value: Quad_Object, path?: Quad_Predicate) {
+    public readonly path: RDF.Quad_Predicate;
+    public readonly useInRelation: boolean;
+    constructor(value: Quad_Object, path: Quad_Predicate, useInRelation=true) {
         this.value = value;
         this.path = path;
+        this.useInRelation = useInRelation;
     }
     cmp(other: this): number {
         return this.value > other.value ? 1 : -1;
