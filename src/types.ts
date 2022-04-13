@@ -120,3 +120,7 @@ export class BuilderTransformer<WI, FI, WO, FO, WI2 = WI, FI2 = FI, WO2 = WO, FO
 export interface Comparable {
     cmp(other: this): number;
 }
+
+export interface ToString {
+    toString(): string;
+}

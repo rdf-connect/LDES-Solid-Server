@@ -14,6 +14,6 @@
     "@solid/community-server": "^3.0.0",
     "@connectors/ldes": "file:../../connectors/packages/ldes",
     "@connectors/types": "file:../../connectors/packages/types",
-    "ldes-solid-server": "./.."
+    "ldes-solid-server": "file:.."
   }
 }

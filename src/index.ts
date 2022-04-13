@@ -12,4 +12,6 @@ export * from './StreamWriter';
 export * from './types';
 export * from './LDESStore';
 export * from './Tree';
+export * from './MongoUtils';
+export * from './DataSync';
 export { List as LinkedList, Node as LinkedNode } from './LinkedList'

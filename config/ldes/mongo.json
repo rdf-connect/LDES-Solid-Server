@@ -5,7 +5,18 @@
   "@graph": [
     {
       "@id": "urn:solid-server:default:Data",
-      "@type": "MongoData"
+      "@type": "MongoData",
+      "conn": {
+        "@id": "urn:solid-server:default:MongoConnection"
+      },
+      "metadata": {
+        "@type": "FileDataSync",
+        "location": "metadatalocation.json"
+      }
+    },
+    {
+      "@id": "urn:solid-server:default:MongoConnection",
+      "@type": "MongoConnection"
     },
     {
       "@id": "urn:solid-server:default:FragmentFetcher",

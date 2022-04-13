@@ -7,7 +7,11 @@
       "@id": "urn:solid-server:default:SimplePageExtractor",
       "@type": "SimplePageExtractor",
       "itemsPerPage": 5,
-      "pathName": "page"
+      "pathName": "page",
+      "sizeTree": {
+        "@type": "FileDataSync",
+        "location": "page_extractor.json"
+      }
     }
   ]
 }

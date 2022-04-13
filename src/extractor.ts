@@ -1,7 +1,7 @@
 import type * as RDF from '@rdfjs/types';
 import { CacheDirectives, Member } from "@treecg/types";
-import { Tree } from './Tree';
-import { Comparable, Params } from "./types";
+import { TreeData } from './Tree';
+import { Comparable, Params, ToString } from "./types";
 
 // Reexport so componentsjs-generator is happy
 export type Quad_Object = RDF.Quad_Object;
@@ -23,17 +23,20 @@ export interface QuadExtractor<Idx = string> {
 }
 
 export interface IndexExtractor<Idx = string> {
-    extractIndices(root: Tree<Idx, void>): void;
+    extractIndices(root: TreeData<Idx>): void;
 }
 
-export class SimpleIndex implements Comparable {
+export class SimpleIndex implements Comparable, ToString {
     public readonly value: RDF.Quad_Object;
     public readonly path: RDF.Quad_Predicate;
     public readonly useInRelation: boolean;
-    constructor(value: Quad_Object, path: Quad_Predicate, useInRelation=true) {
+    constructor(value: Quad_Object, path: Quad_Predicate, useInRelation = true) {
         this.value = value;
         this.path = path;
         this.useInRelation = useInRelation;
+    }
+    toString(): string {
+        return this.value.value;
     }
     cmp(other: this): number {
         return this.value > other.value ? 1 : -1;
@@ -74,3 +77,4 @@ export * from './extractor/CombinedExtractor';
 export * from './extractor/PageExtractor';
 export * from './extractor/PathExtractor';
 export * from './extractor/QuadExtractor';
+
