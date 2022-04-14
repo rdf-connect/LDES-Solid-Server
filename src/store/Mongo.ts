@@ -1,5 +1,5 @@
 
-import { Member } from '@treecg/types';
+import { Member, RelationType } from '@treecg/types';
 import type * as RDF from '@rdfjs/types';
 import * as mongoDB from 'mongodb';
 import { CacheExtractor, IndexExtractor, PathExtractor, QuadExtractor, SimpleIndex } from '../extractor';
@@ -55,9 +55,14 @@ function parseQuad(obj: any): RDF.Quad {
 }
 
 function makeKeyMongoProof(inp: string): string {
-    return inp.replaceAll('.', '_', );
+    return inp.replaceAll('.', '_');
 }
 
+function appendToRoot(root: string, key: string, value: string): string {
+    return `${root}&${key}=${value}`;
+}
+
+type Foo<Idx> = { "keys": Plain, "root": string }
 type Plain = { [label: string]: string }
 type Doc = { id: RDF.Term, quads: RDF.Quad[], met: Plain };
 export class MongoWriter<Idx extends SimpleIndex> extends MemberStoreBase<State, Idx> {
@@ -69,30 +74,42 @@ export class MongoWriter<Idx extends SimpleIndex> extends MemberStoreBase<State,
     }
 
     async _add(quads: Member, tree: TreeData<Idx>): Promise<void> {
-        const locations = await TreeTwo.walkTreeWith(tree, <Plain>{},
+        const foos: { root: string, value: string, index: Idx }[] = [];
+
+        const locations = await TreeTwo.walkTreeWith(tree, <Foo<Idx>>{ keys: {}, root: "" },
             async (index, c, node) => {
                 const v = node.value!.value.value;
-                const p = node.value!.path.value;
+                const p = makeKeyMongoProof(node.value!.path.value);
 
+                foos.push({ root: c.root, value: v, index: node.value! });
+                const newroot = appendToRoot(c.root, p, v);
 
-                const o: Plain = {};
-                Object.assign(o, c);
-                o[makeKeyMongoProof(p)] = v;
+                const o: Foo<Idx> = { keys: {}, root: newroot };
+                Object.assign(o.keys, c);
+                o.keys[p] = v;
 
                 if (TreeTwo.isLeaf(node)) {
                     return ["end", o];
                 }
+
                 return ["cont", o];
             }
         );
 
-        const items = locations.map(loc => { return { id: quads.id, quads: quads.quads, met: loc } });
+        const metaDoc = await this.state.connection("metaDoc");
+
+        for (let foo of foos) {
+            metaDoc.updateOne(foo, { $set: {} }, { upsert: true });
+        }
+
+        const items = locations.map(loc => { return { id: quads.id, quads: quads.quads, met: loc.keys } });
         const collection = await this.state.connection();
         await collection.insertMany(items);
     }
 }
 
 export class MongoFetcher<Idx extends SimpleIndex> extends FragmentFetcherBase<State, Idx> {
+    private readonly factory = new DataFactory();
     constructor(state: Wrapper<State>, extractors: PathExtractor<Idx>[], cacheExtractor: CacheExtractor<Idx>) {
         super(state.inner, extractors, cacheExtractor);
     }
@@ -106,7 +123,39 @@ export class MongoFetcher<Idx extends SimpleIndex> extends FragmentFetcherBase<S
         console.log(indices);
         indices.forEach(i => key[makeKeyMongoProof(i.path.value)] = i.value.value);
 
+        let root = "";
+        const keyParts = [];
+        for (let index of indices) {
+            const v = index.value.value;
+            const p = makeKeyMongoProof(index.path.value);
+            keyParts.push({ root: root, value: v, index: index })
+
+            root = appendToRoot(root, p, v);
+        }
+
         console.log("looking with", { met: key });
+
+        const metaDoc = await this.state.connection("metaDoc");
+        const alterantives: AlternativePath<Idx>[][] = await Promise.all(keyParts.flatMap(async (part, i) => {
+            const toAlternative = (meta: { value: string, index: Idx }, rel: RelationType) => {
+                return {
+                    index: meta.index,
+                    type: rel,
+                    from: i,
+                    path: part.index.useInRelation ? part.index.path : undefined,
+                    value: part.index.useInRelation ? [this.factory.literal(meta.value)] : []
+                }
+            };
+
+            const os: Array<AlternativePath<Idx> | undefined> = await Promise.all([
+                metaDoc.findOne({ root: part.root, value: { $gt: part.value } }, { sort: { value: 1 }, limit: 1 })
+                    .then(x => x ? toAlternative(<any>x, RelationType.GreaterThan) : undefined),
+                metaDoc.findOne({ root: part.root, value: { $lt: part.value } }, { sort: { value: -1 }, limit: 1 })
+                    .then(x => x ? toAlternative(<any>x, RelationType.LessThan) : undefined),
+            ]);
+
+            return <AlternativePath<Idx>[]>os.filter(x => !!x);
+        }));
 
 
         const conn = await this.state.connection();
@@ -116,6 +165,6 @@ export class MongoFetcher<Idx extends SimpleIndex> extends FragmentFetcherBase<S
 
         const members = res.map(x => { return { id: x.id, quads: x.quads.map(parseQuad) } });
 
-        return { members, relations: [] };
+        return { members, relations: alterantives.flat() };
     }
 } 
