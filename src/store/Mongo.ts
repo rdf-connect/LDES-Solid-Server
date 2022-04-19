@@ -1,16 +1,62 @@
 
-import { Member, RelationType } from '@treecg/types';
 import type * as RDF from '@rdfjs/types';
+import { Member, RelationType } from '@treecg/types';
 import * as mongoDB from 'mongodb';
+import { DataFactory } from 'rdf-data-factory';
+import { DataSync } from '../DataSync';
 import { CacheExtractor, IndexExtractor, PathExtractor, QuadExtractor, SimpleIndex } from '../extractor';
 import { AlternativePath, FragmentFetcherBase } from '../Fetcher';
 import { MemberStoreBase } from '../StreamWriter';
-import { Tree, TreeData, TreeTwo } from '../Tree';
+import { Tree, TreeData } from '../Tree';
 import { Wrapper } from '../types';
-import { DataFactory } from 'rdf-data-factory';
-import fetch from 'node-fetch';
-import { MongoConnection } from '../MongoUtils';
-import { DataSync } from '../DataSync';
+
+export class MongoDataSync<T> implements DataSync<T | undefined> {
+    private readonly collection: Promise<mongoDB.Collection>;
+    private readonly id: string;
+    constructor(connection: MongoConnection, collection: string, id: string) {
+        this.collection = connection.connection(collection);
+        this.id = id;
+    }
+
+    async update(f: (value: T | undefined) => Promise<T>): Promise<void> {
+        const v = await this.get();
+        await this.save(await f(v));
+    }
+
+    async get(): Promise<T | undefined> {
+        const collection = await this.collection;
+        const item = await collection.findOne({ id: this.id });
+        if (item) {
+            return item.data;
+        }
+    }
+
+    async save(t: T): Promise<void> {
+        const collection = await this.collection;
+        await collection.updateOne({ id: this.id }, { $set: { data: t } }, { upsert: true });
+    }
+
+}
+
+export class MongoConnection {
+    private readonly db: Promise<mongoDB.Db>;
+    private readonly defaultCollection: string;
+
+    constructor(conn = "mongodb://localhost:27017", dbName = "local", collection = "gemeenten_enzo") {
+        this.defaultCollection = collection;
+        this.db = new Promise(async (res) => {
+            const client: mongoDB.MongoClient = new mongoDB.MongoClient(conn);
+            await client.connect();
+
+            res(client.db(dbName));
+        });
+    }
+
+    connection(collection?: string): Promise<mongoDB.Collection<mongoDB.Document>> {
+        const colName = collection || this.defaultCollection;
+        return this.db.then(db => db.collection(colName))
+    }
+}
 
 export interface State {
     metadata: DataSync<any>,
@@ -31,6 +77,7 @@ export class MongoData implements State {
     }
 }
 
+const factory = new DataFactory();
 function parseNode(v: { termType: string, value: string }): RDF.Term | undefined {
     switch (v.termType) {
         case "NamedNode":
@@ -44,7 +91,6 @@ function parseNode(v: { termType: string, value: string }): RDF.Term | undefined
     }
 }
 
-const factory = new DataFactory();
 function parseQuad(obj: any): RDF.Quad {
     return factory.quad(
         <RDF.Quad_Subject>parseNode(obj.subject),
@@ -54,6 +100,8 @@ function parseQuad(obj: any): RDF.Quad {
     )
 }
 
+
+// Dots have a special meaning in mongoDB better replace with underscore
 function makeKeyMongoProof(inp: string): string {
     return inp.replaceAll('.', '_');
 }
@@ -62,49 +110,53 @@ function appendToRoot(root: string, key: string, value: string): string {
     return `${root}&${key}=${value}`;
 }
 
-type Foo<Idx> = { "keys": Plain, "root": string }
+// Plain dictionairy
 type Plain = { [label: string]: string }
-type Doc = { id: RDF.Term, quads: RDF.Quad[], met: Plain };
+
+// MongoDB Document type
+type Doc = { id: RDF.Term, quads: RDF.Quad[], keys: Plain };
+
+
 export class MongoWriter<Idx extends SimpleIndex> extends MemberStoreBase<State, Idx> {
     constructor(state: Wrapper<State>, extractors: QuadExtractor<Idx>[] = [], indexExtractors: IndexExtractor<Idx>[] = []) {
         super(state, extractors, indexExtractors);
     }
+
     async writeMetadata(metadata: any): Promise<void> {
         this.state.metadata.save(metadata);
     }
 
     async _add(quads: Member, tree: TreeData<Idx>): Promise<void> {
-        const foos: { root: string, value: string, index: Idx }[] = [];
+        const indices: { root: string, value: string, index: Idx }[] = [];
 
-        const locations = await TreeTwo.walkTreeWith(tree, <Foo<Idx>>{ keys: {}, root: "" },
-            async (index, c, node) => {
-                const v = node.value!.value.value;
-                const p = makeKeyMongoProof(node.value!.path.value);
+        type Keys = { "keys": Plain, "root": string }
+        const locations = await Tree.walkTreeWith(tree, <Keys>{ keys: {}, root: "" },
+            async (index, keys, node) => {
+                const value = node.value!.value.value;
+                const property = makeKeyMongoProof(node.value!.path.value);
 
-                foos.push({ root: c.root, value: v, index: node.value! });
-                const newroot = appendToRoot(c.root, p, v);
+                indices.push({ root: keys.root, value: value, index: node.value! });
+                const newroot = appendToRoot(keys.root, property, value);
 
-                const o: Foo<Idx> = { keys: {}, root: newroot };
-                Object.assign(o.keys, c);
-                o.keys[p] = v;
+                const newKeys: Keys = { keys: {}, root: newroot };
 
-                if (TreeTwo.isLeaf(node)) {
-                    return ["end", o];
-                }
+                // make sure to copy keys
+                Object.assign(newKeys.keys, keys);
+                newKeys.keys[property] = value;
 
-                return ["cont", o];
+                return [Tree.isLeaf(node) ? "end" : "cont", newKeys];
             }
         );
 
         const metaDoc = await this.state.connection("metaDoc");
-
-        for (let foo of foos) {
-            metaDoc.updateOne(foo, { $set: {} }, { upsert: true });
-        }
+        const metadataUpdates = indices.map(foo => metaDoc.updateOne(foo, { $set: {} }, { upsert: true }));
 
         const items = locations.map(loc => { return { id: quads.id, quads: quads.quads, met: loc.keys } });
         const collection = await this.state.connection();
-        await collection.insertMany(items);
+
+        const itemInserts = collection.insertMany(items);
+
+        await Promise.all([metadataUpdates, itemInserts]);
     }
 }
 
@@ -133,8 +185,6 @@ export class MongoFetcher<Idx extends SimpleIndex> extends FragmentFetcherBase<S
             root = appendToRoot(root, p, v);
         }
 
-        console.log("looking with", { met: key });
-
         const metaDoc = await this.state.connection("metaDoc");
         const alterantives: AlternativePath<Idx>[][] = await Promise.all(keyParts.flatMap(async (part, i) => {
             const toAlternative = (meta: { value: string, index: Idx }, rel: RelationType) => {
@@ -159,7 +209,7 @@ export class MongoFetcher<Idx extends SimpleIndex> extends FragmentFetcherBase<S
 
 
         const conn = await this.state.connection();
-        const res = <Doc[]><unknown>await conn.find({ met: key }).toArray();
+        const res = <Doc[]><unknown>await conn.find({ keys: key }).toArray();
 
         console.log(res[0]?.quads[0]);
 

@@ -3,6 +3,7 @@ import { Member } from '@treecg/types';
 import { DataFactory } from "rdf-data-factory";
 import { QuadExtractor, SimpleIndex } from "../extractor";
 
+// Extracts SimpleIndices from a new Member
 export class SimpleQuadExtractor implements QuadExtractor<SimpleIndex> {
     private readonly factory: RDF.DataFactory;
     private readonly path: RDF.Quad_Predicate;

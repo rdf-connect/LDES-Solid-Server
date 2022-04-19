@@ -30,8 +30,8 @@ export class CombinedExtractor<Idx = string> implements PathExtractor<Idx>, Quad
     extractQuads(quads: Member): Idx[] {
         return this.quadExtractor.extractQuads(quads);
     }
-    getCacheDirectives(indices: Idx[], members: Member[]): CacheDirectives | undefined {
-        return this.cacheExtractor?.getCacheDirectives(indices, members);
+    async getCacheDirectives(indices: Idx[], members: Member[]): Promise<CacheDirectives | undefined> {
+        return await this.cacheExtractor?.getCacheDirectives(indices, members);
     }
 }
 

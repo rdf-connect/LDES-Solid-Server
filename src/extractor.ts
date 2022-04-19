@@ -7,6 +7,8 @@ import { Comparable, Params, ToString } from "./types";
 export type Quad_Object = RDF.Quad_Object;
 export type Quad_Predicate = RDF.Quad_Predicate;
 
+// Extract Indices from a path
+// Can also change a path that when visited would extract to that index
 export interface PathExtractor<Idx = string> {
     extractPath(params: Params, base: number): Idx;
     setPath(index: Idx, old: Params, base: number): Params;
@@ -14,18 +16,24 @@ export interface PathExtractor<Idx = string> {
     numberSegsRequired(): number;
 }
 
+// Extract cache directives from specific indices and the resulting members
 export interface CacheExtractor<Idx = string> {
-    getCacheDirectives(indices: Idx[], members: Member[]): CacheDirectives | undefined;
+    getCacheDirectives(indices: Idx[], members: Member[]): Promise<CacheDirectives | undefined>;
 }
 
+// Extract indices from an incoming member
 export interface QuadExtractor<Idx = string> {
     extractQuads(quads: Member): Idx[];
 }
 
+// Extract indices from extracted indices
+// also contains new indices from previous IndexExtractor's
 export interface IndexExtractor<Idx = string> {
-    extractIndices(root: TreeData<Idx>): void;
+    extractIndices(root: TreeData<Idx>): Promise<void>;
 }
 
+// Simple Index contains enough information to fragment based on properties and pages.
+// Maybe a new class is required for other usecases like geospatial fragmentation
 export class SimpleIndex implements Comparable, ToString {
     public readonly value: RDF.Quad_Object;
     public readonly path: RDF.Quad_Predicate;
@@ -43,6 +51,7 @@ export class SimpleIndex implements Comparable, ToString {
     }
 }
 
+// Wrapper class for multiple extractors
 export class CombinedExtractor<Idx = string> implements PathExtractor<Idx>, QuadExtractor<Idx>, CacheExtractor<Idx> {
     private readonly pathExtractor: PathExtractor<Idx>;
     private readonly quadExtractor: QuadExtractor<Idx>;
@@ -68,8 +77,8 @@ export class CombinedExtractor<Idx = string> implements PathExtractor<Idx>, Quad
     extractQuads(quads: Member): Idx[] {
         return this.quadExtractor.extractQuads(quads);
     }
-    getCacheDirectives(indices: Idx[], members: Member[]): CacheDirectives | undefined {
-        return this.cacheExtractor?.getCacheDirectives(indices, members);
+    async getCacheDirectives(indices: Idx[], members: Member[]): Promise<CacheDirectives | undefined> {
+        return await this.cacheExtractor?.getCacheDirectives(indices, members);
     }
 }
 

@@ -3,6 +3,7 @@ import { DataFactory } from "rdf-data-factory";
 import { PathExtractor, SimpleIndex } from "../extractor";
 import { Params } from "../types";
 
+// Extracts a SimpleIndex from a path segment
 export class SimplePathExtractor implements PathExtractor<SimpleIndex> {
     private readonly factory: RDF.DataFactory = new DataFactory();
     private readonly path: RDF.Quad_Predicate;

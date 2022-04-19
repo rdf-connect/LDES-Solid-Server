@@ -3,6 +3,7 @@ import { CacheDirectives, Fragment, FragmentFetcher, Member, Metadata, RelationP
 import { CacheExtractor, PathExtractor } from './extractor';
 import { Builder, Params } from "./types";
 
+// Helper type to create relations to other fragments
 export type AlternativePath<Idx> = {
     index: Idx,
     type: RelationType,
@@ -11,12 +12,15 @@ export type AlternativePath<Idx> = {
     value?: RDF.Term[],
 };
 
+// Simple class that will never return CacheDirectives (no cache)
 export class NeverCache<Idx = string> implements CacheExtractor<Idx> {
-    getCacheDirectives(_indices: Idx[], _members: Member[]): CacheDirectives | undefined {
+    async getCacheDirectives(_indices: Idx[], _members: Member[]): Promise<CacheDirectives | undefined> {
         return;
     }
 }
 
+// Helper class that helps implement a correct FragmentFetcher
+// Consequently parsing the incoming Fragment location and building required Relations from AlternativePaths 
 export abstract class FragmentFetcherBase<State extends any, Idx = string> implements FragmentFetcher {
     protected state: State;
     protected pathExtractor: PathExtractor<Idx>[];
@@ -53,7 +57,7 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
         // Inverse sort base on location in path (highest first)
         rels.sort((a, b) => b.from - a.from);
 
-        const cache = this.cacheExtractor.getCacheDirectives(indices, members)!;
+        const cache = await this.cacheExtractor.getCacheDirectives(indices, members);
         const relations: RelationParameters[] = [];
 
         let lastFrom = this.pathExtractor.length;
@@ -83,7 +87,7 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
         return {
             members,
             relations,
-            cache,
+            cache: cache!,
             metadata: await this._getMetadata()
         };
     }
@@ -93,6 +97,9 @@ export abstract class FragmentFetcherBase<State extends any, Idx = string> imple
     abstract _fetch(indices: Idx[]): Promise<{ members: Member[], relations: AlternativePath<Idx>[] }>;
 }
 
+// Additional helper class to implement FragmentFetcherBase based on a builder pattern
+// each node creates possibly new Alternatives
+// ending with the expected Members
 export abstract class FragmentFetcherBaseWithBuilder<State extends any, Idx = string> extends FragmentFetcherBase<State, Idx> {
     abstract _fetchBuilder(): Builder<[Idx, number], undefined, Array<AlternativePath<Idx>>, Array<Member>>;
 

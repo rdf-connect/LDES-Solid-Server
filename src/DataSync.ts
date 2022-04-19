@@ -1,50 +1,10 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { watch } from "fs/promises";
-import { MongoConnection } from "./MongoUtils";
 
 export interface DataSync<T> {
     update(f: (value: T) => Promise<T>): Promise<void>;
-    get(): T;
+    get(): Promise<T>;
     save(t: T): Promise<void>;
-}
-
-// Not working, requires WatchStream capable mongodb
-export class MongoDataSync<T> implements DataSync<T | undefined> {
-    private inner: T | undefined;
-    private readonly conn: MongoConnection;
-    private readonly id: string;
-    private readonly collection?: string;
-    constructor(conn: MongoConnection, id: string, collection?: string) {
-        this.id = id;
-        this.collection = collection;
-        this.conn = conn;
-
-        conn.connection(collection).then(coll => {
-            const pipeline = [
-                { $match: { id: this.id } },
-            ];
-
-            const stream = coll.watch(pipeline);
-
-            stream.on("change", next => {
-                console.log(next);
-            })
-        });
-    }
-
-    async update(f: (value: T | undefined) => Promise<T>): Promise<void> {
-        await this.save(await f(this.inner));
-    }
-
-    get(): T | undefined {
-        return this.inner;
-    }
-    async save(t: T): Promise<void> {
-        this.inner = t;
-
-        const collection = await this.conn.connection(this.collection);
-        await collection.findOneAndUpdate({ id: this.id }, { data: { $set: this.inner } });
-    }
 }
 
 export class MemoryDataSync<T> implements DataSync<T | undefined> {
@@ -52,7 +12,7 @@ export class MemoryDataSync<T> implements DataSync<T | undefined> {
     async update(f: (value: T | undefined) => Promise<T>): Promise<void> {
         this.inner = await f(this.inner);
     }
-    get(): T | undefined {
+    async get(): Promise<T | undefined> {
         return this.inner;
     }
     async save(t: T): Promise<void> {
@@ -94,7 +54,7 @@ export class FileDataSync<T> implements DataSync<T | undefined> {
     async update(f: (value: T | undefined) => Promise<T | undefined>): Promise<void> {
         await this.save(await f(this.inner));
     }
-    get(): T | undefined {
+    async get(): Promise<T | undefined> {
         return this.inner;
     }
     save(t: T | undefined): Promise<void> {
