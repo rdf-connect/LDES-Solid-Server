@@ -14,6 +14,7 @@
     "@solid/community-server": "^3.0.0",
     "@connectors/ldes": "file:../../connectors/packages/ldes",
     "@connectors/types": "file:../../connectors/packages/types",
+    "@connectors/kafka": "file:../../connectors/packages/kafka",
     "ldes-solid-server": "file:.."
   }
 }
