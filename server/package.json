@@ -11,10 +11,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@treecg/connector-kafka": "1.0.0",
+    "@treecg/connector-ldes": "1.0.0",
+    "@treecg/connector-types": "1.0.0",
     "@solid/community-server": "^3.0.0",
-    "@connectors/ldes": "file:../../connectors/packages/ldes",
-    "@connectors/types": "file:../../connectors/packages/types",
-    "@connectors/kafka": "file:../../connectors/packages/kafka",
     "ldes-solid-server": "file:.."
   }
 }
