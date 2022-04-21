@@ -2485,10 +2485,10 @@
   resolved "https://registry.yarnpkg.com/@treecg/bus-rdf-frame/-/bus-rdf-frame-2.3.6.tgz#75bc914c85bb4a3c7fb9c459aeedda53e226077d"
   integrity sha512-SNEzGNFS2BfxMBUiHYW/w/KjfcmEOtBJCe7rV7JbvTJ6Ka2q3CWiFQw+mczOq20nMqwpu/WeZB4Lu0bh9f8cPw==
 
-"@treecg/connector-types@1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@treecg/connector-types/-/connector-types-1.0.0.tgz#bc10749f258c4c931b5e52c32d35ffaa54380ecf"
-  integrity sha512-ZWoyh+40pa2gjA6Ox2Uwsrn3ZeoguuV+ucFkfGAYjqzptvRswPZUJvF6upoT1WfNGzbezHiSOrxwV3og5BEqQA==
+"@treecg/connector-types@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@treecg/connector-types/-/connector-types-1.0.1.tgz#e3628b243e0356987c29d5f5eead5a964469c844"
+  integrity sha512-AkotZamNZAAK9+FnGCUSvleKpc306x8zvy5cnlsNTVa3m2MRb1jTshitXd/dMnUKI3WqoNr7m/nV5GUhz7urFQ==
 
 "@treecg/tree-metadata-extraction@^1.1.1":
   version "1.2.1"

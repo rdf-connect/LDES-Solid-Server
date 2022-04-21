@@ -11,9 +11,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@treecg/connector-kafka": "1.0.0",
-    "@treecg/connector-ldes": "1.0.0",
-    "@treecg/connector-types": "1.0.0",
+    "@treecg/connector-kafka": "^1.0.2",
+    "@treecg/connector-ldes": "^1.0.2",
+    "@treecg/connector-types": "^1.0.1",
     "@solid/community-server": "^3.0.0",
     "ldes-solid-server": "file:.."
   }

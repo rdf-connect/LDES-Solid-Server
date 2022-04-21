@@ -32,7 +32,7 @@
         "@comunica/bus-init": "=1.20.0",
         "@comunica/bus-rdf-metadata-extract": "1.21.1",
         "@comunica/core": "1.21.1",
-        "@treecg/connector-types": "1.0.0",
+        "@treecg/connector-types": "^1.0.1",
         "@solid/community-server": "^3.0.0",
         "@treecg/actor-init-ldes-client": "^2.5.8",
         "@treecg/actor-rdf-filter-object-with-framing": "^2.3.6",
