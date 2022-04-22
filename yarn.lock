@@ -2485,10 +2485,10 @@
   resolved "https://registry.yarnpkg.com/@treecg/bus-rdf-frame/-/bus-rdf-frame-2.3.6.tgz#75bc914c85bb4a3c7fb9c459aeedda53e226077d"
   integrity sha512-SNEzGNFS2BfxMBUiHYW/w/KjfcmEOtBJCe7rV7JbvTJ6Ka2q3CWiFQw+mczOq20nMqwpu/WeZB4Lu0bh9f8cPw==
 
-"@treecg/connector-types@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@treecg/connector-types/-/connector-types-1.0.1.tgz#e3628b243e0356987c29d5f5eead5a964469c844"
-  integrity sha512-AkotZamNZAAK9+FnGCUSvleKpc306x8zvy5cnlsNTVa3m2MRb1jTshitXd/dMnUKI3WqoNr7m/nV5GUhz7urFQ==
+"@treecg/connector-types@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@treecg/connector-types/-/connector-types-1.0.3.tgz#0140d93709dfde24fdb878095a8322897145e66c"
+  integrity sha512-hs/q19ZEDIeg8lMS26PtIvKoR7H+3VSewSRjcHfjkkKBO2JO/A7QElK3i3bKYPwAfn4cJuvYzQsX2uGB1eNqLg==
 
 "@treecg/tree-metadata-extraction@^1.1.1":
   version "1.2.1"
@@ -2510,9 +2510,10 @@
     n3 "^1.11.1"
     rdf-data-factory "^1.1.0"
 
-"@treecg/types@ajuvercr/types#cbfcc1a8e234c8662cd056cca885b8ad38e70846":
-  version "0.2.2"
-  resolved "https://codeload.github.com/ajuvercr/types/tar.gz/cbfcc1a8e234c8662cd056cca885b8ad38e70846"
+"@treecg/types@^0.2.4":
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/@treecg/types/-/types-0.2.4.tgz#193c1371765dd6abc765f4774ad6e7cdcf67df04"
+  integrity sha512-VZJoJS+4fpGIVWoa7IBWdhy67WH7RvHs7/fDvGjnjJ8zuv4fipEfBqCFcGkG/cHAATGArsyGANah+2pQU+qDzg==
   dependencies:
     "@rdfjs/dataset" "^1.1.1"
     "@rdfjs/types" "*"

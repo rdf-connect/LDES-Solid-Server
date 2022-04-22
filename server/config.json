@@ -1,7 +1,7 @@
 {
     "@context": [
         "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^3.0.0/components/context.jsonld",
-        "https://linkedsoftwaredependencies.org/bundles/npm/@connectors/ldes/^1.0.0/components/context.jsonld",
+        "https://linkedsoftwaredependencies.org/bundles/npm/@treecg/connector-ldes/^1.0.0/components/context.jsonld",
         "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
     ],
     "import": [

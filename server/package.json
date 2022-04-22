@@ -5,15 +5,16 @@
   "main": "index.js",
   "scripts": {
     "start": "npx community-solid-server -c config.json -f ./data",
+    "postinstall": "touch metadatalocation.json && touch page_extractor.json",
     "file": "npx community-solid-server -c @css:config/file.json -f ./data"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@treecg/connector-kafka": "^1.0.2",
-    "@treecg/connector-ldes": "^1.0.2",
-    "@treecg/connector-types": "^1.0.1",
+    "@treecg/connector-kafka": "^1.0.4",
+    "@treecg/connector-ldes": "^1.0.5",
+    "@treecg/connector-types": "^1.0.3",
     "@solid/community-server": "^3.0.0",
     "ldes-solid-server": "file:.."
   }

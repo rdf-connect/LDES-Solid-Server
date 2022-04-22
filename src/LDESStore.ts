@@ -1,5 +1,5 @@
 
-import { StreamReader } from "@connectors/types";
+import { StreamReader } from "@treecg/connector-types";
 import type * as RDF from '@rdfjs/types';
 import { BasicRepresentation, Conditions, CONTENT_TYPE, guardedStreamFrom, INTERNAL_QUADS, MetadataRecord, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore } from "@solid/community-server";
 import { CacheDirectives, FragmentFetcher, Member, MemberStore, Metadata, RelationParameters } from "@treecg/types";
