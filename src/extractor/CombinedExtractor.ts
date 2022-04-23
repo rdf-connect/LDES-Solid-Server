@@ -1,6 +1,6 @@
 
 import { CacheDirectives, Member } from "@treecg/types";
-import { CacheExtractor, PathExtractor, QuadExtractor, SimpleIndex } from "../extractor";
+import { CacheExtractor, PathExtractor, QuadExtractor, RelationManager, SimpleIndex } from "../extractor";
 import { Params } from "../types";
 import { SimplePathExtractor } from "./PathExtractor";
 import { SimpleQuadExtractor } from "./QuadExtractor";
@@ -27,8 +27,8 @@ export class CombinedExtractor<Idx = string> implements PathExtractor<Idx>, Quad
     numberSegsRequired(): number {
         return this.pathExtractor.numberSegsRequired();
     }
-    extractQuads(quads: Member): Idx[] {
-        return this.quadExtractor.extractQuads(quads);
+    extractQuads(quads: Member, current: Idx[][], manager: RelationManager<Idx>): Idx[] {
+        return this.quadExtractor.extractQuads(quads, current, manager);
     }
     async getCacheDirectives(indices: Idx[], members: Member[]): Promise<CacheDirectives | undefined> {
         return await this.cacheExtractor?.getCacheDirectives(indices, members);

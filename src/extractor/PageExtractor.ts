@@ -3,9 +3,10 @@ import type * as RDF from '@rdfjs/types';
 import { CacheDirectives, Member } from "@treecg/types";
 import { DataFactory } from "rdf-data-factory";
 import { DataSync } from "../DataSync";
-import { CacheExtractor, IndexExtractor, PathExtractor, SimpleIndex } from '../extractor';
+import { CacheExtractor, IndexExtractor, PathExtractor, RelationManager, SimpleIndex } from '../extractor';
 import { TreeData, Tree } from '../Tree';
 import { Params } from "../types";
+import { SimpleBucketStrategy } from './QuadExtractor';
 
 // Extracts a page index based on indices
 // Only `itemsPerPage` items are accepted for each fragment
@@ -15,6 +16,8 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
     private readonly itemsPerPage: number;
     private readonly sizeTree: DataSync<TreeData<number>>;
     private readonly path: RDF.Quad_Predicate;
+
+    private readonly strategy = new SimpleBucketStrategy();
 
     constructor(itemsPerPage: number, pathName: string, sizeTree: DataSync<TreeData<number>>) {
         this.path = this.factory.namedNode(pathName);
@@ -45,11 +48,13 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
         return;
     }
 
-    async extractIndices(root: TreeData<SimpleIndex>): Promise<void> {
+    async extractIndices(root: TreeData<SimpleIndex>, manager: RelationManager<SimpleIndex>): Promise<void> {
         let sizeTree = await this.sizeTree.get();
         if (!sizeTree) sizeTree = Tree.create();
 
-        Tree.walkTreeWith(root, sizeTree, async (index, data, node) => {
+        Tree.walkTreeWith<SimpleIndex, [TreeData<number>, SimpleIndex[]], undefined>(root, [sizeTree, []], async (index, d, node) => {
+            const [data, from] = d;
+
             if (Tree.isLeaf(node)) {
                 const leaf = Tree.get(data, index);
                 const amount = leaf.value = leaf.value ? leaf.value + 1 : 1;
@@ -59,11 +64,13 @@ export class SimplePageExtractor implements IndexExtractor<SimpleIndex>, PathExt
                 const indexLeaf = Tree.get(node, l.toString());
                 indexLeaf.value = new SimpleIndex(this.factory.literal(l.toString()), this.path, false);
 
+                this.strategy.add([...from, node.value!], [indexLeaf.value!], manager)
+
                 return ["end", undefined];
             }
 
             const next = Tree.get(data, index);
-            return ["cont", next];
+            return ["cont", [next, [...from, node.value!]]];
         });
 
         this.sizeTree.save(sizeTree);

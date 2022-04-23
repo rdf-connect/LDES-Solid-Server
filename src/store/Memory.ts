@@ -1,6 +1,6 @@
 import { Member, RelationType } from "@treecg/types";
 import { LinkedList, LinkedNode } from "..";
-import { CacheExtractor, IndexExtractor, PathExtractor, QuadExtractor, SimpleIndex } from '../extractor';
+import { CacheExtractor, IndexExtractor, PathExtractor, QuadExtractor, RelationManager, SimpleIndex } from '../extractor';
 import { AlternativePath, FragmentFetcherBaseWithBuilder } from "../Fetcher";
 import { MemberStoreBaseWithBuilder } from "../StreamWriter";
 import { Builder, BuilderTransformer, Comparable, Wrapper } from "../types";
@@ -108,7 +108,7 @@ export class DataImpl implements SimpleMemoryData<SimpleIndex> {
     public metadata?: any;
 }
 
-export class SimpleMemoryWriter<Idx extends SimpleIndex> extends MemberStoreBaseWithBuilder<SimpleMemoryData<Idx>, Idx>  {
+export class SimpleMemoryWriter<Idx extends SimpleIndex> extends MemberStoreBaseWithBuilder<SimpleMemoryData<Idx>, Idx> implements RelationManager<Idx>  {
     constructor(state: Wrapper<SimpleMemoryData<Idx>>, extractors: QuadExtractor<Idx>[] = [], indexExtractors: IndexExtractor<Idx>[] = []) {
         super(state, extractors, indexExtractors);
     }
@@ -117,6 +117,13 @@ export class SimpleMemoryWriter<Idx extends SimpleIndex> extends MemberStoreBase
         this.state.metadata = metadata;
     }
 
+    getRelationManager(): RelationManager<Idx> {
+        return this;
+    }
+    async addRelation(base: Idx[], target: Idx, type: RelationType): Promise<void> {
+    }
+    async removeRelation(base: Idx[], target: Idx): Promise<void> {
+    }
     _writeBuilder(): Builder<Idx, Member, void, void> {
         return new BuilderTransformer(
             this.state.data,

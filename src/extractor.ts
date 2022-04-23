@@ -1,5 +1,5 @@
 import type * as RDF from '@rdfjs/types';
-import { CacheDirectives, Member } from "@treecg/types";
+import { CacheDirectives, Member, RelationType } from "@treecg/types";
 import { TreeData } from './Tree';
 import { Comparable, Params, ToString } from "./types";
 
@@ -21,15 +21,20 @@ export interface CacheExtractor<Idx = string> {
     getCacheDirectives(indices: Idx[], members: Member[]): Promise<CacheDirectives | undefined>;
 }
 
+export interface RelationManager<Idx> {
+    addRelation(base: Idx[], target: Idx, rel: RelationType): Promise<void>;
+    removeRelation(base: Idx[], target: Idx): Promise<void>;
+}
+
 // Extract indices from an incoming member
 export interface QuadExtractor<Idx = string> {
-    extractQuads(quads: Member): Idx[];
+    extractQuads(quads: Member, currentIndices: Idx[][], relationManager: RelationManager<Idx>): Idx[];
 }
 
 // Extract indices from extracted indices
 // also contains new indices from previous IndexExtractor's
 export interface IndexExtractor<Idx = string> {
-    extractIndices(root: TreeData<Idx>): Promise<void>;
+    extractIndices(root: TreeData<Idx>, relationManager: RelationManager<Idx>): Promise<void>;
 }
 
 // Simple Index contains enough information to fragment based on properties and pages.
@@ -74,8 +79,8 @@ export class CombinedExtractor<Idx = string> implements PathExtractor<Idx>, Quad
     numberSegsRequired(): number {
         return this.pathExtractor.numberSegsRequired();
     }
-    extractQuads(quads: Member): Idx[] {
-        return this.quadExtractor.extractQuads(quads);
+    extractQuads(quads: Member, foo: Idx[][], manager: RelationManager<Idx>): Idx[] {
+        return this.quadExtractor.extractQuads(quads, foo, manager);
     }
     async getCacheDirectives(indices: Idx[], members: Member[]): Promise<CacheDirectives | undefined> {
         return await this.cacheExtractor?.getCacheDirectives(indices, members);
@@ -86,4 +91,3 @@ export * from './extractor/CombinedExtractor';
 export * from './extractor/PageExtractor';
 export * from './extractor/PathExtractor';
 export * from './extractor/QuadExtractor';
-

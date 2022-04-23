@@ -1,5 +1,5 @@
 import { Member, MemberStore } from "@treecg/types";
-import { IndexExtractor, QuadExtractor } from "./extractor";
+import { IndexExtractor, QuadExtractor, RelationManager } from "./extractor";
 import { TreeData, Tree } from "./Tree";
 import { Builder, ToString, Wrapper } from "./types";
 
@@ -10,21 +10,26 @@ export abstract class MemberStoreBase<State extends any, Idx extends ToString = 
 
     protected quadExtractor: QuadExtractor<Idx>[];
     protected indexExtractors: IndexExtractor<Idx>[];
+
     constructor(state: Wrapper<State>, extractors: QuadExtractor<Idx>[], indexExtractors: IndexExtractor<Idx>[] = []) {
         this.state = state.inner;
         this.quadExtractor = extractors;
         this.indexExtractors = indexExtractors;
     }
 
+    abstract getRelationManager(): RelationManager<Idx>;
     abstract writeMetadata(metadata: any): Promise<void>;
 
     async write(member: Member): Promise<void> {
         const tree = Tree.create<Idx>();
         let current = [tree];
+        let foo: Idx[][] = [[]];
 
+        const manager = this.getRelationManager();
         for (let extractor of this.quadExtractor) {
             try {
-                const index = extractor.extractQuads(member);
+                const index = extractor.extractQuads(member, foo, manager);
+                foo = foo.flatMap(f => index.map(i => [...f, i]));
                 current = index.flatMap(index => current.map(c => {
                     const n = Tree.get(c, index.toString());
                     n.value = index;
@@ -37,7 +42,7 @@ export abstract class MemberStoreBase<State extends any, Idx extends ToString = 
         }
 
         try {
-            await Promise.all(this.indexExtractors.map(e => e.extractIndices(tree)));
+            await Promise.all(this.indexExtractors.map(e => e.extractIndices(tree, manager)));
         } catch (e) {
             console.error(e);
             return;
