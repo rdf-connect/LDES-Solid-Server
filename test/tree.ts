@@ -1,29 +1,33 @@
-import { Tree } from '../dist/Tree';
+import { Tree, TreeData } from '../dist/Tree';
 
 test("Tree works as expected", () => {
-    const tree = new Tree<string, number>();
+    const tree: TreeData<number> = Tree.create();
 
     {
-        const t1 = tree.get("_1");
-        t1.get("a1").get("b1").set_v(1)
-        t1.get("a1").get("b2").set_v(2)
-        t1.get("a2").get("b3").set_v(3)
-        t1.get("a2").get("b4").set_v(4);
+        const t1 = Tree.get(tree, "_1")
+        const a1 = Tree.get(t1, "a1");
+        Tree.get(a1, "b1").value = 1;
+        Tree.get(a1, "b2").value = 2;
+        const a2 = Tree.get(t1, "a2");
+        Tree.get(a2, "b3").value = 3;
+        Tree.get(a2, "b4").value = 4;
     }
 
     {
-        const t1 = tree.get("_2");
-        t1.get("a3").get("b5").set_v(5)
-        t1.get("a3").get("b6").set_v(6)
-        t1.get("a4").get("b7").set_v(7)
-        t1.get("a4").get("b8").set_v(8);
+        const t1 = Tree.get(tree, "_2")
+        const a1 = Tree.get(t1, "a3");
+        Tree.get(a1, "b5").value = 5;
+        Tree.get(a1, "b6").value = 6;
+        const a2 = Tree.get(t1, "a4");
+        Tree.get(a2, "b7").value = 7;
+        Tree.get(a2, "b8").value = 8;
     }
 
     const paths = [];
     const leaves = [];
-    for (let path of tree.paths()) {
-        paths.push(path.indices.slice());
-        leaves.push(path.get_v());
+    for (let path of Tree.paths(tree, true)) {
+        paths.push(path.rootPath.slice());
+        leaves.push(path.value);
     }
 
     expect(paths.length).toBe(8);

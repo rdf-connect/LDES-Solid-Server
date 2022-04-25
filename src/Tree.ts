@@ -13,7 +13,7 @@ export interface TreeData<T> {
 
 export namespace Tree {
     export function create<T>(): TreeData<T> {
-        return {children:{}, rootPath: []};
+        return { children: {}, rootPath: [] };
     }
     export function get<T>(tree: TreeData<T>, index: string): TreeData<T> {
         if (!tree.children[index]) {
@@ -36,9 +36,9 @@ export namespace Tree {
     export function* paths<T>(tree: TreeData<T>, leafsOnly = false): Generator<TreeData<T>> {
         if (!isLeaf(tree)) {
             for (let key in tree.children) {
-                if (!leafsOnly) yield tree;
+                if (!leafsOnly) { yield tree };
                 const sub = tree.children[key];
-                yield* paths(sub)
+                yield* paths(sub, leafsOnly)
             }
         } else {
             yield tree;
