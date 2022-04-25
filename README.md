@@ -43,11 +43,11 @@ The mongo based store stores all members in a MongoDb with an added field that i
 
 ```bash
 git clone https://github.com/TREEcg/ldes-solid-server
-yarn i
+yarn install
 yarn run build
 
 # start a community solid server with LDES
 cd server
-yarn i
-yarn start
+npm i
+npm start
 ```
