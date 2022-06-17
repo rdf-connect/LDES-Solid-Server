@@ -1,4 +1,3 @@
-import { Comparable } from '../dist/types';
 import { SortedData, Input, Get, Add } from '../dist/Memory';
 
 class NamedNode {
@@ -14,7 +13,7 @@ class NamedNode {
     }
 }
 
-class CmpInt implements Comparable {
+class CmpInt {
     private readonly t: number;
     constructor(t: number) {
         this.t = t;

@@ -1,119 +1,135 @@
 import type * as RDF from '@rdfjs/types';
-import { CacheDirectives, Fragment, FragmentFetcher, Member, Metadata, RelationParameters, RelationType } from "@treecg/types";
-import { CacheExtractor, PathExtractor } from './extractor';
-import { Builder, Params } from "./types";
+import { LDES, TREE, Fragment, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
+import { Collection, Document, Filter } from "mongodb";
+import { DataFactory, Parser } from "n3";
 
-// Helper type to create relations to other fragments
-export type AlternativePath<Idx> = {
-    index: Idx,
-    type: RelationType,
-    from: number,
-    path?: RDF.Term,
-    value?: RDF.Term[],
-};
+const { namedNode, literal } = DataFactory;
 
-// Simple class that will never return CacheDirectives (no cache)
-export class NeverCache<Idx = string> implements CacheExtractor<Idx> {
-    async getCacheDirectives(_indices: Idx[], _members: Member[]): Promise<CacheDirectives | undefined> {
-        return;
+export interface FragmentFetcherFactory {
+    build(id: string, store: RDF.Quad[], membersCollection: Collection, indexCollection: Collection<MongoFragment>): Promise<FragmentFetcher>;
+}
+
+function findQuad(quads: RDF.Quad[], id: RDF.Term | null, predicate: RDF.Term): RDF.Quad | undefined {
+    if (id) {
+        return quads.find(quad => quad.subject.equals(id) && quad.predicate.equals(predicate));
+    } else {
+        return quads.find(quad => quad.predicate.equals(predicate));
     }
 }
 
-// Helper class that helps implement a correct FragmentFetcher
-// Consequently parsing the incoming Fragment location and building required Relations from AlternativePaths 
-export abstract class FragmentFetcherBase<State extends any, Idx = string> implements FragmentFetcher {
-    protected state: State;
-    protected pathExtractor: PathExtractor<Idx>[];
-    private readonly totalPathSegments: number;
-    private readonly cacheExtractor: CacheExtractor<Idx>;
+export class FragmentFetcherFactoryImpl implements FragmentFetcherFactory {
+    async build(id: string, quads: RDF.Quad[], membersCollection: Collection<Document>, indexCollection: Collection<MongoFragment>): Promise<FragmentFetcher> {
+        const typeNode = findQuad(quads, namedNode(id), LDES.terms.bucketType);
+        if (!typeNode) throw new Error("No buckettype found!");
 
-    constructor(state: State, extractors: PathExtractor<Idx>[], cacheExtractor?: CacheExtractor<Idx>) {
-        this.state = state;
-        this.pathExtractor = extractors;
-        this.cacheExtractor = cacheExtractor || new NeverCache();
-        this.totalPathSegments = this.pathExtractor.reduce((x, y) => x + y.numberSegsRequired(), 0)
+        const bucketProperty = findQuad(quads, namedNode(id), TREE.terms.path)!.object;
+        return new FragmentFetcherImpl(id, bucketProperty, membersCollection, indexCollection);
     }
-
-    async fetch(id: string): Promise<Fragment> {
-        let params = new Params(id);
-        const segments = params.path.length;
-
-        if (segments < this.totalPathSegments)
-            throw "Not enough segments in path, expected " + this.totalPathSegments;
-
-
-        const indices: Idx[] = [];
-        {
-            let base = segments - this.totalPathSegments;
-            for (let extractor of this.pathExtractor) {
-                const index = extractor.extractPath(params, base);
-                base += extractor.numberSegsRequired();
-                indices.push(index);
-            }
-        }
-
-        const { members, relations: rels } = await this._fetch(indices);
-
-        // Inverse sort base on location in path (highest first)
-        rels.sort((a, b) => b.from - a.from);
-
-        const cache = await this.cacheExtractor.getCacheDirectives(indices, members);
-        const relations: RelationParameters[] = [];
-
-        let lastFrom = this.pathExtractor.length;
-        let base = segments;
-
-        for (let rel of rels) {
-            for (let i = lastFrom; i > rel.from; i--) {
-                const extractor = this.pathExtractor[i - 1];
-                params = extractor.setDefault(params, base)
-                base -= extractor.numberSegsRequired();
-            }
-
-            lastFrom = rel.from;
-
-            const extractor = this.pathExtractor[rel.from];
-            const newParams = extractor.setPath(rel.index, params, base);
-
-            const relation = {
-                type: rel.type,
-                nodeId: newParams.toUrl(),
-                value: rel.value,
-                path: rel.path
-            };
-            relations.push(relation);
-        }
-
-        return {
-            members,
-            relations,
-            cache: cache!,
-            metadata: await this._getMetadata()
-        };
-    }
-
-    abstract _getMetadata(): Promise<Metadata>;
-
-    abstract _fetch(indices: Idx[]): Promise<{ members: Member[], relations: AlternativePath<Idx>[] }>;
 }
 
-// Additional helper class to implement FragmentFetcherBase based on a builder pattern
-// each node creates possibly new Alternatives
-// ending with the expected Members
-export abstract class FragmentFetcherBaseWithBuilder<State extends any, Idx = string> extends FragmentFetcherBase<State, Idx> {
-    abstract _fetchBuilder(): Builder<[Idx, number], undefined, Array<AlternativePath<Idx>>, Array<Member>>;
+type MongoFragment = { leaf: boolean, ids: string[], fragmentId: string, relations: { type: string, values: string[], bucket: string }[], members?: string[], count: number, timeStamp?: string };
+type Parsed = { segs: string[], query: { [label: string]: string } };
+function parseIndex(index: string): Parsed {
+    const [first, second] = index.split('?', 2);
+    const query: { [label: string]: string } = {};
 
-    async _fetch(indices: Idx[]): Promise<{ members: Member[], relations: AlternativePath<Idx>[] }> {
-        let builder = this._fetchBuilder();
-        const alternatives = [];
+    if (second) {
+        second.split("&").forEach(q => {
+            const [key, value] = q.split("=", 2);
+            query[key] = decodeURIComponent(value);
+        })
+    }
+
+    return { segs: first.split("/"), query };
+}
+
+function reconstructIndex({ segs, query }: Parsed): string {
+    const path = segs.join("/");
+    const queries = [];
+
+    for (let [key, value] of Object.entries(query)) {
+        queries.push(`${key}=${encodeURIComponent(value)}`);
+    }
+
+    if (queries.length > 0) {
+        return `${path}?${queries.join("&")}`;
+    } else {
+        return path;
+    }
+}
+
+// TODO how to handle default values?
+export class FragmentFetcherImpl implements FragmentFetcher {
+    protected readonly id: string;
+    protected readonly property: RDF.Term[];
+    protected readonly members: Collection<Document>;
+    protected readonly indices: Collection<MongoFragment>;
+
+    constructor(id: string, property: RDF.Term[] | RDF.Term, members: Collection<Document>, indices: Collection<MongoFragment>) {
+        this.id = id;
+        this.property = (property instanceof Array) ? property : [property];
+        this.members = members;
+        this.indices = indices;
+    }
+
+    async fetch(id: string, timestampCapable: boolean, timestampPath?: RDF.Term): Promise<Fragment> {
+        const fragmentId = this.id;
+        console.log("Fetching id", id);
+        const { segs, query } = parseIndex(id);
+
+        // [a,b,c] => [[a], [a,b], [a,b,c]]
+        const indices = segs.reduce((cum, _, i, arr) => [...cum, arr.slice(0, i + 1)], <string[][]>[]);
+
+        let timestampValue = query["timestamp"];
+
+        const relations = <RelationParameters[]>[];
 
         for (let i = 0; i < indices.length; i++) {
-            const index = indices[i];
-            const sub = await builder.with([index, i]);
-            alternatives.push(...sub.value);
-            builder = sub.builder;
+            const ids = indices[i];
+
+            const fragment = await this.indices.findOne({ fragmentId, ids, leaf: false });
+            const rels: RelationParameters[] = fragment!.relations.map(({ type, values, bucket }) => {
+                const value: RDF.Term[] = values.map(x => literal(x));
+                const index: Parsed = { segs: segs.slice(), query: {} };
+                index.segs[i] = bucket;
+                return { type: <RelationType>type, value, nodeId: reconstructIndex(index), path: this.property[i] };
+            });
+
+            relations.push(...rels);
         }
 
-        return { 'members': await builder.finish(undefined), 'relations': alternatives };
+        const li = indices[indices.length - 1];
+
+        let ids: string[] = []
+        if (timestampCapable) {
+            const search: Filter<MongoFragment> = { fragmentId, ids: segs, leaf: true };
+            if (timestampValue)
+                search.timeStamp = { "$lte": timestampValue };
+
+
+            const actualTimestampBucket = await this.indices.find(search).sort({ "timeStamp": -1 }).limit(1).next();
+            ids = actualTimestampBucket?.members || [];
+
+            const rels: RelationParameters[] = actualTimestampBucket!.relations.map(({ type, values, bucket }) => {
+                const index: Parsed = { segs, query };
+                index.query["timestamp"] = bucket;
+
+                const value: RDF.Term[] = values.map(x => literal(x));
+                return { type: <RelationType>type, value, nodeId: reconstructIndex(index), path: timestampPath };
+            });
+
+            relations.push(...rels);
+        } else {
+            const fragments = await this.indices.findOne({ fragmentId: this.id, ids: li, leaf: false });
+            ids = fragments?.members || [];
+        }
+
+
+        const parser = new Parser();
+        const members = await this.members.find({ id: { $in: ids } })
+            .map(row => { return <Member>{ id: namedNode(row.id), quads: parser.parse(row.data) } })
+            .toArray();
+
+        return { members, cache: { pub: true }, relations };
     }
 }

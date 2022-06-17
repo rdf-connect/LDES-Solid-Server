@@ -8,15 +8,19 @@
       "@id": "urn:solid-server:default:LDESResourceStore",
       "@type": "LDESAccessorBasedStore",
       "id": "https://test.bla/ldes",
-      "fragmentFetcher": {
-        "@id": "urn:solid-server:default:FragmentFetcher"
+      "fragmentFetcherFactory": {
+        "@type": "FragmentFetcherFactoryImpl"
       },
-      "streamWriter": {
-        "@id": "urn:solid-server:default:StreamWriter"
-      },
-      "streamReader": {
-        "@id": "urn:connector:default:StreamReader"
-      }
+      "ldesConfig": [
+        {
+          "LDESAccessorBasedStore:_ldesConfig_key": "mine",
+          "LDESAccessorBasedStore:_ldesConfig_value": "http://example.org/ns#BucketizeStrategy"
+        }
+      ],
+      "dbConfig_dbName": "ldes",
+      "dbConfig_meta": "meta",
+      "dbConfig_members": "data",
+      "dbConfig_indices": "index"
     }
   ]
 }

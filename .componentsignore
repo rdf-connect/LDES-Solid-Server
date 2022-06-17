@@ -8,5 +8,6 @@
   "LinkedNode",
   "Quad_Object",
   "MemberStore",
+  "Collection",
   "Quad_Predicate"
 ]
