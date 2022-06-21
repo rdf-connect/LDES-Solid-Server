@@ -15,8 +15,13 @@
         {
           "LDESAccessorBasedStore:_ldesConfig_key": "mine",
           "LDESAccessorBasedStore:_ldesConfig_value": "http://example.org/ns#BucketizeStrategy"
+        },
+        {
+          "LDESAccessorBasedStore:_ldesConfig_key": "default",
+          "LDESAccessorBasedStore:_ldesConfig_value": "https://w3id.org/ldes#TimestampFragmentation"
         }
       ],
+      "timestampFragmentation": "https://w3id.org/ldes#TimestampFragmentation",
       "dbConfig_dbName": "ldes",
       "dbConfig_meta": "meta",
       "dbConfig_members": "data",

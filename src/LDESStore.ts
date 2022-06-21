@@ -42,6 +42,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
         fragmentFetcherFactory: FragmentFetcherFactory,
         ldesConfig: { [label: string]: string },
         dbConfig: DBConfig,
+        timestampFragmentation?: string,
     ) {
         this.id = id;
         this.fragmentFetchers = [];
@@ -52,10 +53,10 @@ export class LDESAccessorBasedStore implements ResourceStore {
             configs.push({ id: ldesConfig[label], prefix: label });
         }
 
-        this.createFetchers(fragmentFetcherFactory, configs, dbConfig);
+        this.createFetchers(fragmentFetcherFactory, configs, dbConfig, timestampFragmentation);
     }
 
-    private async createFetchers(factory: FragmentFetcherFactory, configs: LDESConfig[], dbConfig: DBConfig) {
+    private async createFetchers(factory: FragmentFetcherFactory, configs: LDESConfig[], dbConfig: DBConfig, timestampFragmentation?: string) {
         const client = new MongoClient(dbConfig.url || "mongodb://localhost:27017");
         await client.connect();
         const db = client.db(dbConfig.dbName);
@@ -99,6 +100,17 @@ export class LDESAccessorBasedStore implements ResourceStore {
                 })
             }
         }
+
+        if (timestampFragmentation) {
+            const config = configs.find(config => config.id === timestampFragmentation);
+            if (config) {
+                console.log("adding fragmentation with prefix", config.prefix);
+                this.fragmentFetchers.push({
+                    prefix: config.prefix,
+                    fetcher: await factory.build(timestampFragmentation, [], membersCollection, <any>indexCollection)
+                })
+            }
+        }
     }
 
 
@@ -121,8 +133,8 @@ export class LDESAccessorBasedStore implements ResourceStore {
                 continue
             }
 
-            const baseIdentifier = identifier.path.substring(0, index + prefix.length + 1);
-            const fragment = await fetcher.fetch(identifier.path.substring(index + prefix.length + 1), this.timestampCapable, this.timestampPath);
+            const baseIdentifier = identifier.path.substring(0, index + prefix.length + 1)
+            const fragment = await fetcher.fetch(identifier.path.substring(index + prefix.length).replace("/", ""), this.timestampCapable, this.timestampPath);
             const quads: Array<RDF.Quad> = [];
 
             // this is not always correct

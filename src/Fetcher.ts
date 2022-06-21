@@ -9,20 +9,17 @@ export interface FragmentFetcherFactory {
     build(id: string, store: RDF.Quad[], membersCollection: Collection, indexCollection: Collection<MongoFragment>): Promise<FragmentFetcher>;
 }
 
-function findQuad(quads: RDF.Quad[], id: RDF.Term | null, predicate: RDF.Term): RDF.Quad | undefined {
+function findQuads(quads: RDF.Quad[], id: RDF.Term | null, predicate: RDF.Term): RDF.Quad[] {
     if (id) {
-        return quads.find(quad => quad.subject.equals(id) && quad.predicate.equals(predicate));
+        return quads.filter(quad => quad.subject.equals(id) && quad.predicate.equals(predicate));
     } else {
-        return quads.find(quad => quad.predicate.equals(predicate));
+        return quads.filter(quad => quad.predicate.equals(predicate));
     }
 }
 
 export class FragmentFetcherFactoryImpl implements FragmentFetcherFactory {
     async build(id: string, quads: RDF.Quad[], membersCollection: Collection<Document>, indexCollection: Collection<MongoFragment>): Promise<FragmentFetcher> {
-        const typeNode = findQuad(quads, namedNode(id), LDES.terms.bucketType);
-        if (!typeNode) throw new Error("No buckettype found!");
-
-        const bucketProperty = findQuad(quads, namedNode(id), TREE.terms.path)!.object;
+        const bucketProperty = findQuads(quads, namedNode(id), TREE.terms.path).map(x => x.object);
         return new FragmentFetcherImpl(id, bucketProperty, membersCollection, indexCollection);
     }
 }
@@ -40,6 +37,9 @@ function parseIndex(index: string): Parsed {
         })
     }
 
+    if(first.length == 0) {
+        return {segs: [], query};
+    }
     return { segs: first.split("/"), query };
 }
 
@@ -74,11 +74,12 @@ export class FragmentFetcherImpl implements FragmentFetcher {
 
     async fetch(id: string, timestampCapable: boolean, timestampPath?: RDF.Term): Promise<Fragment> {
         const fragmentId = this.id;
-        console.log("Fetching id", id);
         const { segs, query } = parseIndex(id);
 
         // [a,b,c] => [[a], [a,b], [a,b,c]]
         const indices = segs.reduce((cum, _, i, arr) => [...cum, arr.slice(0, i + 1)], <string[][]>[]);
+
+        console.log(fragmentId, segs, query, indices)
 
         let timestampValue = query["timestamp"];
 
@@ -105,9 +106,12 @@ export class FragmentFetcherImpl implements FragmentFetcher {
             const search: Filter<MongoFragment> = { fragmentId, ids: segs, leaf: true };
             if (timestampValue)
                 search.timeStamp = { "$lte": timestampValue };
+            
+            console.log("search", search);
 
 
             const actualTimestampBucket = await this.indices.find(search).sort({ "timeStamp": -1 }).limit(1).next();
+            console.log("result", actualTimestampBucket);
             ids = actualTimestampBucket?.members || [];
 
             const rels: RelationParameters[] = actualTimestampBucket!.relations.map(({ type, values, bucket }) => {
@@ -123,6 +127,8 @@ export class FragmentFetcherImpl implements FragmentFetcher {
             const fragments = await this.indices.findOne({ fragmentId: this.id, ids: li, leaf: false });
             ids = fragments?.members || [];
         }
+
+        console.log("members", ids);
 
 
         const parser = new Parser();
