@@ -1,18 +1,17 @@
 {
-  "name": "server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "start": "npx community-solid-server -c config.json -f ./data",
-    "postinstall": "touch metadatalocation.json && touch page_extractor.json",
-    "file": "npx community-solid-server -c @css:config/file.json -f ./data"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@solid/community-server": "^3.0.0",
-    "ldes-solid-server": "file:.."
-  }
+    "name": "server",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "npx community-solid-server -c config.json -f ./data",
+        "file": "npx community-solid-server -c @css:config/file.json -f ./data"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@solid/community-server": "^3.0.0",
+        "ldes-solid-server": "file:.."
+    }
 }

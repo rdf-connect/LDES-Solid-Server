@@ -8,6 +8,18 @@ import { FragmentFetcherFactory, HTTP } from "./index";
 
 import { LDES, RDF as RDFT, SDS, TREE } from '@treecg/types';
 import { cacheToLiteral, Data, extractData } from './utils';
+import winston from "winston";
+
+const consoleTransport = new winston.transports.Console();
+const logger = winston.createLogger({
+    format: winston.format.combine(
+        winston.format.label({label: "LDESStore", message: true}),
+        winston.format.colorize({ level: true }),
+        winston.format.simple()
+    ), transports: [consoleTransport]
+});
+
+consoleTransport.level = process.env.LOG_LEVEL || "info";
 
 const { namedNode, quad, blankNode, literal } = DF;
 
@@ -16,18 +28,37 @@ interface PrefixFetcher {
     fetcher: FragmentFetcher,
 }
 
-export interface DBConfig {
-    url?: string,
-    dbName?: string,
-    meta: string,
-    members: string,
-    indices: string
+export class DBConfig {
+    readonly url: string;
+    readonly dbName?: string;
+    readonly meta: string;
+    readonly members: string;
+    readonly indices: string;
+    constructor(metaCollection: string, membersCollection: string, indexCollection: string, dbUrl?: string, dbName?: string) {
+        this.meta = metaCollection;
+        this.members = membersCollection;
+        this.indices = indexCollection;
+
+        this.url = dbUrl || "mongodb://localhost:27017";
+        this.dbName = dbName;
+    }
 }
 
-export interface LDESConfig {
+interface LDESConfig {
     id: string,
     prefix: string,
 }
+
+export class Config {
+    readonly ldesConfig: { [label: string]: string };
+    readonly timestampFragmentation?: string;
+    constructor(ldesConfig: { [label: string]: string }, timestampFragmentation?: string) {
+        this.ldesConfig = ldesConfig;
+        this.timestampFragmentation = timestampFragmentation;
+    }
+}
+
+
 
 export class LDESAccessorBasedStore implements ResourceStore {
     private readonly id: string;
@@ -40,24 +71,23 @@ export class LDESAccessorBasedStore implements ResourceStore {
     constructor(
         id: string,
         fragmentFetcherFactory: FragmentFetcherFactory,
-        ldesConfig: { [label: string]: string },
+        config: Config,
         dbConfig: DBConfig,
-        timestampFragmentation?: string,
     ) {
         this.id = id;
         this.fragmentFetchers = [];
         this.ignoredFields = [];
 
         const configs: LDESConfig[] = [];
-        for (let label in ldesConfig) {
-            configs.push({ id: ldesConfig[label], prefix: label });
+        for (let label in config.ldesConfig) {
+            configs.push({ id: config.ldesConfig[label], prefix: label });
         }
 
-        this.createFetchers(fragmentFetcherFactory, configs, dbConfig, timestampFragmentation);
+        this.createFetchers(fragmentFetcherFactory, configs, dbConfig, config.timestampFragmentation);
     }
 
     private async createFetchers(factory: FragmentFetcherFactory, configs: LDESConfig[], dbConfig: DBConfig, timestampFragmentation?: string) {
-        const client = new MongoClient(dbConfig.url || "mongodb://localhost:27017");
+        const client = new MongoClient(dbConfig.url);
         await client.connect();
         const db = client.db(dbConfig.dbName);
 
@@ -68,7 +98,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
 
         const metadatas = await metaCollection.find({ "type": SDS.Stream }).toArray();
         if (metadatas.length > 1) {
-            console.error("Hm found multiple metadata's in mongo");
+            logger.error("Hm found multiple metadata's in mongo");
         }
 
         if (metadatas.length > 0) {
@@ -93,7 +123,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
 
             const config = configs.find(config => config.id === fragmentation.id.value);
             if (config) {
-                console.log("adding fragmentation with prefix", config.prefix);
+                logger.info("adding fragmentation with prefix: " + config.prefix);
                 this.fragmentFetchers.push({
                     prefix: config.prefix,
                     fetcher: await factory.build(fragmentation.id.value, fragmentation.quads, membersCollection, <any>indexCollection)
@@ -104,11 +134,13 @@ export class LDESAccessorBasedStore implements ResourceStore {
         if (timestampFragmentation) {
             const config = configs.find(config => config.id === timestampFragmentation);
             if (config) {
-                console.log("adding fragmentation with prefix", config.prefix);
+                logger.info("adding fragmentation with prefix: " + config.prefix);
                 this.fragmentFetchers.push({
                     prefix: config.prefix,
                     fetcher: await factory.build(timestampFragmentation, [], membersCollection, <any>indexCollection)
                 })
+            } else {
+                logger.error("timestamp fragmentation set, but not found!");
             }
         }
     }
@@ -126,7 +158,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
     }
 
     getRepresentation = async (identifier: ResourceIdentifier, preferences: RepresentationPreferences, conditions?: Conditions): Promise<Representation> => {
-        console.log("Getting representation for ", identifier);
+        logger.debug("Getting representation for " + identifier.path);
         for (let { prefix, fetcher } of this.fragmentFetchers) {
             const index = identifier.path.indexOf(prefix);
             if (index < 0) {

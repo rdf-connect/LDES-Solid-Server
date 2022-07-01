@@ -2,7 +2,16 @@ import type * as RDF from '@rdfjs/types';
 import { LDES, TREE, Fragment, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
 import { Collection, Document, Filter } from "mongodb";
 import { DataFactory, Parser } from "n3";
+import winston from "winston";
 
+const consoleTransport = new winston.transports.Console();
+const logger = winston.createLogger({
+    format: winston.format.combine(
+        winston.format.label({label: "Fetcher", message: true}),
+        winston.format.colorize({ level: true }),
+        winston.format.simple()
+    ), transports: [consoleTransport]
+});
 const { namedNode, literal } = DataFactory;
 
 export interface FragmentFetcherFactory {
@@ -37,8 +46,8 @@ function parseIndex(index: string): Parsed {
         })
     }
 
-    if(first.length == 0) {
-        return {segs: [], query};
+    if (first.length == 0) {
+        return { segs: [], query };
     }
     return { segs: first.split("/"), query };
 }
@@ -89,14 +98,15 @@ export class FragmentFetcherImpl implements FragmentFetcher {
             const ids = indices[i];
 
             const fragment = await this.indices.findOne({ fragmentId, ids, leaf: false });
-            const rels: RelationParameters[] = fragment!.relations.map(({ type, values, bucket }) => {
+            const rels: RelationParameters[] | undefined = fragment?.relations.map(({ type, values, bucket }) => {
                 const value: RDF.Term[] = values.map(x => literal(x));
                 const index: Parsed = { segs: segs.slice(), query: {} };
                 index.segs[i] = bucket;
                 return { type: <RelationType>type, value, nodeId: reconstructIndex(index), path: this.property[i] };
             });
 
-            relations.push(...rels);
+            if (rels !== undefined)
+                relations.push(...rels);
         }
 
         const li = indices[indices.length - 1];
@@ -106,15 +116,15 @@ export class FragmentFetcherImpl implements FragmentFetcher {
             const search: Filter<MongoFragment> = { fragmentId, ids: segs, leaf: true };
             if (timestampValue)
                 search.timeStamp = { "$lte": timestampValue };
-            
-            console.log("search", search);
-
 
             const actualTimestampBucket = await this.indices.find(search).sort({ "timeStamp": -1 }).limit(1).next();
-            console.log("result", actualTimestampBucket);
+            if (!actualTimestampBucket) {
+                logger.error("No such bucket found! " + JSON.stringify(search));
+            }
+
             ids = actualTimestampBucket?.members || [];
 
-            const rels: RelationParameters[] = actualTimestampBucket!.relations.map(({ type, values, bucket }) => {
+            const rels: RelationParameters[] | undefined = actualTimestampBucket?.relations.map(({ type, values, bucket }) => {
                 const index: Parsed = { segs, query };
                 index.query["timestamp"] = bucket;
 
@@ -122,14 +132,16 @@ export class FragmentFetcherImpl implements FragmentFetcher {
                 return { type: <RelationType>type, value, nodeId: reconstructIndex(index), path: timestampPath };
             });
 
-            relations.push(...rels);
+            if (rels !== undefined)
+                relations.push(...rels);
         } else {
-            const fragments = await this.indices.findOne({ fragmentId: this.id, ids: li, leaf: false });
+            const search = { fragmentId: this.id, ids: li, leaf: false };
+            const fragments = await this.indices.findOne(search);
+            if (!fragments) {
+                logger.error("No such bucket found! " + JSON.stringify(search));
+            }
             ids = fragments?.members || [];
         }
-
-        console.log("members", ids);
-
 
         const parser = new Parser();
         const members = await this.members.find({ id: { $in: ids } })

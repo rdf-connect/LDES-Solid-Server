@@ -116,6 +116,30 @@
                     "@id": "urn:solid-server:default:SparqlDataAccessor"
                 }
             }
+        },
+        {
+            "@id": "urn:solid-server:default:LDESConfig",
+            "@type": "Config",
+            "ldesConfig": [
+                {
+                    "Config:_ldesConfig_key": "default",
+                    "Config:_ldesConfig_value": "http://example.org/ns#time"
+                },
+                {
+                    "Config:_ldesConfig_key": "mine",
+                    "Config:_ldesConfig_value": "http://example.org/ns#BucketizeStrategy"
+                }
+            ],
+            "timestampFragmentation": "http://example.org/ns#time"
+        },
+        {
+            "@id": "urn:solid-server:default:LDESDBConfig",
+            "@type": "DBConfig",
+            "metaCollection": "meta",
+            "indexCollection": "index",
+            "membersCollection": "data",
+            "dbUrl": "mongodb://localhost:27017",
+            "dbName": "ldes"
         }
     ]
 }
