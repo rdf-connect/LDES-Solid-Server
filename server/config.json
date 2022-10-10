@@ -98,27 +98,28 @@
         },
         {
             "@id": "urn:solid-server:default:LDESConfig",
-            "@type": "Config",
-            "ldesConfig": [
+            "@type": "LDESViews",
+            "views": [
                 {
-                    "Config:_ldesConfig_key": "default",
-                    "Config:_ldesConfig_value": "http://example.org/ns#time"
+                    "@type": "LDESView",
+                    "mprefix": "default",
+                    "streamId": "http://me#csvStream"
                 },
                 {
-                    "Config:_ldesConfig_key": "mine",
-                    "Config:_ldesConfig_value": "http://example.org/ns#BucketizeStrategy"
+                    "@type": "LDESView",
+                    "mprefix": "mine",
+                    "streamId": "http://mine.org/rdfstream"
                 }
-            ],
-            "timestampFragmentation": "http://example.org/ns#time"
+            ]
         },
         {
             "@id": "urn:solid-server:default:LDESDBConfig",
             "@type": "DBConfig",
-            "metaCollection": "meta",
-            "indexCollection": "index",
-            "membersCollection": "data",
+            "metaCollection": "meta2",
+            "indexCollection": "index2",
+            "membersCollection": "data2",
             "dbUrl": "mongodb://localhost:27017",
-            "dbName": "ldes"
+            "dbName": "ldes2"
         }
     ]
 }

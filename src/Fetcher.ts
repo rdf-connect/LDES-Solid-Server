@@ -1,13 +1,14 @@
 import type * as RDF from '@rdfjs/types';
-import { LDES, TREE, Fragment, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
+import { LDES,  Fragment, FragmentFetcher, Member, RelationParameters, RelationType, SDS } from "@treecg/types";
 import { Collection, Document, Filter } from "mongodb";
 import { DataFactory, Parser } from "n3";
 import winston from "winston";
+import { MongoFragment } from '.';
 
 const consoleTransport = new winston.transports.Console();
 const logger = winston.createLogger({
     format: winston.format.combine(
-        winston.format.label({label: "Fetcher", message: true}),
+        winston.format.label({ label: "Fetcher", message: true }),
         winston.format.colorize({ level: true }),
         winston.format.simple()
     ), transports: [consoleTransport]
@@ -18,22 +19,22 @@ export interface FragmentFetcherFactory {
     build(id: string, store: RDF.Quad[], membersCollection: Collection, indexCollection: Collection<MongoFragment>): Promise<FragmentFetcher>;
 }
 
-function findQuads(quads: RDF.Quad[], id: RDF.Term | null, predicate: RDF.Term): RDF.Quad[] {
-    if (id) {
-        return quads.filter(quad => quad.subject.equals(id) && quad.predicate.equals(predicate));
-    } else {
-        return quads.filter(quad => quad.predicate.equals(predicate));
-    }
+function isTimestampCapable(id: string, quads: RDF.Quad[]): boolean {
+    const idTerm = namedNode(id);
+    const dataset = quads.find(q => q.subject.equals(idTerm) && q.predicate.equals(SDS.terms.dataset))?.object;
+    if(!dataset) return false;
+
+    const timestampPath = quads.find(q => q.subject.equals(dataset) && q.predicate.equals(LDES.terms.timestampPath))?.object;
+    return !!timestampPath;
 }
 
 export class FragmentFetcherFactoryImpl implements FragmentFetcherFactory {
-    async build(id: string, quads: RDF.Quad[], membersCollection: Collection<Document>, indexCollection: Collection<MongoFragment>): Promise<FragmentFetcher> {
-        const bucketProperty = findQuads(quads, namedNode(id), TREE.terms.path).map(x => x.object);
-        return new FragmentFetcherImpl(id, bucketProperty, membersCollection, indexCollection);
+    async build(id: string, streamMetadata: RDF.Quad[], membersCollection: Collection<Document>, indexCollection: Collection<MongoFragment>): Promise<FragmentFetcher> {
+        const timestampCapable = isTimestampCapable(id, streamMetadata);
+        return new FragmentFetcherImpl(id, timestampCapable, membersCollection, indexCollection);
     }
 }
 
-type MongoFragment = { leaf: boolean, ids: string[], fragmentId: string, relations: { type: string, values: string[], bucket: string }[], members?: string[], count: number, timeStamp?: string };
 type Parsed = { segs: string[], query: { [label: string]: string } };
 function parseIndex(index: string): Parsed {
     const [first, second] = index.split('?', 2);
@@ -69,76 +70,93 @@ function reconstructIndex({ segs, query }: Parsed): string {
 
 // TODO how to handle default values?
 export class FragmentFetcherImpl implements FragmentFetcher {
-    protected readonly id: string;
-    protected readonly property: RDF.Term[];
+    protected readonly streamId: string;
+    protected readonly timestampCapable: boolean;
+
     protected readonly members: Collection<Document>;
     protected readonly indices: Collection<MongoFragment>;
 
-    constructor(id: string, property: RDF.Term[] | RDF.Term, members: Collection<Document>, indices: Collection<MongoFragment>) {
-        this.id = id;
-        this.property = (property instanceof Array) ? property : [property];
+    constructor(streamId: string, timestampCapable: boolean, members: Collection<Document>, indices: Collection<MongoFragment>) {
+        this.streamId = streamId;
+        this.timestampCapable = timestampCapable;
         this.members = members;
         this.indices = indices;
     }
 
-    async fetch(id: string, timestampCapable: boolean, timestampPath?: RDF.Term): Promise<Fragment> {
-        const fragmentId = this.id;
+    async fetch(id: string): Promise<Fragment> {
+        const streamId = this.streamId;
+        logger.debug("streamid", streamId);
         const { segs, query } = parseIndex(id);
 
         // [a,b,c] => [[a], [a,b], [a,b,c]]
         const indices = segs.reduce((cum, _, i, arr) => [...cum, arr.slice(0, i + 1)], <string[][]>[]);
 
-        console.log(fragmentId, segs, query, indices)
-
-        let timestampValue = query["timestamp"];
-
+        const timestampValue = query["timestamp"];
         const relations = <RelationParameters[]>[];
 
         for (let i = 0; i < indices.length; i++) {
-            const ids = indices[i];
+            const id = indices[i].join("/");
 
-            const fragment = await this.indices.findOne({ fragmentId, ids, leaf: false });
-            const rels: RelationParameters[] | undefined = fragment?.relations.map(({ type, values, bucket }) => {
-                const value: RDF.Term[] = values.map(x => literal(x));
+            const fragment = await this.indices.findOne({ streamId, id, leaf: false });
+            if (!fragment) continue;
+
+            const rels: RelationParameters[] = fragment!.relations.map(({ type, value, bucket, path }) => {
+                const values: RDF.Term[] = [literal(value)];
+
                 const index: Parsed = { segs: segs.slice(), query: {} };
                 index.segs[i] = bucket;
-                return { type: <RelationType>type, value, nodeId: reconstructIndex(index), path: this.property[i] };
+
+                return { type: <RelationType>type, value: values, nodeId: reconstructIndex(index), path: namedNode(path) };
             });
 
-            if (rels !== undefined)
-                relations.push(...rels);
+            relations.push(...rels);
         }
 
-        const li = indices[indices.length - 1];
 
         let ids: string[] = []
-        if (timestampCapable) {
-            const search: Filter<MongoFragment> = { fragmentId, ids: segs, leaf: true };
+        if (this.timestampCapable) {
+            const id = segs.join("/");
+            const search: Filter<MongoFragment> = { streamId, id, leaf: true };
+
             if (timestampValue)
                 search.timeStamp = { "$lte": timestampValue };
 
             const actualTimestampBucket = await this.indices.find(search).sort({ "timeStamp": -1 }).limit(1).next();
             if (!actualTimestampBucket) {
                 logger.error("No such bucket found! " + JSON.stringify(search));
+                ids = [];
+            } else {
+                ids = actualTimestampBucket!.members || [];
+
+                const rels: RelationParameters[] = actualTimestampBucket!.relations.map(({ type, value, bucket, path }) => {
+                    const index: Parsed = { segs, query };
+                    index.query["timestamp"] = bucket;
+                    const values: RDF.Term[] = [literal(value)];
+
+                    return { type: <RelationType>type, value: values, nodeId: reconstructIndex(index), path: namedNode(path) };
+                });
+
+                relations.push(...rels);
             }
 
-            ids = actualTimestampBucket?.members || [];
-
-            const rels: RelationParameters[] | undefined = actualTimestampBucket?.relations.map(({ type, values, bucket }) => {
-                const index: Parsed = { segs, query };
-                index.query["timestamp"] = bucket;
-
-                const value: RDF.Term[] = values.map(x => literal(x));
-                return { type: <RelationType>type, value, nodeId: reconstructIndex(index), path: timestampPath };
-            });
-
-            if (rels !== undefined)
-                relations.push(...rels);
         } else {
-            const search = { fragmentId: this.id, ids: li, leaf: false };
+            const id = segs.join("/");
+
+            // Hmmmmm
+            const search = { streamId , id, leaf: true };
             const fragments = await this.indices.findOne(search);
             if (!fragments) {
                 logger.error("No such bucket found! " + JSON.stringify(search));
+            } else {
+                const rels: RelationParameters[] = fragments!.relations.map(({ type, value, bucket, path }) => {
+                    const index: Parsed = { segs, query };
+                    index.query["timestamp"] = bucket;
+                    const values: RDF.Term[] = [literal(value)];
+
+                    return { type: <RelationType>type, value: values, nodeId: reconstructIndex(index), path: namedNode(path) };
+                });
+
+                relations.push(...rels);
             }
             ids = fragments?.members || [];
         }
@@ -151,3 +169,4 @@ export class FragmentFetcherImpl implements FragmentFetcher {
         return { members, cache: { pub: true }, relations };
     }
 }
+

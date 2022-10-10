@@ -1,23 +1,34 @@
 
 import type * as RDF from '@rdfjs/types';
 import { BasicRepresentation, Conditions, CONTENT_TYPE, guardedStreamFrom, INTERNAL_QUADS, MetadataRecord, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore } from "@solid/community-server";
-import { CacheDirectives, FragmentFetcher, Member, RelationParameters } from "@treecg/types";
+import { CacheDirectives, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
 import { MongoClient } from 'mongodb';
-import { DataFactory as DF, NamedNode, Parser, Quad_Object } from 'n3';
-import { FragmentFetcherFactory, HTTP } from "./index";
+import { DataFactory as DF, Parser, Quad_Object } from 'n3';
+import { FragmentFetcherFactory, FragmentFetcherFactoryImpl, HTTP } from "./index";
 
-import { LDES, RDF as RDFT, SDS, TREE } from '@treecg/types';
-import { cacheToLiteral, Data, extractData } from './utils';
+import { RDF as RDFT, SDS, TREE } from '@treecg/types';
+import { cacheToLiteral } from './utils';
 import winston from "winston";
 
 const consoleTransport = new winston.transports.Console();
 const logger = winston.createLogger({
     format: winston.format.combine(
-        winston.format.label({label: "LDESStore", message: true}),
+        winston.format.label({ label: "LDESStore", message: true }),
         winston.format.colorize({ level: true }),
         winston.format.simple()
     ), transports: [consoleTransport]
 });
+
+export type MongoFragment = {
+    id?: string,
+    streamId: string,
+    leaf: boolean,
+    value?: string,
+    relations: { type: RelationType, value: string, bucket: string, path: string }[],
+    members?: string[],
+    count: number,
+    timeStamp?: string
+};
 
 consoleTransport.level = process.env.LOG_LEVEL || "info";
 
@@ -44,107 +55,63 @@ export class DBConfig {
     }
 }
 
-interface LDESConfig {
-    id: string,
-    prefix: string,
-}
-
-export class Config {
-    readonly ldesConfig: { [label: string]: string };
-    readonly timestampFragmentation?: string;
-    constructor(ldesConfig: { [label: string]: string }, timestampFragmentation?: string) {
-        this.ldesConfig = ldesConfig;
-        this.timestampFragmentation = timestampFragmentation;
+export class LDESView {
+    public readonly mprefix: string;
+    public readonly streamId: string;
+    constructor(mprefix: string, streamId: string) {
+        this.mprefix = mprefix;
+        this.streamId = streamId;
     }
 }
-
-
+export class LDESViews {
+    public readonly views: LDESView[];
+    constructor(views: LDESView[]) {
+        this.views = views;
+    }
+}
 
 export class LDESAccessorBasedStore implements ResourceStore {
     private readonly id: string;
     private readonly fragmentFetchers: PrefixFetcher[];
-    private metadata: Data = {};
-    private timestampCapable = false;
-    private timestampPath?: RDF.Term;
-    private readonly ignoredFields: NamedNode[];
 
     constructor(
         id: string,
-        fragmentFetcherFactory: FragmentFetcherFactory,
-        config: Config,
+        views: LDESViews,
         dbConfig: DBConfig,
     ) {
         this.id = id;
         this.fragmentFetchers = [];
-        this.ignoredFields = [];
 
-        const configs: LDESConfig[] = [];
-        for (let label in config.ldesConfig) {
-            configs.push({ id: config.ldesConfig[label], prefix: label });
-        }
-
-        this.createFetchers(fragmentFetcherFactory, configs, dbConfig, config.timestampFragmentation);
+        this.createFetchers(new FragmentFetcherFactoryImpl(), views.views, dbConfig);
     }
 
-    private async createFetchers(factory: FragmentFetcherFactory, configs: LDESConfig[], dbConfig: DBConfig, timestampFragmentation?: string) {
+    private async createFetchers(factory: FragmentFetcherFactory, views: LDESView[], dbConfig: DBConfig) {
         const client = new MongoClient(dbConfig.url);
         await client.connect();
         const db = client.db(dbConfig.dbName);
 
         const metaCollection = db.collection(dbConfig.meta);
         const membersCollection = db.collection(dbConfig.members);
-        const indexCollection = db.collection(dbConfig.indices);
+        const indexCollection = db.collection<MongoFragment>(dbConfig.indices);
 
 
-        const metadatas = await metaCollection.find({ "type": SDS.Stream }).toArray();
-        if (metadatas.length > 1) {
-            logger.error("Hm found multiple metadata's in mongo");
-        }
+        const streams = await metaCollection.find({ "type": SDS.Stream }).toArray();
 
-        if (metadatas.length > 0) {
-            const metadata = new Parser().parse(metadatas[0].value);
-            const data = extractData(metadata);
-            this.metadata = data;
+        for (let stream of streams) {
+            const metadata = new Parser().parse(stream.value);
 
-            if (this.metadata.dataset) {
-                const { id, quads } = this.metadata.dataset;
-
-                const timestampPath = quads.find(quad => quad.subject.equals(id) && quad.predicate.equals(LDES.terms.timestampPath));
-                this.timestampPath = timestampPath?.object;
-                this.timestampCapable = !!timestampPath;
-            }
-        }
-
-        const fragmentations = await metaCollection.find({ "type": "fragmentation" }).map(row => { return <Member>{ id: namedNode(row.id), quads: new Parser().parse(row.value) } }).toArray();
-
-        for (let fragmentation of fragmentations) {
-            const bucketProperty = fragmentation.quads.find(quad => quad.subject.equals(fragmentation.id) && quad.predicate.equals(LDES.terms.bucketProperty))?.object;
-            this.ignoredFields.push(<NamedNode>bucketProperty || LDES.terms.bucket);
-
-            const config = configs.find(config => config.id === fragmentation.id.value);
+            const config = views.find(config => config.streamId === stream.id);
             if (config) {
-                logger.info("adding fragmentation with prefix: " + config.prefix);
+                logger.info("adding fragmentation with prefix: " + config.mprefix);
                 this.fragmentFetchers.push({
-                    prefix: config.prefix,
-                    fetcher: await factory.build(fragmentation.id.value, fragmentation.quads, membersCollection, <any>indexCollection)
-                })
-            }
-        }
-
-        if (timestampFragmentation) {
-            const config = configs.find(config => config.id === timestampFragmentation);
-            if (config) {
-                logger.info("adding fragmentation with prefix: " + config.prefix);
-                this.fragmentFetchers.push({
-                    prefix: config.prefix,
-                    fetcher: await factory.build(timestampFragmentation, [], membersCollection, <any>indexCollection)
+                    prefix: config.mprefix,
+                    fetcher: await factory.build(stream.id, metadata, membersCollection, indexCollection),
                 })
             } else {
-                logger.error("timestamp fragmentation set, but not found!");
+                logger.debug("No fragmentation specified for " + stream.id);
             }
         }
     }
-
 
     resourceExists = async (identifier: ResourceIdentifier, conditions?: Conditions | undefined): Promise<boolean> => {
         return false;
@@ -159,35 +126,45 @@ export class LDESAccessorBasedStore implements ResourceStore {
 
     getRepresentation = async (identifier: ResourceIdentifier, preferences: RepresentationPreferences, conditions?: Conditions): Promise<Representation> => {
         logger.debug("Getting representation for " + identifier.path);
+        let index = -1;
+        let chosenFetcher = undefined;
+        let chosenPrefix = undefined;
         for (let { prefix, fetcher } of this.fragmentFetchers) {
-            const index = identifier.path.indexOf(prefix);
-            if (index < 0) {
-                continue
+            const competingIndex = identifier.path.indexOf(prefix);
+            if (competingIndex < 0 || (index >= 0 && competingIndex >= index)) {
+                continue;
             }
 
-            const baseIdentifier = identifier.path.substring(0, index + prefix.length + 1)
-            const fragment = await fetcher.fetch(identifier.path.substring(index + prefix.length).replace("/", ""), this.timestampCapable, this.timestampPath);
-            const quads: Array<RDF.Quad> = [];
-
-            // this is not always correct
-            quads.push(quad(
-                namedNode(this.id),
-                TREE.terms.view,
-                namedNode(identifier.path)
-            ));
-
-            this.addMeta(quads, this.metadata);
-
-            fragment.relations.forEach(relation => this.addRelations(quads, identifier.path, baseIdentifier, relation));
-            fragment.members.forEach(m => this.addMember(quads, m));
-
-            return new BasicRepresentation(
-                guardedStreamFrom(quads),
-                new RepresentationMetadata(this.getMetadata(fragment.cache))
-            );
+            index = competingIndex;
+            chosenFetcher = fetcher;
+            chosenPrefix = prefix;
         }
 
-        throw "No LDES found!"
+        if (!chosenFetcher) {
+            throw "No LDES found!"
+        }
+
+        logger.debug("Found prefix " + chosenPrefix);
+        const baseIdentifier = identifier.path.substring(0, index + chosenPrefix!.length + 1)
+        const fragment = await chosenFetcher.fetch(identifier.path.substring(index + chosenPrefix!.length).replace("/", ""), false);
+        const quads: Array<RDF.Quad> = [];
+
+        // this is not always correct
+        quads.push(quad(
+            namedNode(this.id),
+            TREE.terms.view,
+            namedNode(identifier.path)
+        ));
+
+        fragment.relations.forEach(relation => this.addRelations(quads, identifier.path, baseIdentifier, relation));
+
+        fragment.members.forEach(m => this.addMember(quads, m));
+
+        return new BasicRepresentation(
+            guardedStreamFrom(quads),
+            new RepresentationMetadata(this.getMetadata(fragment.cache))
+        );
+
     }
 
     addRelations(quads: Array<RDF.Quad>, identifier: string, baseIdentifier: string, relation: RelationParameters) {
@@ -233,20 +210,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
             TREE.terms.member,
             <Quad_Object>member.id
         ));
-        quads.push(...member.quads.filter(quad => !quad.subject.equals(member.id) || !this.ignoredFields.some(ignored => ignored.equals(quad.predicate))));
-    }
-
-    addMeta(quads: Array<RDF.Quad>, meta: Data) {
-        if (meta.dataset) {
-            const datasetId = meta.dataset.id;
-            for (let q of meta.dataset.quads) {
-                if (q.subject.equals(datasetId)) {
-                    q = quad(namedNode(this.id), q.predicate, q.object, q.graph);
-                }
-
-                quads.push(q);
-            }
-        }
+        quads.push(...member.quads);
     }
 
     setRepresentation = async (identifier: ResourceIdentifier, representation: Representation, conditions?: Conditions | undefined): Promise<ResourceIdentifier[]> => {

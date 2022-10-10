@@ -8,10 +8,7 @@
             "@id": "urn:solid-server:default:LDESResourceStore",
             "@type": "LDESAccessorBasedStore",
             "id": "https://test.bla/ldes",
-            "fragmentFetcherFactory": {
-                "@type": "FragmentFetcherFactoryImpl"
-            },
-            "config": {
+            "views": {
                 "@id": "urn:solid-server:default:LDESConfig"
             },
             "dbConfig": {
