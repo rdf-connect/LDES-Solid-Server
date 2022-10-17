@@ -28,16 +28,31 @@ To understand a specific  view, the ldes-server checks the database for addition
 
 Timestamp paths are a special fragmentation that is used widely. Enable timestamp path fragmentations in the config.
 
-
 ## Setup
 
+### Local development
 
 ```bash
+# Install local dependencies
+yarn install
+# Compile TS package
+npm run build
+# Setup server
+cd server
+npm install
+npm start
+```
+
+### Use ldes-solid-server as Community Solid Server
+
+```bash
+# Install the server
 npm install ldes-solid-server
+# Start the server
 npx community-solid-server -c config.json -f ./data
 ```
 
-### Configuration
+#### Required Configuration
 
 The ldes-server expects some configurations, take this example css configuration file to start up a ldes-server.
 
