@@ -1,6 +1,6 @@
 
 import type * as RDF from '@rdfjs/types';
-import { BasicRepresentation, Conditions, CONTENT_TYPE, guardedStreamFrom, INTERNAL_QUADS, MetadataRecord, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore } from "@solid/community-server";
+import { BasicRepresentation, ChangeMap, Conditions, CONTENT_TYPE, guardedStreamFrom, INTERNAL_QUADS, MetadataRecord, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore } from "@solid/community-server";
 import { CacheDirectives, FragmentFetcher, Member, RelationParameters, RelationType } from "@treecg/types";
 import { MongoClient } from 'mongodb';
 import { DataFactory as DF, Parser, Quad_Object } from 'n3';
@@ -41,28 +41,28 @@ interface PrefixFetcher {
 
 export class DBConfig {
     readonly url: string;
-    readonly dbName?: string;
     readonly meta: string;
     readonly members: string;
     readonly indices: string;
-    constructor(metaCollection: string, membersCollection: string, indexCollection: string, dbUrl?: string, dbName?: string) {
+
+    constructor(metaCollection: string, membersCollection: string, indexCollection: string, dbUrl?: string) {
         this.meta = metaCollection;
         this.members = membersCollection;
         this.indices = indexCollection;
 
-        this.url = dbUrl || "mongodb://localhost:27017";
-        this.dbName = dbName;
+        this.url = dbUrl || "mongodb://localhost:27017/ldes";
     }
 }
 
 export class LDESView {
-    public readonly mprefix: string;
+    public readonly prefix: string;
     public readonly streamId: string;
-    constructor(mprefix: string, streamId: string) {
-        this.mprefix = mprefix;
+    constructor(prefix: string, streamId: string) {
+        this.prefix = prefix;
         this.streamId = streamId;
     }
 }
+
 export class LDESViews {
     public readonly views: LDESView[];
     constructor(views: LDESView[]) {
@@ -88,7 +88,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
     private async createFetchers(factory: FragmentFetcherFactory, views: LDESView[], dbConfig: DBConfig) {
         const client = new MongoClient(dbConfig.url);
         await client.connect();
-        const db = client.db(dbConfig.dbName);
+        const db = client.db();
 
         const metaCollection = db.collection(dbConfig.meta);
         const membersCollection = db.collection(dbConfig.members);
@@ -102,9 +102,9 @@ export class LDESAccessorBasedStore implements ResourceStore {
 
             const config = views.find(config => config.streamId === stream.id);
             if (config) {
-                logger.info("adding fragmentation with prefix: " + config.mprefix);
+                logger.info("adding fragmentation with prefix: " + config.prefix);
                 this.fragmentFetchers.push({
-                    prefix: config.mprefix,
+                    prefix: config.prefix,
                     fetcher: await factory.build(stream.id, metadata, membersCollection, indexCollection),
                 })
             } else {
@@ -113,7 +113,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
         }
     }
 
-    resourceExists = async (identifier: ResourceIdentifier, conditions?: Conditions | undefined): Promise<boolean> => {
+    hasResource = async (identifier: ResourceIdentifier, conditions?: Conditions | undefined): Promise<boolean> => {
         return false;
     }
 
@@ -126,6 +126,7 @@ export class LDESAccessorBasedStore implements ResourceStore {
 
     getRepresentation = async (identifier: ResourceIdentifier, preferences: RepresentationPreferences, conditions?: Conditions): Promise<Representation> => {
         logger.debug("Getting representation for " + identifier.path);
+        console.log("Getting representation for " + identifier.path);
         let index = -1;
         let chosenFetcher = undefined;
         let chosenPrefix = undefined;
@@ -213,22 +214,22 @@ export class LDESAccessorBasedStore implements ResourceStore {
         quads.push(...member.quads);
     }
 
-    setRepresentation = async (identifier: ResourceIdentifier, representation: Representation, conditions?: Conditions | undefined): Promise<ResourceIdentifier[]> => {
+    setRepresentation = async (identifier: ResourceIdentifier, representation: Representation, conditions?: Conditions): Promise<ChangeMap> => {
         console.log("Set representation", identifier, representation, conditions)
         throw "Not implemented set"
     }
 
-    addResource = async (container: ResourceIdentifier, representation: Representation, conditions?: Conditions | undefined): Promise<ResourceIdentifier> => {
+    addResource = async (container: ResourceIdentifier, representation: Representation, conditions?: Conditions): Promise<ChangeMap> => {
         console.log("Add representation", container, representation, conditions)
         throw "Not implemented add"
     }
 
-    deleteResource = async (identifier: ResourceIdentifier, conditions?: Conditions | undefined): Promise<ResourceIdentifier[]> => {
+    deleteResource = async (identifier: ResourceIdentifier, conditions?: Conditions): Promise<ChangeMap> => {
         console.log("Delete representation", identifier, conditions)
         throw "Not implemented delete"
     }
 
-    modifyResource = async (identifier: ResourceIdentifier, patch: Patch, conditions?: Conditions | undefined): Promise<ResourceIdentifier[]> => {
+    modifyResource = async (identifier: ResourceIdentifier, patch: Patch, conditions?: Conditions): Promise<ChangeMap> => {
         console.log("Modify representation", identifier, patch, conditions)
         throw "Not implemented modify"
     }

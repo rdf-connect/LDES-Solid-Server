@@ -1,0 +1,35 @@
+{
+  "@context": [
+    "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
+  ],
+  "@graph": [
+    {
+      "comment": "Some basic LDES server configuration as starting point"
+    },
+    {
+      "@id": "urn:solid-server:default:LDESConfig",
+      "@type": "LDESViews",
+      "views": [
+        {
+          "@type": "LDESView",
+          "mprefix": "default",
+          "streamId": "http://me#csvStream"
+        },
+        {
+          "@type": "LDESView",
+          "mprefix": "mine",
+          "streamId": "http://mine.org/rdfstream"
+        }
+      ]
+    },
+    {
+      "@id": "urn:solid-server:default:LDESDBConfig",
+      "@type": "DBConfig",
+      "metaCollection": "meta2",
+      "indexCollection": "index2",
+      "membersCollection": "data2",
+      "dbUrl": "mongodb://localhost:27017",
+      "dbName": "ldes2"
+    }
+  ]
+}

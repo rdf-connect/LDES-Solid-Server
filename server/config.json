@@ -1,125 +1,120 @@
 {
-    "@context": [
-        "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^3.0.0/components/context.jsonld",
-        "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
-    ],
-    "import": [
-        "files-scs:config/app/main/default.json",
-        "files-scs:config/app/init/default.json",
-        "files-scs:config/app/setup/optional.json",
-        "files-scs:config/app/variables/default.json",
-        "files-lss:config/http/default.json",
-        "files-scs:config/http/middleware/websockets.json",
-        "files-scs:config/http/server-factory/websockets.json",
-        "files-scs:config/http/static/default.json",
-        "files-scs:config/identity/access/public.json",
-        "files-scs:config/identity/email/default.json",
-        "files-scs:config/identity/handler/default.json",
-        "files-scs:config/identity/ownership/token.json",
-        "files-scs:config/identity/pod/static.json",
-        "files-scs:config/identity/registration/enabled.json",
-        "files-scs:config/ldp/authentication/dpop-bearer.json",
-        "files-scs:config/ldp/authorization/webacl.json",
-        "files-scs:config/ldp/handler/default.json",
-        "files-lss:config/ldp/handler/default.json",
-        "files-scs:config/ldp/metadata-parser/default.json",
-        "files-lss:config/ldp/metadata-writer/default.json",
-        "files-scs:config/ldp/modes/default.json",
-        "files-scs:config/storage/key-value/resource-store.json",
-        "files-scs:config/storage/middleware/default.json",
-        "files-scs:config/util/auxiliary/acl.json",
-        "files-scs:config/util/identifiers/suffix.json",
-        "files-scs:config/util/index/default.json",
-        "files-scs:config/util/logging/winston.json",
-        "files-scs:config/util/representation-conversion/default.json",
-        "files-scs:config/util/resource-locker/memory.json",
-        "files-scs:config/util/variables/default.json",
-        "files-scs:config/storage/backend/data-accessors/sparql-endpoint.json",
-        "files-scs:config/storage/backend/data-accessors/file.json",
-        "files-lss:config/storage/backend/ldes.json"
-    ],
-    "@graph": [
+  "@context": [
+    "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^5.0.0/components/context.jsonld",
+    "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
+  ],
+  "import": [
+    "css:config/app/main/default.json",
+    "css:config/app/init/initialize-root.json",
+    "css:config/app/setup/disabled.json",
+    "css:config/app/variables/default.json",
+    "css:config/http/handler/default.json",
+    "css:config/http/middleware/websockets.json",
+    "css:config/http/server-factory/websockets.json",
+    "css:config/http/static/default.json",
+    "css:config/identity/access/public.json",
+    "css:config/identity/email/default.json",
+    "css:config/identity/handler/default.json",
+    "css:config/identity/ownership/token.json",
+    "css:config/identity/pod/static.json",
+    "css:config/identity/registration/enabled.json",
+    "css:config/ldp/authentication/dpop-bearer.json",
+    "css:config/ldp/authorization/allow-all.json",
+    "css:config/ldp/handler/default.json",
+    "css:config/ldp/metadata-parser/default.json",
+    "lss:config/ldp/metadata-writer/default.json",
+    "css:config/ldp/modes/default.json",
+    "lss:config/storage/backend/ldes.json",
+    "css:config/storage/backend/data-accessors/memory.json",
+    "css:config/storage/key-value/memory.json",
+    "css:config/storage/middleware/default.json",
+    "css:config/util/auxiliary/acl.json",
+    "css:config/util/identifiers/suffix.json",
+    "css:config/util/index/default.json",
+    "css:config/util/logging/winston.json",
+    "css:config/util/representation-conversion/default.json",
+    "css:config/util/resource-locker/memory.json",
+    "css:config/util/variables/default.json"
+  ],
+  "@graph": [
+    {
+      "comment": "A more complex example with 3 different stores being routed to.",
+      "@id": "urn:solid-server:default:ResourceStore_Backend",
+      "@type": "RoutingResourceStore",
+      "rule": {
+        "@id": "urn:solid-server:default:RouterRule"
+      }
+    },
+    {
+      "@id": "urn:solid-server:default:RouterRule",
+      "@type": "RegexRouterRule",
+      "base": {
+        "@id": "urn:solid-server:default:variable:baseUrl"
+      },
+      "rules": [
         {
-            "comment": "A single-pod server that exposes Linked Data Event Streams."
+          "@type": "RegexRule",
+          "regex": "^/(\\.acl|\\.meta)?$",
+          "store": {
+            "@id": "urn:solid-server:default:MemoryResourceStore"
+          }
         },
         {
+          "@type": "RegexRule",
+          "regex": "/ldes/",
+          "store": {
             "comment": "A more complex example with 3 different stores being routed to.",
-            "@id": "urn:solid-server:default:ResourceStore_Backend",
-            "@type": "RoutingResourceStore",
-            "rule": {
-                "@id": "urn:solid-server:default:RouterRule"
+            "@type": "RepresentationConvertingStore",
+            "source": {
+              "@id": "urn:solid-server:default:LDESResourceStore"
+            },
+            "options_outConverter": {
+              "@id": "urn:solid-server:default:RepresentationConverter"
             }
-        },
-        {
-            "@id": "urn:solid-server:default:RouterRule",
-            "@type": "RegexRouterRule",
-            "base": {
-                "@id": "urn:solid-server:default:variable:baseUrl"
-            },
-            "storeMap": [
-                {
-                    "RegexRouterRule:_storeMap_key": "^/(\\.acl)?$",
-                    "RegexRouterRule:_storeMap_value": {
-                        "@id": "urn:solid-server:default:FileResourceStore"
-                    }
-                },
-                {
-                    "RegexRouterRule:_storeMap_key": "^/ldes/(?!.*acl$).*$",
-                    "RegexRouterRule:_storeMap_value": {
-                        "@type": "RepresentationConvertingStore",
-                        "source": {
-                            "@id": "urn:solid-server:default:LDESResourceStore"
-                        },
-                        "options_outConverter": {
-                            "@id": "urn:solid-server:default:RepresentationConverter"
-                        }
-                    }
-                },
-                {
-                    "RegexRouterRule:_storeMap_key": "/",
-                    "RegexRouterRule:_storeMap_value": {
-                        "@id": "urn:solid-server:default:FileResourceStore"
-                    }
-                }
-            ]
-        },
-        {
-            "@id": "urn:solid-server:default:FileResourceStore",
-            "@type": "DataAccessorBasedStore",
-            "identifierStrategy": {
-                "@id": "urn:solid-server:default:IdentifierStrategy"
-            },
-            "auxiliaryStrategy": {
-                "@id": "urn:solid-server:default:AuxiliaryStrategy"
-            },
-            "accessor": {
-                "@id": "urn:solid-server:default:FileDataAccessor"
-            }
-        },
-        {
-            "@id": "urn:solid-server:default:LDESConfig",
-            "@type": "LDESViews",
-            "views": [
-                {
-                    "@type": "LDESView",
-                    "mprefix": "default",
-                    "streamId": "http://me#csvStream"
-                },
-                {
-                    "@type": "LDESView",
-                    "mprefix": "mine",
-                    "streamId": "http://mine.org/rdfstream"
-                }
-            ]
-        },
-        {
-            "@id": "urn:solid-server:default:LDESDBConfig",
-            "@type": "DBConfig",
-            "metaCollection": "meta2",
-            "indexCollection": "index2",
-            "membersCollection": "data2",
-            "dbUrl": "mongodb://localhost:27017",
-            "dbName": "ldes2"
+          }
         }
-    ]
+      ]
+    },
+    {
+      "@id": "urn:solid-server:default:MemoryResourceStore",
+      "@type": "DataAccessorBasedStore",
+      "identifierStrategy": {
+        "@id": "urn:solid-server:default:IdentifierStrategy"
+      },
+      "auxiliaryStrategy": {
+        "@id": "urn:solid-server:default:AuxiliaryStrategy"
+      },
+      "accessor": {
+        "@id": "urn:solid-server:default:MemoryDataAccessor"
+      },
+      "metadataStrategy": {
+        "@id": "urn:solid-server:default:MetadataStrategy"
+      }
+    },
+    {
+      "@id": "urn:solid-server:default:LDESConfig",
+      "@type": "LDESViews",
+      "views": [
+        {
+          "@type": "LDESView",
+          "prefix": "default",
+          "streamId": "http://me#csvStream"
+        },
+        {
+          "@type": "LDESView",
+          "prefix": "mine",
+          "streamId": "http://mine.org/rdfstream"
+        }
+      ]
+    },
+    {
+      "@id": "urn:solid-server:default:LDESDBConfig",
+      "@type": "DBConfig",
+      "metaCollection": "meta2",
+      "indexCollection": "index2",
+      "membersCollection": "data2",
+      "dbUrl": "mongodb://localhost:27017/ldes2"
+    }
+  ]
 }
+

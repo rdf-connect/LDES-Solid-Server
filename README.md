@@ -1,8 +1,7 @@
 # ldes-solid-server
 
 Linked data event stream components to configure a community solid server that exposes a LDES.
-Currently only a mongodb backend is supported.
-
+Currently, only a MongoDB backend is supported.
 
 ### What is a Linked Data Event Stream
 
@@ -11,22 +10,8 @@ A Linked Data Event Stream ([LDES](https://semiceu.github.io/LinkedDataEventStre
 With Linked Data Event Streams, consumers can replicate and stay in sync with a stream of RDF data.
 
 LDES uses the [TREE](https://treecg.github.io/specification/) specification, which enables API developers to define relations between HTTP resources.
-A collection of items can be fragmented and these fragments can be interlinked.
-A well known example is to paging, but with fragments can describe what elements can be found by following the link to another page.
-
-## Structure
-
-The Community Solid Server uses [ComponentsJs](https://github.com/LinkedSoftwareDependencies/Components.js) extensively, this is carried through here.
-
-
-### Views
-
-The ldes-solid-server can host multiple view on the same data. The user has to define what views are exposed on what path. 
-To understand a specific  view, the ldes-server checks the database for additional information. If no information is found about that view, no view is set up.
-
-### Timestamp path
-
-Timestamp paths are a special fragmentation that is used widely. Enable timestamp path fragmentations in the config.
+A collection of items is divided into interlinked fragments.
+A well-known example is paging, but fragments can describe what elements can be found by following the link to another page.
 
 ## Setup
 
@@ -34,7 +19,7 @@ Timestamp paths are a special fragmentation that is used widely. Enable timestam
 
 ```bash
 # Install local dependencies
-yarn install
+npm install
 # Compile TS package
 npm run build
 # Setup server
@@ -54,138 +39,106 @@ npx community-solid-server -c config.json -f ./data
 
 #### Required Configuration
 
-The ldes-server expects some configurations, take this example css configuration file to start up a ldes-server.
+See config/default.json for an example ldes-solid-server configuration.
 
-This CSS uses ACL security on a file based store, it also exposes the LDES store on the '/ldes' path.
-LDESConfig specifies what view to host on what paths, the uri's representing the view correspond to those found in the database.
+You will probably want to configure a `urn:solid-server:default:LDESConfig` and a `urn:solid-server:default:LDESDBConfig` yourself.
 
-Database configuration allows the user to configure what collections are used.
+**LDESConfig**
 
+- `views` takes multiple view configurations. It is expected that information about each view can be found in the database. Specify the prefix and the stream identifier.
 
 ```json
 {
-    "@context": [
-        "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^3.0.0/components/context.jsonld",
-        "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
-    ],
-    "import": [
-        "files-scs:config/app/main/default.json",
-        "files-scs:config/app/init/default.json",
-        "files-scs:config/app/setup/optional.json",
-        "files-scs:config/app/variables/default.json",
-        "files-lss:config/http/default.json",
-        "files-scs:config/http/middleware/websockets.json",
-        "files-scs:config/http/server-factory/websockets.json",
-        "files-scs:config/http/static/default.json",
-        "files-scs:config/identity/access/public.json",
-        "files-scs:config/identity/email/default.json",
-        "files-scs:config/identity/handler/default.json",
-        "files-scs:config/identity/ownership/token.json",
-        "files-scs:config/identity/pod/static.json",
-        "files-scs:config/identity/registration/enabled.json",
-        "files-scs:config/ldp/authentication/dpop-bearer.json",
-        "files-scs:config/ldp/authorization/webacl.json",
-        "files-scs:config/ldp/handler/default.json",
-        "files-lss:config/ldp/handler/default.json",
-        "files-scs:config/ldp/metadata-parser/default.json",
-        "files-lss:config/ldp/metadata-writer/default.json",
-        "files-scs:config/ldp/modes/default.json",
-        "files-scs:config/storage/key-value/resource-store.json",
-        "files-scs:config/storage/middleware/default.json",
-        "files-scs:config/util/auxiliary/acl.json",
-        "files-scs:config/util/identifiers/suffix.json",
-        "files-scs:config/util/index/default.json",
-        "files-scs:config/util/logging/winston.json",
-        "files-scs:config/util/representation-conversion/default.json",
-        "files-scs:config/util/resource-locker/memory.json",
-        "files-scs:config/util/variables/default.json",
-        "files-scs:config/storage/backend/data-accessors/sparql-endpoint.json",
-        "files-scs:config/storage/backend/data-accessors/file.json",
-        "files-lss:config/storage/backend/ldes.json"
-    ],
-    "@graph": [
-        {
-            "comment": "A single-pod server that exposes Linked Data Event Streams."
-        },
-        {
-            "comment": "A more complex example with 3 different stores being routed to.",
-            "@id": "urn:solid-server:default:ResourceStore_Backend",
-            "@type": "RoutingResourceStore",
-            "rule": {
-                "@id": "urn:solid-server:default:RouterRule"
-            }
-        },
-        {
-            "@id": "urn:solid-server:default:RouterRule",
-            "@type": "RegexRouterRule",
-            "base": {
-                "@id": "urn:solid-server:default:variable:baseUrl"
-            },
-            "storeMap": [
-                {
-                    "RegexRouterRule:_storeMap_key": "^/(\\.acl)?$",
-                    "RegexRouterRule:_storeMap_value": {
-                        "@id": "urn:solid-server:default:FileResourceStore"
-                    }
-                },
-                {
-                    "RegexRouterRule:_storeMap_key": "^/ldes/(?!.*acl$).*$",
-                    "RegexRouterRule:_storeMap_value": {
-                        "@type": "RepresentationConvertingStore",
-                        "source": {
-                            "@id": "urn:solid-server:default:LDESResourceStore"
-                        },
-                        "options_outConverter": {
-                            "@id": "urn:solid-server:default:RepresentationConverter"
-                        }
-                    }
-                },
-                {
-                    "RegexRouterRule:_storeMap_key": "/",
-                    "RegexRouterRule:_storeMap_value": {
-                        "@id": "urn:solid-server:default:FileResourceStore"
-                    }
-                }
-            ]
-        },
-        {
-            "@id": "urn:solid-server:default:FileResourceStore",
-            "@type": "DataAccessorBasedStore",
-            "identifierStrategy": {
-                "@id": "urn:solid-server:default:IdentifierStrategy"
-            },
-            "auxiliaryStrategy": {
-                "@id": "urn:solid-server:default:AuxiliaryStrategy"
-            },
-            "accessor": {
-                "@id": "urn:solid-server:default:FileDataAccessor"
-            }
-        },
-        {
-            "@id": "urn:solid-server:default:LDESConfig",
-            "@type": "Config",
-            "ldesConfig": [
-                {
-                    "Config:_ldesConfig_key": "default",
-                    "Config:_ldesConfig_value": "http://example.org/ns#time"
-                },
-                {
-                    "Config:_ldesConfig_key": "mine",
-                    "Config:_ldesConfig_value": "http://example.org/ns#BucketizeStrategy"
-                }
-            ],
-            "timestampFragmentation": "http://example.org/ns#time"
-        },
-        {
-            "@id": "urn:solid-server:default:LDESDBConfig",
-            "@type": "DBConfig",
-            "metaCollection": "meta",
-            "indexCollection": "index",
-            "membersCollection": "data",
-            "dbUrl": "mongodb://localhost:27017",
-            "dbName": "ldes"
-        }
-    ]
+  "@id": "urn:solid-server:default:LDESConfig",
+  "@type": "LDESViews",
+  "views": [
+    {
+      "@type": "LDESView",
+      "prefix": "default",
+      "streamId": "http://me#csvStream"
+    },
+    {
+      "@type": "LDESView",
+      "prefix": "mine",
+      "streamId": "http://mine.org/rdfstream"
+    }
+  ]
 }
+```
+
+
+**LDESDBConfig**
+
+- optional: `dbUrl` specifies the mongodb location, defaults to "mongodb://localhost:27017/ldes".
+- `dataCollection` specifies the data collection, this collection contains the entire LDES dataset. JSON objects with the following fields:
+    - `id` of the member
+    - `data` raw turtle representing the datat
+    - optional `timestamp` specified by the LDES
+- `indexCollection` specifies the index collection, this collection contains information about all fragments and links between fragments. JSON objects with the following fields:
+    - `streamId` is the identifier of the consumed stream.
+    - `id` of the fragment (can be empty)
+    - `count` specifies the number of members already present in this fragment
+    - `members` is an array of all contained members
+    - `relations` is an array with all relations starting from this fragment. JSON objects with the following fields:
+        - `type` of the relation
+        - `value` of the relation
+        - `bucket` is the target fragment id
+        - `path` of the relation
+    - optional `timeStamp` specifies the starting timestamp of this fragment.
+- `metaCollection` specifies the metadata collection, this collection contains information about each ingested stream. JSON objects with following fields:
+    - `id` the id of the ingested stream.
+    - `type` specifies the metadata type. Often "https://w3id.org/sds#Stream".
+    - `value` the actual metadata, example below:
+```turtle
+@prefix ns0: <http://purl.org/net/p-plan#> .
+@prefix ns1: <https://w3id.org/sds#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix void: <http://rdfs.org/ns/void#> .
+@prefix ns2: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ns3: <https://www.w3.org/ns/dcat#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix ns4: <https://w3id.org/ldes#> .
+
+<http://me#csvStream>
+  a <https://w3id.org/sds#Stream> ;
+  ns0:wasGeneratedBy <http://me#readCsv> ;
+  ns1:carries <http://me#csvShape> ;
+  ns1:dataset <http://me#dataset> .
+
+<http://me#readCsv>
+  a ns0:Activity ;
+  rdfs:comment "Reads csv file and converts to rdf members" ;
+  prov:used [
+    a void:Dataset ;
+    void:dataDump <file:///data/input.csv>
+  ] .
+
+<http://me#csvShape>
+  a ns1:Member ;
+  ns1:shape <http://example.org/ns#PointShape> .
+
+<http://example.org/ns#PointShape>
+  a <http://www.w3.org/ns/shacl#NodeShape> ;
+  ns2:targetClass <http://example.org/ns#Point> ;
+  ns2:property [
+    ns2:path <http://example.org/ns#x> ;
+    ns2:datatype xsd:integer ;
+    ns2:minCount 1 ;
+    ns2:maxCount 1
+  ], [
+    ns2:path <http://example.org/ns#y> ;
+    ns2:datatype xsd:integer ;
+    ns2:minCount 1 ;
+    ns2:maxCount 1
+  ] .
+
+<http://me#dataset>
+  a <https://www.w3.org/ns/dcat#Dataset> ;
+  ns3:title "Epic dataset" ;
+  ns3:publisher [ foaf:name "Arthur Vercruysse" ] ;
+  ns4:timestampPath <http://example.org/ns#time> ;
+  ns3:identifier <http://localhost:3000/ldes> .
 ```
 
