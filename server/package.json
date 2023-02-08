@@ -4,7 +4,8 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "start": "npx community-solid-server -c config.json -f ./data"
+        "start": "npx community-solid-server -c ./examples/config-ldes.json",
+        "start-file": "npx community-solid-server -c ./examples/config-ldes.json -f ./data"
     },
     "keywords": [],
     "author": "",

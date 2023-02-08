@@ -24,7 +24,6 @@
     "css:config/ldp/metadata-parser/default.json",
     "lss:config/ldp/metadata-writer/default.json",
     "css:config/ldp/modes/default.json",
-    "lss:config/storage/backend/ldes.json",
     "css:config/storage/backend/data-accessors/memory.json",
     "css:config/storage/key-value/memory.json",
     "css:config/storage/middleware/default.json",
@@ -56,7 +55,7 @@
           "@type": "RegexRule",
           "regex": "^/(\\.acl|\\.meta)?$",
           "store": {
-            "@id": "urn:solid-server:default:MemoryResourceStore"
+            "@id": "urn:solid-server:default:FileResourceStore"
           }
         },
         {
@@ -66,7 +65,32 @@
             "comment": "A more complex example with 3 different stores being routed to.",
             "@type": "RepresentationConvertingStore",
             "source": {
-              "@id": "urn:solid-server:default:LDESResourceStore"
+              "@type": "LDESStore",
+              "id": "http://mine.org/testing",
+              "views": [
+                {
+                  "@type": "PrefixView",
+                  "prefix": "default",
+                  "view": {
+                    "@type": "MongoView",
+                    "streamId": "http://me#csvStream",
+                    "db": {
+                      "@id": "urn:solid-server:default:DBConfig"
+                    }
+                  }
+                },
+                {
+                  "@type": "PrefixView",
+                  "prefix": "mine",
+                  "view": {
+                    "@type": "MongoView",
+                    "streamId": "http://mine.org/rdfstream",
+                    "db": {
+                      "@id": "urn:solid-server:default:DBConfig"
+                    }
+                  }
+                }
+              ]
             },
             "options_outConverter": {
               "@id": "urn:solid-server:default:RepresentationConverter"
@@ -92,29 +116,13 @@
       }
     },
     {
-      "@id": "urn:solid-server:default:LDESConfig",
-      "@type": "LDESViews",
-      "views": [
-        {
-          "@type": "LDESView",
-          "prefix": "default",
-          "streamId": "http://me#csvStream"
-        },
-        {
-          "@type": "LDESView",
-          "prefix": "mine",
-          "streamId": "http://mine.org/rdfstream"
-        }
-      ]
-    },
-    {
-      "@id": "urn:solid-server:default:LDESDBConfig",
+      "@id": "urn:solid-server:default:DBConfig",
       "@type": "DBConfig",
       "metaCollection": "meta",
       "indexCollection": "index",
       "membersCollection": "data",
       "dbUrl": "mongodb://localhost:27017/ldes2"
-    }
+    } 
   ]
 }
 

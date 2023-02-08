@@ -19,6 +19,7 @@
         "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/dist/": "dist/"
     },
     "scripts": {
+        "start": "npx community-solid-server -c ./examples/config-ldes.json -f ./data",
         "test": "jest",
         "build": "npm run build:ts && npm run build:components",
         "build:ts": "tsc",
@@ -29,8 +30,7 @@
         "@solid/community-server": "^5.0.0",
         "@treecg/types": "^0.4.0",
         "mongodb": "^4.11.0",
-        "n3": "^1.16.2",
-        "winston": "^3.8.2"
+        "n3": "^1.16.2"
     },
     "devDependencies": {
         "@tsconfig/node16": "^1.0.3",
