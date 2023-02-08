@@ -134,7 +134,11 @@ export class LDESStore implements ResourceStore {
                 namedNode(identifier.path)
             ));
         }
-
+        quads.push(quad(
+            namedNode(identifier.path),
+            RDFT.terms.type,
+            TREE.terms.custom("Node")
+        ));
         const relations = await fragment.getRelations();
         const members = await fragment.getMembers();
 
