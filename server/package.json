@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "start": "npx community-solid-server -c ./examples/config-ldes.json",
-        "start-file": "npx community-solid-server -c ./examples/config-ldes.json -f ./data"
+        "start-file": "npx community-solid-server -c ./examples/config-ldes-file_locks.json -f ./data"
     },
     "keywords": [],
     "author": "",

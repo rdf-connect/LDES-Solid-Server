@@ -1,7 +1,7 @@
 import type * as RDF from '@rdfjs/types';
 import { BasicRepresentation, ChangeMap, Conditions, CONTENT_TYPE, createUriAndTermNamespace, getLoggerFor, guardedStreamFrom, INTERNAL_QUADS, MetadataRecord, Patch, Representation, RepresentationMetadata, RepresentationPreferences, ResourceIdentifier, ResourceStore } from '@solid/community-server';
 import { CacheDirectives, Member, RelationParameters } from '@treecg/types';
-import { DataFactory, Quad_Object } from 'n3';
+import { DataFactory, Quad, Quad_Object } from 'n3';
 import { RDF as RDFT, TREE } from '@treecg/types';
 import { cacheToLiteral } from './utils';
 
@@ -33,10 +33,6 @@ export interface Fragment {
      * Fetch or return the cache directives concerning this fragment
      */
     getCacheDirectives(): Promise<CacheDirectives>;
-    /**
-     * Boolean indicating whether or not all members can be reached from this fragment (ldes:view)
-     */
-    isView(): boolean;
 }
 
 
@@ -46,12 +42,18 @@ export interface Fragment {
 export interface View {
     /**
      * Initialize function is called when mounting this view (before any other invocation).
+     * Also returns the URI that represents the root of the view (or undefined for partial view or something).
+     *
+     * @param base - The base URI for this LDES store
+     * @param prefix - The prefix for this view
+     * @returns - Promise that results to the optional root of this view
      */
-    init(): Promise<boolean>;
+    init(base: string, prefix: string): Promise<void>;
+    getRoot(): string | undefined;
     /**
      * Function requesting the metadata of this view, this metadata should contain all required information for query agents.
      */
-    getMetadata(): Promise<RDF.Quad[]>;
+    getMetadata(ldes: string): Promise<RDF.Quad[]>;
     /**
      * Function requesting a single {@link Fragment}. 
      *
@@ -71,17 +73,25 @@ export class PrefixView {
 
 export class LDESStore implements ResourceStore {
     protected readonly logger = getLoggerFor(this);
-
     id: string;
+    base: string;
     views: PrefixView[];
 
     initPromise: any;
 
-    constructor(id: string, views: PrefixView[]) {
+    /**
+     * @param id - The URI of the published LDES
+     * @param views - The mounted views that expose this LDES
+     * @param base - The base URI for this LDES store (defaults to the id)
+     */
+    constructor(id: string, views: PrefixView[], base?: string) {
         this.id = id;
+        this.base = base || id;
         this.views = views;
 
-        this.initPromise = Promise.all(views.map(view => view.view.init()));
+        this.initPromise = Promise.all(views.map(async view =>
+            view.view.init(this.base, view.prefix)
+        ));
         this.logger.info(`Mounting ${this.views.length} LDES views ${this.views.map(x => x.prefix).join(", ")}`);
         console.log(`Mounting ${this.views.length} LDES views ${this.views.map(x => x.prefix).join(", ")}`);
     }
@@ -90,8 +100,19 @@ export class LDESStore implements ResourceStore {
         this.logger.info("Get representation");
         await this.initPromise;
 
+        if (identifier.path === this.base) {
+            // We got a base request, let's announce all mounted view
+            const quads = await this.getViewDescriptions();
+
+            return new BasicRepresentation(
+                guardedStreamFrom(quads),
+                new RepresentationMetadata(this.getMetadata({ pub: true, immutable: true }))
+            );
+        }
+
         const view = this.views.find((pv) => identifier.path.indexOf(pv.prefix) >= 0);
         if (!view) {
+            this.logger.info("No LDES view found for identifier " + identifier.path);
             throw "No LDES found!"
         }
 
@@ -103,12 +124,10 @@ export class LDESStore implements ResourceStore {
         const baseIdentifier = identifier.path.substring(0, idStart);
         let bucketIdentifier = identifier.path.substring(idStart);
 
-        console.log(baseIdentifier, bucketIdentifier);
-
         const fragment = await view.view.getFragment(bucketIdentifier);
         const quads: Array<RDF.Quad> = [];
 
-        if (fragment.isView()) {
+        if (view.view.getRoot() === identifier.path) {
             quads.push(quad(
                 namedNode(this.id),
                 TREE.terms.view,
@@ -126,6 +145,24 @@ export class LDESStore implements ResourceStore {
             guardedStreamFrom(quads),
             new RepresentationMetadata(this.getMetadata(await fragment.getCacheDirectives()))
         );
+    }
+
+    private async getViewDescriptions(): Promise<RDF.Quad[]> {
+        const quads = [];
+
+        for (let view of this.views) {
+            quads.push(...await view.view.getMetadata(this.id));
+            const mRoot = view.view.getRoot();
+            if (mRoot) {
+                quads.push(quad(
+                    namedNode(this.id),
+                    TREE.terms.view,
+                    namedNode(mRoot)
+                ));
+            }
+        }
+
+        return quads;
     }
 
     private getMetadata(cache?: CacheDirectives): MetadataRecord {

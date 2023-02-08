@@ -1,14 +1,15 @@
 
 import type * as RDF from '@rdfjs/types';
-import { getLoggerFor } from '@solid/community-server';
-import { Member, RelationParameters, RelationType, SDS, CacheDirectives } from "@treecg/types";
+import { createUriAndTermNamespace, getLoggerFor } from '@solid/community-server';
+import { Member, RelationParameters, RelationType, SDS, RDF as RDFT, TREE, CacheDirectives, LDES } from "@treecg/types";
 import { Collection, Db, Filter, MongoClient } from "mongodb";
 import { DataFactory, Parser } from "n3";
 
 import { Fragment, View } from ".";
 import { Parsed, parseIndex, reconstructIndex } from './utils';
 
-const { namedNode, literal } = DataFactory;
+const DCAT = createUriAndTermNamespace("http://www.w3.org/ns/dcat#", "endpointURL", "servesDataset");
+const { namedNode, quad, blankNode, literal } = DataFactory;
 
 type DataCollectionDocument = {
   id: string,
@@ -79,10 +80,6 @@ class MongoFragment implements Fragment {
   async getCacheDirectives(): Promise<CacheDirectives> {
     return { pub: true };
   }
-
-  isView(): boolean {
-    return true;
-  }
 }
 
 export class MongoView implements View {
@@ -93,29 +90,57 @@ export class MongoView implements View {
   metaCollection!: Collection<MetaCollectionDocument>;
   indexCollection!: Collection<IndexCollectionDocument>;
   dataCollection!: Collection<DataCollectionDocument>;
+  root!: string;
 
+  descriptionId?: string;
   streamId: string;
 
-  constructor(streamId: string, db: DBConfig) {
+
+  constructor(db: DBConfig, streamId: string, descriptionId?: string) {
     this.dbConfig = db;
     this.streamId = streamId;
+    this.descriptionId = descriptionId;
   }
 
-  async init(): Promise<boolean> {
+  async init(base: string, prefix: string): Promise<void> {
     this.db = await this.dbConfig.db();
     this.metaCollection = this.db.collection(this.dbConfig.meta);
     this.indexCollection = this.db.collection(this.dbConfig.index);
     this.dataCollection = this.db.collection(this.dbConfig.data);
-    return true;
+
+    this.root = [base.replace(/^\/|\/$/g, ""), prefix.replace(/^\/|\/$/g, "")].join("/");
   }
 
-  async getMetadata(): Promise<RDF.Quad[]> {
+  getRoot(): string {
+    return this.root;
+  }
+
+  async getMetadata(ldes: string): Promise<RDF.Quad[]> {
+    /*
+ex:BasicFragmentation a tree:ViewDescription ;
+    dcat:endpointURL </basic> ;
+    dcat:servesDataset ex:MyLDES ; # the LDES
+    ldes:managedBy ex:LDESStream.
+     */
+
+    const quads = [];
+    const blankId = this.descriptionId ? namedNode(this.descriptionId) : blankNode();
+    quads.push(
+      quad(blankId, RDFT.terms.type, TREE.terms.custom("ViewDescription")),
+      quad(blankId, DCAT.terms.endpointURL, namedNode(this.getRoot())),
+      quad(blankId, DCAT.terms.servesDataset, namedNode(ldes)),
+    );
+
     const stream = await this.metaCollection.findOne({ "type": SDS.Stream, "id": this.streamId });
-    if (!stream) {
-      throw "No stream found in database :(";
+    if (stream) {
+      quads.push(
+        quad(blankId, LDES.terms.custom("managedBy"), namedNode(this.streamId)),
+      );
+
+      quads.push(...new Parser().parse(stream.value));
     }
 
-    return new Parser().parse(stream.value);
+    return quads;
   }
 
   async getFragment(identifier: string): Promise<Fragment> {

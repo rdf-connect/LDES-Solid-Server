@@ -24,7 +24,7 @@
     "css:config/ldp/metadata-parser/default.json",
     "lss:config/ldp/metadata-writer/default.json",
     "css:config/ldp/modes/default.json",
-    "css:config/storage/backend/data-accessors/memory.json",
+    "css:config/storage/backend/data-accessors/file.json",
     "css:config/storage/key-value/memory.json",
     "css:config/storage/middleware/default.json",
     "css:config/util/auxiliary/acl.json",
@@ -66,13 +66,14 @@
             "@type": "RepresentationConvertingStore",
             "source": {
               "@type": "LDESStore",
-              "id": "http://mine.org/testing",
+              "id": "http://localhost:3000/ldes/",
               "views": [
                 {
                   "@type": "PrefixView",
                   "prefix": "default",
                   "view": {
                     "@type": "MongoView",
+                    "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
                     "streamId": "http://me#csvStream",
                     "db": {
                       "@id": "urn:solid-server:default:DBConfig"
@@ -100,7 +101,7 @@
       ]
     },
     {
-      "@id": "urn:solid-server:default:MemoryResourceStore",
+      "@id": "urn:solid-server:default:FileResourceStore",
       "@type": "DataAccessorBasedStore",
       "identifierStrategy": {
         "@id": "urn:solid-server:default:IdentifierStrategy"
@@ -108,9 +109,7 @@
       "auxiliaryStrategy": {
         "@id": "urn:solid-server:default:AuxiliaryStrategy"
       },
-      "accessor": {
-        "@id": "urn:solid-server:default:MemoryDataAccessor"
-      },
+      "accessor": { "@id": "urn:solid-server:default:FileDataAccessor" },
       "metadataStrategy": {
         "@id": "urn:solid-server:default:MetadataStrategy"
       }

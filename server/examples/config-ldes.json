@@ -67,12 +67,14 @@
             "source": {
               "@type": "LDESStore",
               "id": "http://mine.org/testing",
+              "base": "http://localhost:3000/ldes/",
               "views": [
                 {
                   "@type": "PrefixView",
                   "prefix": "default",
                   "view": {
                     "@type": "MongoView",
+                    "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
                     "streamId": "http://me#csvStream",
                     "db": {
                       "@id": "urn:solid-server:default:DBConfig"
