@@ -1,19 +1,18 @@
-
 import type * as RDF from '@rdfjs/types';
-import { createUriAndTermNamespace, getLoggerFor } from '@solid/community-server';
-import { Member, RelationParameters, RelationType, SDS, RDF as RDFT, TREE, CacheDirectives, LDES } from "@treecg/types";
-import { Collection, Db, Filter, MongoClient } from "mongodb";
-import { DataFactory, Parser } from "n3";
-
-import { Fragment, View } from ".";
-import { Parsed, parseIndex, reconstructIndex } from './utils';
-import {DBConfig} from "./mongoDB/MongoDBConfig";
-import {DataCollectionDocument, IndexCollectionDocument, MetaCollectionDocument} from "./mongoDB/MongoCollectionTypes";
+import {createUriAndTermNamespace, getLoggerFor} from '@solid/community-server';
+import {CacheDirectives, LDES, Member, RDF as RDFT, RelationParameters, RelationType, SDS, TREE} from "@treecg/types";
+import {Collection, Db, Filter} from "mongodb";
+import {DataFactory, Parser} from "n3";
+import {View} from "../ldes/View";
+import {Parsed, parseIndex, reconstructIndex} from '../utils';
+import {DBConfig} from "./MongoDBConfig";
+import {DataCollectionDocument, IndexCollectionDocument, MetaCollectionDocument} from "./MongoCollectionTypes";
+import {Fragment} from "../ldes/Fragment";
 
 const DCAT = createUriAndTermNamespace("http://www.w3.org/ns/dcat#", "endpointURL", "servesDataset");
 const { namedNode, quad, blankNode, literal } = DataFactory;
 
-class MongoFragment implements Fragment {
+class MongoSDSFragment implements Fragment {
   members: string[];
   relations: RelationParameters[];
   collection: Collection<DataCollectionDocument>;
@@ -38,7 +37,7 @@ class MongoFragment implements Fragment {
   }
 }
 
-export class MongoView implements View {
+export class MongoSDSView implements View {
   protected readonly logger = getLoggerFor(this);
 
   dbConfig: DBConfig;
@@ -72,13 +71,6 @@ export class MongoView implements View {
   }
 
   async getMetadata(ldes: string): Promise<RDF.Quad[]> {
-    /*
-ex:BasicFragmentation a tree:ViewDescription ;
-    dcat:endpointURL </basic> ;
-    dcat:servesDataset ex:MyLDES ; # the LDES
-    ldes:managedBy ex:LDESStream.
-     */
-
     const quads = [];
     const blankId = this.descriptionId ? namedNode(this.descriptionId) : blankNode();
     quads.push(
@@ -155,7 +147,7 @@ ex:BasicFragmentation a tree:ViewDescription ;
       relations.push(...rels);
     }
 
-    return new MongoFragment(members, relations, this.dataCollection);
+    return new MongoSDSFragment(members, relations, this.dataCollection);
   }
 }
 

@@ -1,5 +1,5 @@
 // Database connections (implement the LDES interfaces)
-export * from './mongo';
+export * from './mongoDB/MongoSDS';
 export * from './mongoDB/MongoTS';
 export * from './mongoDB/MongoDBConfig';
 export * from './mongoDB/MongoCollectionTypes';

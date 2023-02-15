@@ -72,7 +72,7 @@
                   "@type": "PrefixView",
                   "prefix": "default",
                   "view": {
-                    "@type": "MongoView",
+                    "@type": "MongoSDSView",
                     "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
                     "streamId": "http://me#csvStream",
                     "db": {
@@ -84,7 +84,7 @@
                   "@type": "PrefixView",
                   "prefix": "mine",
                   "view": {
-                    "@type": "MongoView",
+                    "@type": "MongoSDSView",
                     "streamId": "http://mine.org/rdfstream",
                     "db": {
                       "@id": "urn:solid-server:default:DBConfig"
@@ -121,7 +121,7 @@
       "indexCollection": "index",
       "membersCollection": "data",
       "dbUrl": "mongodb://localhost:27017/ldes2"
-    } 
+    }
   ]
 }
 

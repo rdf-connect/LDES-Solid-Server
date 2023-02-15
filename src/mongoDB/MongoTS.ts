@@ -1,7 +1,7 @@
 import type * as RDF from '@rdfjs/types';
 import { createUriAndTermNamespace, getLoggerFor } from '@solid/community-server';
 import { Member, RelationParameters, RelationType, SDS, RDF as RDFT, TREE, CacheDirectives, LDES } from "@treecg/types";
-import { Collection, Db, Filter, MongoClient } from "mongodb";
+import { Collection, Db, Filter } from "mongodb";
 import { DataFactory, Parser } from "n3";
 
 import { View } from "../ldes/View";
@@ -73,13 +73,6 @@ export class MongoTSView implements View {
     }
 
     async getMetadata(ldes: string): Promise<RDF.Quad[]> {
-        /*
-    ex:BasicFragmentation a tree:ViewDescription ;
-        dcat:endpointURL </basic> ;
-        dcat:servesDataset ex:MyLDES ; # the LDES
-        ldes:managedBy ex:LDESStream.
-         */
-
         const quads = [];
         const blankId = this.descriptionId ? namedNode(this.descriptionId) : blankNode();
         quads.push(

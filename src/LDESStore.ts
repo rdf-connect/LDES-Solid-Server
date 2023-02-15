@@ -1,7 +1,17 @@
 import {
-    BasicRepresentation, ChangeMap,
-    Conditions, CONTENT_TYPE, createUriAndTermNamespace,
-    getLoggerFor, guardedStreamFrom, INTERNAL_QUADS, MetadataRecord, Patch, Representation, RepresentationMetadata,
+    BasicRepresentation,
+    ChangeMap,
+    Conditions,
+    CONTENT_TYPE,
+    createUriAndTermNamespace,
+    getLoggerFor,
+    guardedStreamFrom,
+    INTERNAL_QUADS,
+    MetadataRecord,
+    NotFoundHttpError,
+    Patch,
+    Representation,
+    RepresentationMetadata,
     RepresentationPreferences,
     ResourceIdentifier,
     ResourceStore
@@ -71,7 +81,7 @@ export class LDESStore implements ResourceStore {
         const view = this.views.find((pv) => identifier.path.indexOf(pv.prefix) >= 0);
         if (!view) {
             this.logger.info("No LDES view found for identifier " + identifier.path);
-            throw "No LDES found!"
+            throw new NotFoundHttpError("No LDES found!");
         }
 
         let idStart = identifier.path.indexOf(view.prefix) + view.prefix.length;
