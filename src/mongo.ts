@@ -7,55 +7,11 @@ import { DataFactory, Parser } from "n3";
 
 import { Fragment, View } from ".";
 import { Parsed, parseIndex, reconstructIndex } from './utils';
+import {DBConfig} from "./mongoDB/MongoDBConfig";
+import {DataCollectionDocument, IndexCollectionDocument, MetaCollectionDocument} from "./mongoDB/MongoCollectionTypes";
 
 const DCAT = createUriAndTermNamespace("http://www.w3.org/ns/dcat#", "endpointURL", "servesDataset");
 const { namedNode, quad, blankNode, literal } = DataFactory;
-
-type DataCollectionDocument = {
-  id: string,
-  data: string,
-  timestamp?: string,
-};
-
-type MetaCollectionDocument = {
-  id: string, value: string, type: string
-};
-
-type IndexCollectionDocument = {
-  id?: string,
-  streamId: string,
-  leaf: boolean,
-  value?: string,
-  relations: { type: RelationType, value: string, bucket: string, path: string }[],
-  members?: string[],
-  count: number,
-  timeStamp?: string
-};
-
-export class DBConfig {
-  readonly url: string;
-  readonly meta: string;
-  readonly data: string;
-  readonly index: string;
-
-  _client: MongoClient;
-  _clientInit: any;
-
-  constructor(metaCollection: string, membersCollection: string, indexCollection: string, dbUrl?: string) {
-    this.meta = metaCollection;
-    this.data = membersCollection;
-    this.index = indexCollection;
-
-    this.url = dbUrl || "mongodb://localhost:27017/ldes";
-    this._client = new MongoClient(this.url);
-    this._clientInit = this._client.connect();
-  }
-
-  async db(): Promise<Db> {
-    await this._clientInit;
-    return this._client.db();
-  }
-}
 
 class MongoFragment implements Fragment {
   members: string[];
