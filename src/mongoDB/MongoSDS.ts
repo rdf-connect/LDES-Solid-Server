@@ -4,7 +4,7 @@ import {CacheDirectives, LDES, Member, RDF as RDFT, RelationParameters, Relation
 import {Collection, Db, Filter} from "mongodb";
 import {DataFactory, Parser} from "n3";
 import {View} from "../ldes/View";
-import {Parsed, parseIndex, reconstructIndex} from '../utils';
+import {Parsed, parseIndex, reconstructIndex} from '../util/utils';
 import {DBConfig} from "./MongoDBConfig";
 import {DataCollectionDocument, IndexCollectionDocument, MetaCollectionDocument} from "./MongoCollectionTypes";
 import {Fragment} from "../ldes/Fragment";

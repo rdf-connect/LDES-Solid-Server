@@ -19,15 +19,12 @@ import {
 import * as RDF from "@rdfjs/types";
 import {CacheDirectives, Member, RelationParameters, TREE} from "@treecg/types";
 import {RDF as RDFT} from "@treecg/types/dist/lib/Vocabularies";
-import {cacheToLiteral} from "./utils";
+import {cacheToLiteral} from "./util/utils";
 import {DataFactory, Quad_Object} from "n3";
 import {PrefixView} from "./PrefixView";
+import {HTTP} from "./util/Vocabulary";
 
 const { namedNode, quad, blankNode, literal } = DataFactory;
-
-export const HTTP = createUriAndTermNamespace('urn:npm:solid:community-server:http:',
-    'cache_control',
-);
 
 /**
  * ResourceStore which uses {@link PrefixView} for backend access.
