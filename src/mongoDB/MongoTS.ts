@@ -1,22 +1,16 @@
 import type * as Rdf from '@rdfjs/types';
-import {
-    createUriAndTermNamespace,
-    ensureTrailingSlash,
-    getLoggerFor,
-    trimTrailingSlashes,
-} from '@solid/community-server';
-import {Member, RelationParameters, RelationType, SDS, RDF, TREE, CacheDirectives, LDES} from "@treecg/types";
+import {ensureTrailingSlash, getLoggerFor, trimTrailingSlashes,} from '@solid/community-server';
+import {CacheDirectives, LDES, Member, RDF, RelationParameters, RelationType, TREE} from "@treecg/types";
 import {Collection, Db, Filter} from "mongodb";
-import {DataFactory, Parser, Store, Writer} from "n3";
+import {DataFactory, Parser, Store} from "n3";
 
 import {View} from "../ldes/View";
 import {Fragment} from "../ldes/Fragment";
 import {DBConfig} from "./MongoDBConfig";
 import {DataCollectionDocument, IndexCollectionDocument, MetaCollectionDocument} from "./MongoCollectionTypes";
-import {ViewDescriptionParser} from "../ldes/ViewDescriptionParser";
+import {MongoTSViewDescription} from "../ldes/viewDescription/MongoTSViewDescription";
 
-const DCAT = createUriAndTermNamespace("http://www.w3.org/ns/dcat#", "endpointURL", "servesDataset");
-const {namedNode, quad, blankNode, literal} = DataFactory;
+const {namedNode, quad, literal} = DataFactory;
 
 class MongoTSFragment implements Fragment {
     members: string[];
@@ -56,11 +50,11 @@ export class MongoTSView implements View {
     dataCollection!: Collection<DataCollectionDocument>;
     root!: string;
 
-    descriptionId?: string;
+    descriptionId: string;
     streamId: string;
 
 
-    constructor(db: DBConfig, streamId: string, descriptionId?: string) {
+    constructor(db: DBConfig, streamId: string, descriptionId: string) {
         this.dbConfig = db;
         this.streamId = streamId;
         this.descriptionId = descriptionId;
@@ -85,23 +79,16 @@ export class MongoTSView implements View {
 
     async getMetadata(ldes: string): Promise<Rdf.Quad[]> {
         const quads = []
-        const parser = new ViewDescriptionParser(this.getRoot(), ldes);
-        const meta = await this.metaCollection.findOne({"type": TREE.custom("ViewDescription"), "id": this.streamId});
+        const query = {"type": LDES.EventStream, "id": this.streamId}
+        const meta = await this.metaCollection.findOne(query);
         if (meta) {
             const metaStore = new Store(new Parser().parse(meta.value))
-            // Note: in the config, there is also the value descriptionId that might be used later for the viewdescription.
-            const viewDescriptionNode = metaStore.getSubjects(RDF.type, TREE.custom("ViewDescription"), null);
-
-            if (viewDescriptionNode.length === 1) {
-                const viewDescription = parser.parseViewDescription(metaStore, viewDescriptionNode[0].value);
-                quads.push(...viewDescription.quads());
-            } else {
-                console.log(`No ViewDescription found for`, this.streamId)
-                console.log(`tried following search query: `, {"type": TREE.custom("ViewDescription"), "id": this.streamId})
-            }
+            const mongoTSVD = new MongoTSViewDescription(this.descriptionId);
+            const viewDescription = mongoTSVD.parseViewDescription(metaStore)
+            quads.push(...viewDescription.quads());
         } else {
-            console.log(`No ViewDescription found for`, this.streamId)
-            console.log(`tried following search query: `, {"type": TREE.custom("ViewDescription"), "id": this.streamId})
+            console.log(`No ViewDescription found for`, this.descriptionId)
+            console.log(`tried following search query: `, query)
         }
 
         quads.push(quad(namedNode(ldes), RDF.terms.type, LDES.terms.EventStream));
@@ -110,8 +97,8 @@ export class MongoTSView implements View {
     }
 
     async getFragment(identifier: string): Promise<Fragment> {
-        this.logger.info(`Looking for fragment with id "${identifier}" in the Mongo Database. (streamID: "${this.streamId}"`);
-        console.log(`Looking for fragment with id "${identifier}" in the Mongo Database. (streamID: "${this.streamId}"`)
+        this.logger.info(`Looking for fragment with id "${identifier}" in the Mongo Database. (streamID: "${this.streamId}")`);
+        console.log(`Looking for fragment with id "${identifier}" in the Mongo Database. (streamID: "${this.streamId}")`)
         const members = [] as string[];
         const relations = <RelationParameters[]>[];
         const search: Filter<IndexCollectionDocument> = {streamId: this.streamId, id: identifier, leaf: true};
@@ -130,7 +117,6 @@ export class MongoTSView implements View {
 
             relations.push(...rels);
         }
-
         return new MongoTSFragment(members, relations, this.dataCollection);
     }
 }

@@ -2,7 +2,7 @@ import {DataFactory, Store} from "n3";
 import namedNode = DataFactory.namedNode;
 import {LDES, TREE} from "@treecg/types";
 import {RDF} from "@solid/community-server";
-import {DCAT} from "../util/Vocabulary";
+import {DCAT} from "../../util/Vocabulary";
 import literal = DataFactory.literal;
 import type * as Rdf from '@rdfjs/types';
 
@@ -138,7 +138,7 @@ export class IngestorClient implements IIngestorClient {
     getStore(): Store {
         const store = new Store()
         store.addQuad(namedNode(this.id), RDF.terms.type, namedNode(this.type))
-        store.addQuad(namedNode(this.id), LDES.terms.BucketizeStrategy, namedNode(this.bucketizeStrategy.id))
+        store.addQuad(namedNode(this.id), LDES.terms.custom("bucketizeStrategy"), namedNode(this.bucketizeStrategy.id))
 
         store.addQuads(this.bucketizeStrategy.getStore().getQuads(null, null, null, null))
         return store;
