@@ -3,7 +3,7 @@ import {
     ChangeMap,
     Conditions,
     CONTENT_TYPE,
-    createUriAndTermNamespace,
+    ensureTrailingSlash,
     getLoggerFor,
     guardedStreamFrom,
     INTERNAL_QUADS,
@@ -14,7 +14,8 @@ import {
     RepresentationMetadata,
     RepresentationPreferences,
     ResourceIdentifier,
-    ResourceStore
+    ResourceStore,
+    trimLeadingSlashes
 } from "@solid/community-server";
 import * as RDF from "@rdfjs/types";
 import {CacheDirectives, Member, RelationParameters, TREE} from "@treecg/types";
@@ -45,18 +46,21 @@ export class LDESStore implements ResourceStore {
     initPromise: any;
 
     /**
-     * @param id - The URI of the published LDES
-     * @param views - The mounted views that expose this LDES
-     * @param base - The base URI for this LDES store (defaults to the id)
+     * @param id - The URI of the published LDES.
+     * @param views - The mounted views that expose this LDES.
+     * @param base - The base URI for the Solid Server.
+     * @param relativePath - The relative path to the LDES.
      */
-    constructor(id: string, views: PrefixView[], base?: string) {
+    constructor(id: string, views: PrefixView[], base: string, relativePath: string) {
         this.id = id;
-        this.base = base || id;
+        this.base = ensureTrailingSlash(base + trimLeadingSlashes(relativePath));
         this.views = views;
 
         this.initPromise = Promise.all(views.map(async view =>
             view.view.init(this.base, view.prefix)
         ));
+        this.logger.info(`The LDES descriptions can be found at ${this.base}`);
+        console.log(`The LDES descriptions can be found at ${this.base}`);
         this.logger.info(`Mounting ${this.views.length} LDES views ${this.views.map(x => x.prefix).join(", ")}`);
         console.log(`Mounting ${this.views.length} LDES views ${this.views.map(x => x.prefix).join(", ")}`);
     }
@@ -65,7 +69,7 @@ export class LDESStore implements ResourceStore {
         this.logger.info("Get representation");
         await this.initPromise;
 
-        if (identifier.path === this.base) {
+        if (ensureTrailingSlash(identifier.path) === this.base) {
             // We got a base request, let's announce all mounted view
             const quads = await this.getViewDescriptions();
 

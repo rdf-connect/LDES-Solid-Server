@@ -60,14 +60,15 @@
         },
         {
           "@type": "RegexRule",
-          "regex": "/ldes/",
+          "regex": { "@id": "urn:solid-server:default:relative-path" },
           "store": {
             "comment": "A more complex example with 3 different stores being routed to.",
             "@type": "RepresentationConvertingStore",
             "source": {
               "@type": "LDESStore",
               "id": "http://mine.org/testing",
-              "base": "http://localhost:3000/ldes/",
+              "base": { "@id": "urn:solid-server:default:variable:baseUrl" },
+              "relativePath":  { "@id": "urn:solid-server:default:relative-path" },
               "views": [
                 {
                   "@type": "PrefixView",
@@ -154,6 +155,10 @@
       "indexCollection": "index",
       "membersCollection": "data",
       "dbUrl": "mongodb://localhost:27017/ldes2"
+    },
+    {
+      "@id": "urn:solid-server:default:relative-path",
+      "valueRaw": "/ldes/"
     }
   ]
 }
