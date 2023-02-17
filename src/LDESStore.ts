@@ -25,7 +25,7 @@ import {DataFactory, Quad_Object} from "n3";
 import {PrefixView} from "./PrefixView";
 import {HTTP} from "./util/Vocabulary";
 
-const { namedNode, quad, blankNode, literal } = DataFactory;
+const {namedNode, quad, blankNode, literal} = DataFactory;
 
 /**
  * ResourceStore which uses {@link PrefixView} for backend access.
@@ -75,7 +75,7 @@ export class LDESStore implements ResourceStore {
 
             return new BasicRepresentation(
                 guardedStreamFrom(quads),
-                new RepresentationMetadata(this.getMetadata({ pub: true, immutable: true }))
+                new RepresentationMetadata(this.getMetadata({pub: true, immutable: true}))
             );
         }
 
@@ -139,10 +139,10 @@ export class LDESStore implements ResourceStore {
     }
 
     private getMetadata(cache?: CacheDirectives): MetadataRecord {
-        if (!cache) return { [CONTENT_TYPE]: INTERNAL_QUADS };
+        if (!cache) return {[CONTENT_TYPE]: INTERNAL_QUADS};
 
         const cacheLit = cacheToLiteral(cache);
-        return { [HTTP.cache_control]: literal(cacheLit), [CONTENT_TYPE]: INTERNAL_QUADS };
+        return {[HTTP.cache_control]: literal(cacheLit), [CONTENT_TYPE]: INTERNAL_QUADS};
     }
 
     private addRelations(quads: Array<RDF.Quad>, identifier: string, baseIdentifier: string, relation: RelationParameters) {

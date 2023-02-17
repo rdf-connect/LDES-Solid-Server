@@ -4,6 +4,7 @@ import {LDES, TREE} from "@treecg/types";
 import {RDF} from "@solid/community-server";
 import {DCAT} from "../util/Vocabulary";
 import literal = DataFactory.literal;
+import type * as Rdf from '@rdfjs/types';
 
 export interface N3Support {
     getStore: () => Store;
@@ -30,6 +31,8 @@ export interface IViewDescription extends N3Support {
      * `dcat:serversDataset` (see DCAT 3 §6.9.1)
      */
     endpointURL: string
+
+    quads: () => Rdf.Quad[];
 }
 
 /**
@@ -102,7 +105,9 @@ export class ViewDescription implements IViewDescription {
         return store
     }
 
-
+    quads(): Rdf.Quad[] {
+        return this.getStore().getQuads(null,null,null,null);
+    }
 }
 
 export class IngestorClient implements IIngestorClient {

@@ -14,11 +14,19 @@ export interface View {
      * @returns - Promise that results to the optional root of this view
      */
     init(base: string, prefix: string): Promise<void>;
+
+    /**
+     * Returns the view URI, the root Node of the LDES.
+     */
     getRoot(): string | undefined;
+
     /**
      * Function requesting the metadata of this view, this metadata should contain all required information for query agents.
+     *
+     * @param ldes - The URI of the LDES.
      */
     getMetadata(ldes: string): Promise<RDF.Quad[]>;
+
     /**
      * Function requesting a single {@link Fragment}.
      *

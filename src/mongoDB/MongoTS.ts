@@ -1,21 +1,28 @@
-import type * as RDF from '@rdfjs/types';
-import {createUriAndTermNamespace, getLoggerFor, WinstonLogger} from '@solid/community-server';
-import { Member, RelationParameters, RelationType, SDS, RDF as RDFT, TREE, CacheDirectives, LDES } from "@treecg/types";
-import { Collection, Db, Filter } from "mongodb";
-import { DataFactory, Parser } from "n3";
+import type * as Rdf from '@rdfjs/types';
+import {
+    createUriAndTermNamespace,
+    ensureTrailingSlash,
+    getLoggerFor,
+    trimTrailingSlashes,
+} from '@solid/community-server';
+import {Member, RelationParameters, RelationType, SDS, RDF, TREE, CacheDirectives, LDES} from "@treecg/types";
+import {Collection, Db, Filter} from "mongodb";
+import {DataFactory, Parser, Store, Writer} from "n3";
 
-import { View } from "../ldes/View";
+import {View} from "../ldes/View";
 import {Fragment} from "../ldes/Fragment";
 import {DBConfig} from "./MongoDBConfig";
 import {DataCollectionDocument, IndexCollectionDocument, MetaCollectionDocument} from "./MongoCollectionTypes";
+import {ViewDescriptionParser} from "../ldes/ViewDescriptionParser";
 
 const DCAT = createUriAndTermNamespace("http://www.w3.org/ns/dcat#", "endpointURL", "servesDataset");
-const { namedNode, quad, blankNode, literal } = DataFactory;
+const {namedNode, quad, blankNode, literal} = DataFactory;
 
 class MongoTSFragment implements Fragment {
     members: string[];
     relations: RelationParameters[];
     collection: Collection<DataCollectionDocument>;
+
     constructor(members: string[], relations: RelationParameters[], collection: Collection<DataCollectionDocument>) {
         this.collection = collection;
         this.members = members;
@@ -23,8 +30,10 @@ class MongoTSFragment implements Fragment {
     }
 
     async getMembers(): Promise<Member[]> {
-        return await this.collection.find({ id: { $in: this.members } })
-            .map(row => { return <Member>{ id: namedNode(row.id), quads: new Parser().parse(row.data) } })
+        return await this.collection.find({id: {$in: this.members}})
+            .map(row => {
+                return <Member>{id: namedNode(row.id), quads: new Parser().parse(row.data)}
+            })
             .toArray();
     }
 
@@ -33,7 +42,7 @@ class MongoTSFragment implements Fragment {
     }
 
     async getCacheDirectives(): Promise<CacheDirectives> {
-        return { pub: true };
+        return {pub: true};
     }
 }
 
@@ -63,30 +72,40 @@ export class MongoTSView implements View {
         this.indexCollection = this.db.collection(this.dbConfig.index);
         this.dataCollection = this.db.collection(this.dbConfig.data);
 
-        this.root = [base.replace(/^\/|\/$/g, ""), prefix.replace(/^\/|\/$/g, ""),""].join("/");
+        this.root = base + ensureTrailingSlash(trimTrailingSlashes(prefix));
     }
 
+    /**
+     * The URL of the view of the LDES.
+     * @returns {string}
+     */
     getRoot(): string {
         return this.root;
     }
 
-    async getMetadata(ldes: string): Promise<RDF.Quad[]> {
-        const quads = [];
-        const blankId = this.descriptionId ? namedNode(this.descriptionId) : blankNode();
-        quads.push(
-            quad(blankId, RDFT.terms.type, TREE.terms.custom("ViewDescription")),
-            quad(blankId, DCAT.terms.endpointURL, namedNode(this.getRoot())),
-            quad(blankId, DCAT.terms.servesDataset, namedNode(ldes)),
-        );
+    async getMetadata(ldes: string): Promise<Rdf.Quad[]> {
+        const quads = []
+        const parser = new ViewDescriptionParser(this.getRoot(), ldes);
+        const meta = await this.metaCollection.findOne({"type": TREE.custom("ViewDescription"), "id": this.streamId});
+        if (meta) {
+            const metaStore = new Store(new Parser().parse(meta.value))
+            // Note: in the config, there is also the value descriptionId that might be used later for the viewdescription.
+            const viewDescriptionNode = metaStore.getSubjects(RDF.type, TREE.custom("ViewDescription"), null);
 
-        const stream = await this.metaCollection.findOne({ "type": SDS.Stream, "id": this.streamId });
-        if (stream) {
-            quads.push(
-                quad(blankId, LDES.terms.custom("managedBy"), namedNode(this.streamId)),
-            );
-            quads.push(...new Parser().parse(stream.value));
+            if (viewDescriptionNode.length === 1) {
+                const viewDescription = parser.parseViewDescription(metaStore, viewDescriptionNode[0].value);
+                quads.push(...viewDescription.quads());
+            } else {
+                console.log(`No ViewDescription found for`, this.streamId)
+                console.log(`tried following search query: `, {"type": TREE.custom("ViewDescription"), "id": this.streamId})
+            }
+        } else {
+            console.log(`No ViewDescription found for`, this.streamId)
+            console.log(`tried following search query: `, {"type": TREE.custom("ViewDescription"), "id": this.streamId})
         }
 
+        quads.push(quad(namedNode(ldes), RDF.terms.type, LDES.terms.EventStream));
+        quads.push(quad(namedNode(this.getRoot()), RDF.terms.type, TREE.terms.custom("Node"))); // TODO: verify if this makes sense
         return quads;
     }
 
@@ -95,18 +114,18 @@ export class MongoTSView implements View {
         console.log(`Looking for fragment with id "${identifier}" in the Mongo Database. (streamID: "${this.streamId}"`)
         const members = [] as string[];
         const relations = <RelationParameters[]>[];
-        const search: Filter<IndexCollectionDocument> = { streamId: this.streamId, id: identifier, leaf: true };
+        const search: Filter<IndexCollectionDocument> = {streamId: this.streamId, id: identifier, leaf: true};
 
-        const dbFragment = await this.indexCollection.find(search).sort({ "timeStamp": -1 }).limit(1).next();
+        const dbFragment = await this.indexCollection.find(search).sort({"timeStamp": -1}).limit(1).next();
         if (!dbFragment) {
             this.logger.error("No such bucket found! " + JSON.stringify(search));
             console.log("No such bucket found! " + JSON.stringify(search));
         } else {
             members.push(...dbFragment.members || []);
 
-            const rels: RelationParameters[] = dbFragment!.relations.map(({ type, value, bucket, path }) => {
-                const values: RDF.Term[] = [literal(value)];
-                return { type: <RelationType>type, value: values, nodeId: bucket, path: namedNode(path) };
+            const rels: RelationParameters[] = dbFragment!.relations.map(({type, value, bucket, path}) => {
+                const values: Rdf.Term[] = [literal(value)];
+                return {type: <RelationType>type, value: values, nodeId: bucket, path: namedNode(path)};
             });
 
             relations.push(...rels);

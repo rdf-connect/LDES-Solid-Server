@@ -72,26 +72,3 @@ export class ViewDescriptionParser {
         return new BucketizeStrategy(bucketizeStrategyNode.value, bucketType, path, pageSize)
     }
 }
-
-const vd = `@prefix example: <http://www.example.org/ldes#>.
-@prefix ldes: <https://w3id.org/ldes#>.
-@prefix tree: <https://w3id.org/tree#>.
-@prefix dcat: <http://www.w3.org/ns/dcat#>.
-@prefix sosa: <http://www.w3.org/ns/sosa/>.
-example:viewDescription a tree:viewDescription;
-#\tdcat:endpointURL -> the view of the LDES, decided by the server
-# \tdcat:servesDataset -> the ldes eventstream, decided by the server
-\tldes:managedBy example:memberIngestor .# the entity responsible to maintain the structure of the above mentioned
-
-example:memberIngestor a example:mongoDBTSIngestor; # TODO: properly
-    ldes:bucketizeStrategy example:BucketizeStrategy.
-
-example:BucketizeStrategy a ldes:BucketizeStrategy;
-    ldes:bucketType ldes:timestampFragmentation;
-    tree:path sosa:resultTime; 
-    ldes:pageSize 100.`
-
-const parser = new ViewDescriptionParser("http://example.org/view","http://example.org/ldes#eventsream")
-
-const viewDescription = parser.parseViewDescription(new Store(new Parser().parse(vd)),"http://www.example.org/ldes#viewDescription")
-console.log(new Writer().quadsToString(viewDescription.getStore().getQuads(null,null,null,null)))
