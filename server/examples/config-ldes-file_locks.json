@@ -60,19 +60,21 @@
         },
         {
           "@type": "RegexRule",
-          "regex": "/ldes/",
+          "regex": { "@id": "urn:solid-server:default:relative-path" },
           "store": {
             "comment": "A more complex example with 3 different stores being routed to.",
             "@type": "RepresentationConvertingStore",
             "source": {
               "@type": "LDESStore",
               "id": "http://localhost:3000/ldes/",
+              "base": { "@id": "urn:solid-server:default:variable:baseUrl" },
+              "relativePath":  { "@id": "urn:solid-server:default:relative-path" },
               "views": [
                 {
                   "@type": "PrefixView",
                   "prefix": "default",
                   "view": {
-                    "@type": "MongoView",
+                    "@type": "MongoSDSView",
                     "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
                     "streamId": "http://me#csvStream",
                     "db": {
@@ -84,7 +86,7 @@
                   "@type": "PrefixView",
                   "prefix": "mine",
                   "view": {
-                    "@type": "MongoView",
+                    "@type": "MongoSDSView",
                     "streamId": "http://mine.org/rdfstream",
                     "db": {
                       "@id": "urn:solid-server:default:DBConfig"
@@ -121,7 +123,11 @@
       "indexCollection": "index",
       "membersCollection": "data",
       "dbUrl": "mongodb://localhost:27017/ldes2"
-    } 
+    },
+    {
+      "@id": "urn:solid-server:default:relative-path",
+      "valueRaw": "/ldes/"
+    }
   ]
 }
 

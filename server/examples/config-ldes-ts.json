@@ -72,11 +72,11 @@
               "views": [
                 {
                   "@type": "PrefixView",
-                  "prefix": "default",
+                  "prefix": "example",
                   "view": {
-                    "@type": "MongoSDSView",
-                    "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
-                    "streamId": "http://me#csvStream",
+                    "@type": "MongoTSView",
+                    "streamId": "http://example.org/myStream#eventStream",
+                    "descriptionId": "http://example.org/myStream#viewDescription",
                     "db": {
                       "@id": "urn:solid-server:default:DBConfig"
                     }
@@ -84,10 +84,11 @@
                 },
                 {
                   "@type": "PrefixView",
-                  "prefix": "mine",
+                  "prefix": "ais",
                   "view": {
-                    "@type": "MongoSDSView",
-                    "streamId": "http://mine.org/rdfstream",
+                    "@type": "MongoTSView",
+                    "streamId": "http://example.org/aisStream#eventStream",
+                    "descriptionId": "http://example.org/aisStream#description",
                     "db": {
                       "@id": "urn:solid-server:default:DBConfig"
                     }
@@ -124,7 +125,7 @@
       "metaCollection": "meta",
       "indexCollection": "index",
       "membersCollection": "data",
-      "dbUrl": "mongodb://localhost:27017/ldes2"
+      "dbUrl": "mongodb://localhost:27017/ldes"
     },
     {
       "@id": "urn:solid-server:default:relative-path",
