@@ -75,8 +75,8 @@
                   "prefix": "example",
                   "view": {
                     "@type": "MongoTSView",
-                    "streamId": "http://www.example.org/ldes#EventStream",
-                    "descriptionId": "http://www.example.org/ldes#viewDescription",
+                    "streamId": "http://example.org/myStream#eventStream",
+                    "descriptionId": "http://example.org/myStream#viewDescription",
                     "db": {
                       "@id": "urn:solid-server:default:DBConfig"
                     }
@@ -87,8 +87,8 @@
                   "prefix": "ais",
                   "view": {
                     "@type": "MongoTSView",
-                    "streamId": "http://example.org/sds#AIS",
-                    "descriptionId": "None yet",
+                    "streamId": "http://example.org/aisStream#eventStream",
+                    "descriptionId": "http://example.org/aisStream#description",
                     "db": {
                       "@id": "urn:solid-server:default:DBConfig"
                     }

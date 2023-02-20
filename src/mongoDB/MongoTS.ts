@@ -83,7 +83,7 @@ export class MongoTSView implements View {
         const meta = await this.metaCollection.findOne(query);
         if (meta) {
             const metaStore = new Store(new Parser().parse(meta.value))
-            const mongoTSVD = new MongoTSViewDescription(this.descriptionId);
+            const mongoTSVD = new MongoTSViewDescription(this.descriptionId, ldes, this.root);
             const viewDescription = mongoTSVD.parseViewDescription(metaStore)
             quads.push(...viewDescription.quads());
         } else {

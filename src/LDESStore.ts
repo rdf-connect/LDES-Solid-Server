@@ -97,6 +97,7 @@ export class LDESStore implements ResourceStore {
         const quads: Array<RDF.Quad> = [];
 
         if (view.view.getRoot() === identifier.path) {
+            quads.push(...await view.view.getMetadata(this.id));
             quads.push(quad(
                 namedNode(this.id),
                 TREE.terms.view,
@@ -108,6 +109,7 @@ export class LDESStore implements ResourceStore {
             RDFT.terms.type,
             TREE.terms.custom("Node")
         ));
+
         const relations = await fragment.getRelations();
         const members = await fragment.getMembers();
 
@@ -134,7 +136,6 @@ export class LDESStore implements ResourceStore {
                 ));
             }
         }
-
         return quads;
     }
 

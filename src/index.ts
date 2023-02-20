@@ -8,6 +8,10 @@ export * from './mongoDB/MongoCollectionTypes';
 export * from './ldes/View';
 export * from './ldes/Fragment';
 
+// View Description
+export * from './ldes/viewDescription/MongoTSViewDescription'
+export * from './ldes/viewDescription/ViewDescription'
+export * from './ldes/viewDescription/ViewDescriptionParser'
 // LDES store
 export * from './LDESStore';
 
