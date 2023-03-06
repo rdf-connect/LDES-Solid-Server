@@ -1,5 +1,8 @@
 # ldes-solid-server
 
+[![npm](https://img.shields.io/npm/v/ldes-solid-server)](https://www.npmjs.com/package/ldes-solid-server)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7702103.svg)](https://doi.org/10.5281/zenodo.7702103)
+
 Linked data event stream components to configure a community solid server that exposes a LDES.
 Currently, only a MongoDB backend is supported.
 
