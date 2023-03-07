@@ -15,7 +15,7 @@ export type IndexCollectionDocument = {
     streamId: string,
     leaf: boolean,
     value?: string,
-    relations: { type: RelationType, value: string, bucket: string, path: string }[],
+    relations: { type: RelationType, value: string, bucket: string, path: string, timestampRelation?: boolean }[],
     members?: string[],
     count: number,
     timeStamp?: string

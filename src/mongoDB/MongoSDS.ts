@@ -1,13 +1,13 @@
 import type * as RDF from '@rdfjs/types';
-import {createUriAndTermNamespace, getLoggerFor} from '@solid/community-server';
-import {CacheDirectives, LDES, Member, RDF as RDFT, RelationParameters, RelationType, SDS, TREE} from "@treecg/types";
-import {Collection, Db, Filter} from "mongodb";
-import {DataFactory, Parser} from "n3";
-import {View} from "../ldes/View";
-import {Parsed, parseIndex, reconstructIndex} from '../util/utils';
-import {DBConfig} from "./MongoDBConfig";
-import {DataCollectionDocument, IndexCollectionDocument, MetaCollectionDocument} from "./MongoCollectionTypes";
-import {Fragment} from "../ldes/Fragment";
+import { createUriAndTermNamespace, getLoggerFor } from '@solid/community-server';
+import { CacheDirectives, LDES, Member, RDF as RDFT, RelationParameters, RelationType, SDS, TREE } from "@treecg/types";
+import { Collection, Db, Filter } from "mongodb";
+import { DataFactory, Parser } from "n3";
+import { View } from "../ldes/View";
+import { Parsed, parseIndex, reconstructIndex } from '../util/utils';
+import { DBConfig } from "./MongoDBConfig";
+import { DataCollectionDocument, IndexCollectionDocument, MetaCollectionDocument } from "./MongoCollectionTypes";
+import { Fragment } from "../ldes/Fragment";
 
 const DCAT = createUriAndTermNamespace("http://www.w3.org/ns/dcat#", "endpointURL", "servesDataset");
 const { namedNode, quad, blankNode, literal } = DataFactory;
@@ -63,7 +63,12 @@ export class MongoSDSView implements View {
     this.indexCollection = this.db.collection(this.dbConfig.index);
     this.dataCollection = this.db.collection(this.dbConfig.data);
 
-    this.root = [base.replace(/^\/|\/$/g, ""), prefix.replace(/^\/|\/$/g, "")].join("/");
+    const root = await this.indexCollection.findOne({ root: true, streamId: this.streamId });
+    if (root) {
+      this.root = [base.replace(/^\/|\/$/g, ""), prefix.replace(/^\/|\/$/g, ""), root.id].join("/");
+    } else {
+      this.root = [base.replace(/^\/|\/$/g, ""), prefix.replace(/^\/|\/$/g, "")].join("/");
+    }
   }
 
   getRoot(): string {
@@ -105,46 +110,57 @@ export class MongoSDSView implements View {
     const relations = <RelationParameters[]>[];
 
     // Look for members and relations in path to leaf
-    for (let i = 0; i < indices.length; i++) {
-      const id = indices[i].join("/");
-
-      const fragment = await this.indexCollection.findOne({ streamId: this.streamId, id, leaf: false });
-      if (!fragment) continue;
-
-      const rels: RelationParameters[] = fragment!.relations.map(({ type, value, bucket, path }) => {
-        const values: RDF.Term[] = [literal(value)];
-
-        const index: Parsed = { segs: segs.slice(), query: {} };
-        index.segs[i] = bucket;
-
-        return { type: <RelationType>type, value: values, nodeId: reconstructIndex(index), path: namedNode(path) };
-      });
-
-      relations.push(...rels);
-      members.push(...fragment.members || []);
-    }
+    // for (let i = 0; i < indices.length; i++) {
+    //   const id = indices[i].join("/");
+    //
+    //   console.log("Finding fragment for ", { streamId: this.streamId, id });
+    //   const fragment = await this.indexCollection.findOne({ streamId: this.streamId, id });
+    //
+    //   if (!fragment) {
+    //     console.log("No fragment found");
+    //     continue;
+    //   }
+    //
+    //   fragment.relations = fragment.relations || [];
+    //   const rels: RelationParameters[] = fragment!.relations.map(({ type, value, bucket, path }) => {
+    //     const values: RDF.Term[] = [literal(value)];
+    //
+    //     const index: Parsed = { segs: segs.slice(), query: {} };
+    //     index.segs[i] = bucket;
+    //
+    //     return { type: <RelationType>type, value: values, nodeId: reconstructIndex(index), path: namedNode(path) };
+    //   });
+    //
+    //   relations.push(...rels);
+    //   members.push(...fragment.members || []);
+    // }
 
     const id = segs.join("/");
-    const search: Filter<IndexCollectionDocument> = { streamId: this.streamId, id, leaf: true };
+    console.log("Finding fragment for ", { streamId: this.streamId, id });
+    const search: Filter<IndexCollectionDocument> = { streamId: this.streamId, id };
 
-    if (timestampValue)
+    if (timestampValue) {
       search.timeStamp = { "$lte": timestampValue };
+    }
 
-    const actualTimestampBucket = await this.indexCollection.find(search).sort({ "timeStamp": -1 }).limit(1).next();
-    if (!actualTimestampBucket) {
+    const fragment = await this.indexCollection.find(search).sort({ "timeStamp": -1 }).limit(1).next();
+    if (!fragment) {
       this.logger.error("No such bucket found! " + JSON.stringify(search));
     } else {
-      members.push(...actualTimestampBucket.members || []);
+      fragment.relations = fragment.relations || [];
 
-      const rels: RelationParameters[] = actualTimestampBucket!.relations.map(({ type, value, bucket, path }) => {
-        const index: Parsed = { segs, query };
-        index.query["timestamp"] = bucket;
+      const rels: RelationParameters[] = fragment!.relations.map(({ type, value, bucket, path, timestampRelation }) => {
+        const index: Parsed = timestampRelation ? {segs: segs.slice(), query: {timestamp: bucket}} : {segs: bucket.split("/"), query: {}};
+        // const index: Parsed = { segs: bucket.split('/'), query };
+        // if (timestampValue) {
+        //   index.query["timestamp"] = bucket;
+        // }
         const values: RDF.Term[] = [literal(value)];
 
         return { type: <RelationType>type, value: values, nodeId: reconstructIndex(index), path: namedNode(path) };
       });
-
       relations.push(...rels);
+      members.push(...fragment.members || []);
     }
 
     return new MongoSDSFragment(members, relations, this.dataCollection);
