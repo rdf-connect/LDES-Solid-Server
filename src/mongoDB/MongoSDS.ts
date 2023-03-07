@@ -103,37 +103,9 @@ export class MongoSDSView implements View {
     this.logger.info(`Getting fragment for segs ${segs} query ${query}`);
     console.log(`Getting fragment for segs ${JSON.stringify(segs)} query ${JSON.stringify(query)}`);
 
-    // [a,b,c] => [[a], [a,b], [a,b,c]]
-    const indices = segs.reduce((cum, _, i, arr) => [...cum, arr.slice(0, i + 1)], <string[][]>[]);
     const timestampValue = query["timestamp"];
     const members = [] as string[];
     const relations = <RelationParameters[]>[];
-
-    // Look for members and relations in path to leaf
-    // for (let i = 0; i < indices.length; i++) {
-    //   const id = indices[i].join("/");
-    //
-    //   console.log("Finding fragment for ", { streamId: this.streamId, id });
-    //   const fragment = await this.indexCollection.findOne({ streamId: this.streamId, id });
-    //
-    //   if (!fragment) {
-    //     console.log("No fragment found");
-    //     continue;
-    //   }
-    //
-    //   fragment.relations = fragment.relations || [];
-    //   const rels: RelationParameters[] = fragment!.relations.map(({ type, value, bucket, path }) => {
-    //     const values: RDF.Term[] = [literal(value)];
-    //
-    //     const index: Parsed = { segs: segs.slice(), query: {} };
-    //     index.segs[i] = bucket;
-    //
-    //     return { type: <RelationType>type, value: values, nodeId: reconstructIndex(index), path: namedNode(path) };
-    //   });
-    //
-    //   relations.push(...rels);
-    //   members.push(...fragment.members || []);
-    // }
 
     const id = segs.join("/");
     console.log("Finding fragment for ", { streamId: this.streamId, id });
@@ -151,13 +123,16 @@ export class MongoSDSView implements View {
 
       const rels: RelationParameters[] = fragment!.relations.map(({ type, value, bucket, path, timestampRelation }) => {
         const index: Parsed = timestampRelation ? {segs: segs.slice(), query: {timestamp: bucket}} : {segs: bucket.split("/"), query: {}};
-        // const index: Parsed = { segs: bucket.split('/'), query };
-        // if (timestampValue) {
-        //   index.query["timestamp"] = bucket;
-        // }
-        const values: RDF.Term[] = [literal(value)];
+        const relation: RelationParameters = { type: <RelationType>type, nodeId: reconstructIndex(index) };
 
-        return { type: <RelationType>type, value: values, nodeId: reconstructIndex(index), path: namedNode(path) };
+        if(value) {
+          relation.value = [literal(value)];
+        }
+        if(path) {
+          relation.path = namedNode(path);
+        }
+
+        return relation;
       });
       relations.push(...rels);
       members.push(...fragment.members || []);
