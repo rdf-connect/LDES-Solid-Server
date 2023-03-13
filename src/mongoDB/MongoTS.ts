@@ -111,7 +111,7 @@ export class MongoTSView implements View {
             members.push(...dbFragment.members || []);
 
             const rels: RelationParameters[] = dbFragment!.relations.map(({type, value, bucket, path}) => {
-                const values: Rdf.Term[] = [literal(value)];
+                const values: Rdf.Term[] = [literal(value, namedNode("http://www.w3.org/2001/XMLSchema#dateTime"))];
                 return {type: <RelationType>type, value: values, nodeId: bucket, path: namedNode(path)};
             });
 
