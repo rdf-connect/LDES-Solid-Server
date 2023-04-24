@@ -145,3 +145,7 @@ You will probably want to configure a `urn:solid-server:default:LDESConfig` and 
   ns3:identifier <http://localhost:3000/ldes> .
 ```
 
+### Specific configurations
+
+There is the case where you want to restrict access to an LDES view. 
+This can be done by modifying the LDES, which is further explained in [LDES Authorization](docs/Authorization.md)
