@@ -19,4 +19,5 @@ export type IndexCollectionDocument = {
     members?: string[],
     count: number,
     timeStamp?: string
+    immutable?: boolean,
 };

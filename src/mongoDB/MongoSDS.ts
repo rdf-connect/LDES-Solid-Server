@@ -12,14 +12,19 @@ import { Fragment } from "../ldes/Fragment";
 const DCAT = createUriAndTermNamespace("http://www.w3.org/ns/dcat#", "endpointURL", "servesDataset");
 const { namedNode, quad, blankNode, literal } = DataFactory;
 
+
+
 class MongoSDSFragment implements Fragment {
   members: string[];
   relations: RelationParameters[];
   collection: Collection<DataCollectionDocument>;
-  constructor(members: string[], relations: RelationParameters[], collection: Collection<DataCollectionDocument>) {
+
+  cacheDirectives: CacheDirectives;
+  constructor(members: string[], relations: RelationParameters[], collection: Collection<DataCollectionDocument>, cacheDirectives: CacheDirectives) {
     this.collection = collection;
     this.members = members;
     this.relations = relations;
+    this.cacheDirectives = cacheDirectives;
   }
 
   async getMembers(): Promise<Member[]> {
@@ -33,7 +38,7 @@ class MongoSDSFragment implements Fragment {
   }
 
   async getCacheDirectives(): Promise<CacheDirectives> {
-    return { pub: true };
+    return this.cacheDirectives;
   }
 }
 
@@ -50,11 +55,14 @@ export class MongoSDSView implements View {
   descriptionId?: string;
   streamId: string;
 
+  freshDuration: number;
 
-  constructor(db: DBConfig, streamId: string, descriptionId?: string) {
+
+  constructor(db: DBConfig, streamId: string, descriptionId?: string, freshDuration?: number,) {
     this.dbConfig = db;
     this.streamId = streamId;
     this.descriptionId = descriptionId;
+    this.freshDuration = freshDuration || 120;
   }
 
   async init(base: string, prefix: string): Promise<void> {
@@ -68,6 +76,16 @@ export class MongoSDSView implements View {
       this.root = [base.replace(/^\/|\/$/g, ""), prefix.replace(/^\/|\/$/g, ""), root.id].join("/");
     } else {
       this.root = [base.replace(/^\/|\/$/g, ""), prefix.replace(/^\/|\/$/g, "")].join("/");
+    }
+  }
+
+  getCacheDirectives(isImmutable?: boolean): CacheDirectives {
+    const immutable = !!isImmutable;
+    const maxAge = immutable ? 604800 : this.freshDuration;
+    return {
+      pub: true,
+      immutable: immutable,
+      maxAge,
     }
   }
 
@@ -122,13 +140,13 @@ export class MongoSDSView implements View {
       fragment.relations = fragment.relations || [];
 
       const rels: RelationParameters[] = fragment!.relations.map(({ type, value, bucket, path, timestampRelation }) => {
-        const index: Parsed = timestampRelation ? {segs: segs.slice(), query: {timestamp: bucket}} : {segs: bucket.split("/"), query: {}};
+        const index: Parsed = timestampRelation ? { segs: segs.slice(), query: { timestamp: bucket } } : { segs: bucket.split("/"), query: {} };
         const relation: RelationParameters = { type: <RelationType>type, nodeId: reconstructIndex(index) };
 
-        if(value) {
+        if (value) {
           relation.value = [literal(value)];
         }
-        if(path) {
+        if (path) {
           relation.path = namedNode(path);
         }
 
@@ -138,7 +156,7 @@ export class MongoSDSView implements View {
       members.push(...fragment.members || []);
     }
 
-    return new MongoSDSFragment(members, relations, this.dataCollection);
+    return new MongoSDSFragment(members, relations, this.dataCollection, this.getCacheDirectives(fragment?.immutable));
   }
 }
 
