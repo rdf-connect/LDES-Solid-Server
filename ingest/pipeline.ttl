@@ -1,0 +1,54 @@
+@prefix js: <https://w3id.org/conn/js#> .
+@prefix ws: <https://w3id.org/conn/ws#> .
+@prefix : <https://w3id.org/conn#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rml: <https://w3id.org/conn/rml#> .
+@prefix ql: <http://semweb.mmlab.be/ns/ql#> .
+
+<> owl:imports 
+  <https://raw.githubusercontent.com/TREEcg/connector-architecture/main/channel/http.ttl>, 
+  <https://raw.githubusercontent.com/TREEcg/connector-architecture/main/channel/file.ttl>,
+  <https://raw.githubusercontent.com/TREEcg/connector-architecture/main/channel/kafka.ttl>,
+  <https://raw.githubusercontent.com/ajuvercr/js-runner/master/ontology.ttl>.
+
+<> owl:imports <./generate.ttl>.
+<> owl:imports <./node_modules/sds-processors/configs/2_bucketstep.ttl>.
+<> owl:imports <./node_modules/sds-processors/configs/sdsify.ttl>.
+<> owl:imports <./node_modules/@treecg/sds-storage-writer-mongo/step.ttl>.
+
+
+
+<ttl/writer> a :JsWriterChannel.
+<ttl/reader> a :JsReaderChannel.
+[] a js:JsChannel; :reader <ttl/reader>; :writer <ttl/writer>.
+
+
+<sds-raw/writer> a :JsWriterChannel.
+<sds-raw/reader> a :JsReaderChannel.
+[] a js:JsChannel; :reader <sds-raw/reader>; :writer <sds-raw/writer>.
+
+<metadata/in> a :FileReaderChannel;
+  :fileReadFirstContent "true";
+  :fileOnReplace "true";
+  :filePath <./metadataIn.ttl>.
+
+
+[] a js:GenerateExample;
+  js:intervalMs 1000;
+  js:dataOutput <ttl/writer>.
+
+[] a js:Sdsify;
+  js:input <ttl/reader>;
+  js:output <sds-raw/writer>;
+  js:stream <https://w3id.org/sds#Stream>.
+
+[] a js:Ingest;
+  js:dataInput <sds-raw/reader>;
+  js:metadataInput <metadata/in>;
+  js:metadataCollection "META";
+  js:dataCollection "DATA";
+  js:indexCollection "INDEX";
+  js:pageSize 150;
+  js:databaseUrl "mongodb://127.0.0.1:27017/test".
+

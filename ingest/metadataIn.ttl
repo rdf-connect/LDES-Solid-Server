@@ -1,0 +1,32 @@
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix p-plan: <http://purl.org/net/p-plan#> .
+@prefix prov:   <http://www.w3.org/ns/prov#> .
+@prefix sds:    <https://w3id.org/sds#> .
+@prefix dcat:   <https://www.w3.org/ns/dcat#> .
+@prefix ex:     <http://example.org/ns#>.
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#>.
+@prefix sh:     <http://www.w3.org/ns/shacl#>.
+@prefix void:   <http://rdfs.org/ns/void#> .
+@prefix ldes:   <https://w3id.org/ldes#>.
+@prefix :       <http://me#> .
+
+:somePlan a p-plan:Plan;
+  rdfs:comment "A epic plan to map csv file to a LDES".
+
+:dataset a dcat:Dataset;
+  dcat:title "Epic dataset";
+  dcat:publisher [
+    foaf:name "Arthur Vercruysse"
+  ];
+  ldes:timestampPath <http://def.isotc211.org/iso19156/2011/Observation#OM_Observation.resultTime>;
+  dcat:identifier <http://localhost:3000/ldes>.
+
+<https://w3id.org/sds#Stream> a sds:Stream;
+    p-plan:wasGeneratedBy [
+      a p-plan:Activity;
+      rdfs:comment "Load in RINF data"
+    ];
+    sds:carries [ a sds:Member ]; 
+    sds:dataset :dataset.
+

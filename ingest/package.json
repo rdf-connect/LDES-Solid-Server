@@ -1,0 +1,30 @@
+{
+  "name": "ingest",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "server": "npx community-solid-server -c ./server.json",
+    "ingest": "node --experimental-specifier-resolution=node node_modules/js-runner/bin/js-runner.js  ./pipeline.ttl",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@treecg/connector-types": "^1.2.1",
+    "@treecg/sds-storage-writer-mongo": "^0.0.5",
+    "@types/n3": "^1.16.0",
+    "js-runner": "github:ajuvercr/js-runner",
+    "n3": "^1.17.1",
+    "sds-processors": "^0.0.2"
+  },
+  "devDependencies": {
+    "@solid/community-server": "^5.0.0",
+    "@types/node": "^20.5.9",
+    "ldes-solid-server": "file:..",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}
