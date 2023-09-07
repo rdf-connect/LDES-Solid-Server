@@ -41,6 +41,7 @@ export class LDESStore implements ResourceStore {
     protected readonly logger = getLoggerFor(this);
     id: string;
     base: string;
+    shape?: string;
     views: PrefixView[];
 
     initPromise: any;
@@ -51,10 +52,11 @@ export class LDESStore implements ResourceStore {
      * @param base - The base URI for the Solid Server.
      * @param relativePath - The relative path to the LDES.
      */
-    constructor(id: string, views: PrefixView[], base: string, relativePath: string) {
-        this.id = id;
+    constructor(views: PrefixView[], base: string, relativePath: string, id?: string, shape?: string) {
         this.base = ensureTrailingSlash(base + trimLeadingSlashes(relativePath));
+        this.id = id || this.base;
         this.views = views;
+        this.shape = shape;
 
         this.initPromise = Promise.all(views.map(async view =>
             view.view.init(this.base, view.prefix)
@@ -72,6 +74,18 @@ export class LDESStore implements ResourceStore {
         if (ensureTrailingSlash(identifier.path) === this.base) {
             // We got a base request, let's announce all mounted view
             const quads = await this.getViewDescriptions();
+            quads.push(quad(
+               namedNode(this.id),
+               RDFT.terms.type,
+               LDES.terms.EventStream,
+            ));
+            if(this.shape) {
+                quads.push(quad(
+                   namedNode(this.id),
+                   TREE.terms.shape,
+                   namedNode(this.shape),
+                ));
+            }
 
             return new BasicRepresentation(
                 guardedStreamFrom(quads),
