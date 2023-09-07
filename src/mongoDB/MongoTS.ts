@@ -77,7 +77,7 @@ export class MongoTSView implements View {
         return this.root;
     }
 
-    async getMetadata(ldes: string): Promise<Rdf.Quad[]> {
+    async getMetadata(ldes: string): Promise<[Rdf.Quad[], Rdf.Quad_Object]> {
         const quads = []
         const query = {"type": LDES.EventStream, "id": this.streamId}
         const meta = await this.metaCollection.findOne(query);
@@ -93,7 +93,7 @@ export class MongoTSView implements View {
 
         quads.push(quad(namedNode(ldes), RDF.terms.type, LDES.terms.EventStream));
         quads.push(quad(namedNode(this.getRoot()), RDF.terms.type, TREE.terms.custom("Node"))); // TODO: verify if this makes sense
-        return quads;
+        return [quads, namedNode(this.descriptionId)];
     }
 
     async getFragment(identifier: string): Promise<Fragment> {

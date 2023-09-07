@@ -93,7 +93,7 @@ export class MongoSDSView implements View {
     return this.root;
   }
 
-  async getMetadata(ldes: string): Promise<RDF.Quad[]> {
+  async getMetadata(ldes: string): Promise<[RDF.Quad[], RDF.Quad_Object]> {
     const quads = [];
     const blankId = this.descriptionId ? namedNode(this.descriptionId) : blankNode();
     quads.push(
@@ -111,7 +111,7 @@ export class MongoSDSView implements View {
       quads.push(...new Parser().parse(stream.value));
     }
 
-    return quads;
+    return [quads, blankId];
   }
 
   async getFragment(identifier: string): Promise<Fragment> {

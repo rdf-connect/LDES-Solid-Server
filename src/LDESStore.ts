@@ -19,7 +19,7 @@ import {
 } from "@solid/community-server";
 import * as RDF from "@rdfjs/types";
 import {CacheDirectives, Member, RelationParameters, TREE} from "@treecg/types";
-import {RDF as RDFT} from "@treecg/types/dist/lib/Vocabularies";
+import {LDES, RDF as RDFT, VOID} from "@treecg/types/dist/lib/Vocabularies";
 import {cacheToLiteral} from "./util/utils";
 import {DataFactory, Quad_Object} from "n3";
 import {PrefixView} from "./PrefixView";
@@ -41,6 +41,7 @@ export class LDESStore implements ResourceStore {
     protected readonly logger = getLoggerFor(this);
     id: string;
     base: string;
+    shape?: string;
     views: PrefixView[];
 
     initPromise: any;
@@ -51,10 +52,11 @@ export class LDESStore implements ResourceStore {
      * @param base - The base URI for the Solid Server.
      * @param relativePath - The relative path to the LDES.
      */
-    constructor(id: string, views: PrefixView[], base: string, relativePath: string) {
-        this.id = id;
+    constructor(views: PrefixView[], base: string, relativePath: string, id?: string, shape?: string) {
         this.base = ensureTrailingSlash(base + trimLeadingSlashes(relativePath));
+        this.id = id || this.base;
         this.views = views;
+        this.shape = shape;
 
         this.initPromise = Promise.all(views.map(async view =>
             view.view.init(this.base, view.prefix)
@@ -72,6 +74,18 @@ export class LDESStore implements ResourceStore {
         if (ensureTrailingSlash(identifier.path) === this.base) {
             // We got a base request, let's announce all mounted view
             const quads = await this.getViewDescriptions();
+            quads.push(quad(
+               namedNode(this.id),
+               RDFT.terms.type,
+               LDES.terms.EventStream,
+            ));
+            if(this.shape) {
+                quads.push(quad(
+                   namedNode(this.id),
+                   TREE.terms.shape,
+                   namedNode(this.shape),
+                ));
+            }
 
             return new BasicRepresentation(
                 guardedStreamFrom(quads),
@@ -95,20 +109,51 @@ export class LDESStore implements ResourceStore {
 
         const fragment = await view.view.getFragment(bucketIdentifier);
         const quads: Array<RDF.Quad> = [];
+        quads.push(quad(
+           namedNode(this.id),
+           RDFT.terms.type,
+           LDES.terms.EventStream,
+        ));
+
+        const [viewDescriptionQuads, viewDescriptionId] = await view.view
+          .getMetadata(this.id);
+        quads.push(...viewDescriptionQuads);
+        const mRoot = view.view.getRoot();
+        if (mRoot) {
+          quads.push(quad(
+            namedNode(this.id),
+            TREE.terms.view,
+            namedNode(mRoot),
+          ));
+        }
+
+        quads.push(
+          quad(
+            namedNode(identifier.path),
+            RDFT.terms.type,
+            TREE.terms.custom("Node"),
+          ),
+          quad(
+            namedNode(identifier.path),
+            TREE.terms.custom("viewDescription"),
+            viewDescriptionId,
+          ),
+        );
 
         if (view.view.getRoot() === identifier.path) {
-            quads.push(...await view.view.getMetadata(this.id));
             quads.push(quad(
                 namedNode(this.id),
                 TREE.terms.view,
                 namedNode(identifier.path)
             ));
-        }
-        quads.push(quad(
+        } else {
+          // This is not the case, you can access a subset of all members
+          quads.push(quad(
+            namedNode(this.id),
+            VOID.terms.subset,
             namedNode(identifier.path),
-            RDFT.terms.type,
-            TREE.terms.custom("Node")
-        ));
+          ));
+        }
 
         const relations = await fragment.getRelations();
         const members = await fragment.getMembers();
@@ -126,9 +171,15 @@ export class LDESStore implements ResourceStore {
         const quads = [];
 
         for (let view of this.views) {
-            quads.push(...await view.view.getMetadata(this.id));
+            const [ metaQuads, id ] = await view.view.getMetadata(this.id);
+            quads.push(...metaQuads);
             const mRoot = view.view.getRoot();
             if (mRoot) {
+                quads.push(quad(
+                    namedNode(mRoot),
+                    TREE.terms.custom("viewDescription"),
+                    id
+                ));
                 quads.push(quad(
                     namedNode(this.id),
                     TREE.terms.view,
