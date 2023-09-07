@@ -28,7 +28,7 @@
     },
     "dependencies": {
         "@solid/community-server": "^5.0.0",
-        "@treecg/types": "^0.4.0",
+        "@treecg/types": "^0.4.5",
         "mongodb": "^4.11.0",
         "n3": "^1.16.2"
     },
