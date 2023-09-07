@@ -25,7 +25,7 @@ export interface View {
      *
      * @param ldes - The URI of the LDES.
      */
-    getMetadata(ldes: string): Promise<RDF.Quad[]>;
+    getMetadata(ldes: string): Promise<[RDF.Quad[], RDF.Quad_Object]>;
 
     /**
      * Function requesting a single {@link Fragment}.

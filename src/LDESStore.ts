@@ -19,7 +19,7 @@ import {
 } from "@solid/community-server";
 import * as RDF from "@rdfjs/types";
 import {CacheDirectives, Member, RelationParameters, TREE} from "@treecg/types";
-import {RDF as RDFT} from "@treecg/types/dist/lib/Vocabularies";
+import {LDES, RDF as RDFT, VOID} from "@treecg/types/dist/lib/Vocabularies";
 import {cacheToLiteral} from "./util/utils";
 import {DataFactory, Quad_Object} from "n3";
 import {PrefixView} from "./PrefixView";
@@ -95,20 +95,51 @@ export class LDESStore implements ResourceStore {
 
         const fragment = await view.view.getFragment(bucketIdentifier);
         const quads: Array<RDF.Quad> = [];
+        quads.push(quad(
+           namedNode(this.id),
+           RDFT.terms.type,
+           LDES.terms.EventStream,
+        ));
+
+        const [viewDescriptionQuads, viewDescriptionId] = await view.view
+          .getMetadata(this.id);
+        quads.push(...viewDescriptionQuads);
+        const mRoot = view.view.getRoot();
+        if (mRoot) {
+          quads.push(quad(
+            namedNode(this.id),
+            TREE.terms.view,
+            namedNode(mRoot),
+          ));
+        }
+
+        quads.push(
+          quad(
+            namedNode(identifier.path),
+            RDFT.terms.type,
+            TREE.terms.custom("Node"),
+          ),
+          quad(
+            namedNode(identifier.path),
+            TREE.terms.custom("viewDescription"),
+            viewDescriptionId,
+          ),
+        );
 
         if (view.view.getRoot() === identifier.path) {
-            quads.push(...await view.view.getMetadata(this.id));
             quads.push(quad(
                 namedNode(this.id),
                 TREE.terms.view,
                 namedNode(identifier.path)
             ));
-        }
-        quads.push(quad(
+        } else {
+          // This is not the case, you can access a subset of all members
+          quads.push(quad(
+            namedNode(this.id),
+            VOID.terms.subset,
             namedNode(identifier.path),
-            RDFT.terms.type,
-            TREE.terms.custom("Node")
-        ));
+          ));
+        }
 
         const relations = await fragment.getRelations();
         const members = await fragment.getMembers();
@@ -126,9 +157,15 @@ export class LDESStore implements ResourceStore {
         const quads = [];
 
         for (let view of this.views) {
-            quads.push(...await view.view.getMetadata(this.id));
+            const [ metaQuads, id ] = await view.view.getMetadata(this.id);
+            quads.push(...metaQuads);
             const mRoot = view.view.getRoot();
             if (mRoot) {
+                quads.push(quad(
+                    namedNode(mRoot),
+                    TREE.terms.custom("viewDescription"),
+                    id
+                ));
                 quads.push(quad(
                     namedNode(this.id),
                     TREE.terms.view,
