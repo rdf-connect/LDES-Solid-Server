@@ -149,7 +149,7 @@
       "metaCollection": "meta",
       "indexCollection": "index",
       "membersCollection": "data",
-      "dbUrl": "mongodb://localhost:27017/ldes"
+      "dbUrl": "mongodb://127.0.0.1:27017/ldes"
     },
     {
       "@id": "urn:solid-server:default:relative-path",

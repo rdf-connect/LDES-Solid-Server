@@ -75,7 +75,7 @@
                   "prefix": "default",
                   "view": {
                     "@type": "MongoSDSView",
-                    "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
+                    "descriptionId": "http://127.0.0.1:3000/ldes/#timestampFragmentation",
                     "streamId": "https://w3id.org/sds#Stream",
                     "db": {
                       "@id": "urn:solid-server:default:DBConfig"
@@ -88,7 +88,7 @@
                   "prefix": "indexed",
                   "view": {
                     "@type": "MongoSDSView",
-                    "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
+                    "descriptionId": "http://127.0.0.1:3000/ldes/#timestampFragmentation",
                     "streamId": "http://example.com/test",
                     "db": {
                       "@id": "urn:solid-server:default:DBConfig"
@@ -127,7 +127,7 @@
       "metaCollection": "TEST_META",
       "indexCollection": "TEST_INDEX",
       "membersCollection": "TEST_DATA",
-      "dbUrl": "mongodb://localhost:27017/ldes"
+      "dbUrl": "mongodb://127.0.0.1:27017/ldes"
     },
     {
       "@id": "urn:solid-server:default:relative-path",
