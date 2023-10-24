@@ -1,0 +1,12 @@
+@prefix tree: <https://w3id.org/tree#>.
+@prefix ldes: <https://w3id.org/ldes#>.
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+@prefix prov:  <http://www.w3.org/ns/prov#>.
+@prefix ex: <http://www.example.com/ns#>.
+
+<http://localhost:3000/ldes/> a ldes:EventStream ;
+    ldes:timestampPath prov:generatedAtTime ; 
+    tree:shape [] ;
+    tree:view <?page=1> .

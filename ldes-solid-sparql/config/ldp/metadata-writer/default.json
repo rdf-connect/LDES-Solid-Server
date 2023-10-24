@@ -1,0 +1,45 @@
+{
+    "@context": "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^5.0.0/components/context.jsonld",
+    "import": [
+    "css:config/ldp/metadata-writer/writers/allow-accept.json",
+    "css:config/ldp/metadata-writer/writers/content-type.json",
+    "css:config/ldp/metadata-writer/writers/link-rel.json",
+    "css:config/ldp/metadata-writer/writers/link-rel-metadata.json",
+    "css:config/ldp/metadata-writer/writers/mapped.json",
+    "css:config/ldp/metadata-writer/writers/modified.json",
+    "css:config/ldp/metadata-writer/writers/wac-allow.json",
+    "css:config/ldp/metadata-writer/writers/www-auth.json"
+    ],
+    "@graph": [
+        {
+      "comment": "Converts all triples with the given predicate to headers of the given type.",
+      "@id": "urn:ldes-server:default:MetadataWriter_Mapped",
+      "@type": "MappedMetadataWriter",
+      "headerMap": [
+        {
+          "MappedMetadataWriter:_headerMap_key": "urn:npm:solid:community-server:http:location",
+          "MappedMetadataWriter:_headerMap_value": "Location"
+        },
+        {
+            "MappedMetadataWriter:_headerMap_key": "urn:npm:solid:community-server:http:cache_control",
+            "MappedMetadataWriter:_headerMap_value": "Cache-Control"
+        }
+      ]
+
+        },{
+      "comment": "Adds metadata to the response based on the RDF metadata.",
+      "@id": "urn:solid-server:default:MetadataWriter",
+      "@type": "ParallelHandler",
+      "handlers": [
+{ "@id": "urn:solid-server:default:MetadataWriter_AllowAccept" },
+        { "@id": "urn:solid-server:default:MetadataWriter_ContentType" },
+        { "@id": "urn:solid-server:default:MetadataWriter_LinkRel" },
+        { "@id": "urn:solid-server:default:MetadataWriter_LinkRelMetadata" },
+        { "@id": "urn:solid-server:default:MetadataWriter_Modified" },
+        { "@id": "urn:solid-server:default:MetadataWriter_WacAllow" },
+        { "@id": "urn:ldes-server:default:MetadataWriter_Mapped" },
+        { "@id": "urn:solid-server:default:MetadataWriter_WwwAuth" }
+            ]
+        }
+    ]
+}
