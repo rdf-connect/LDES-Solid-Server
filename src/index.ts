@@ -17,6 +17,8 @@ export * from './LDESStore';
 
 export * from './PrefixView';
 
+export * from "./sparql/sparqlstore";
+
 
 
 
