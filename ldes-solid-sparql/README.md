@@ -1,1 +1,0 @@
-# ldes-solid-sparql-server

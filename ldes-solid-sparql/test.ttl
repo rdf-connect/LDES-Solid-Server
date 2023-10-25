@@ -1,5 +1,0 @@
-<https://data.kkg.kadaster.nl/id/openbareRuimte/0356300000001579/1> a <http://example.org/ns#RoadName>;
-    <http://www.w3.org/2000/01/rdf-schema#label> "Reinoutsgaarde"@nl;
-    <https://data.kkg.kadaster.nl/nen3610/model/def/beginGeldigheid> "1975-10-21"^^<http://www.w3.org/2001/XMLSchema#date>;
-    <http://www.w3.org/ns/prov#generatedAtTime> "2009-06-30T10:22:12+02:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>;
-    <http://purl.org/dc/terms/isVersionOf> <https://data.kkg.kadaster.nl/id/openbareRuimte/0356300000001579>.
