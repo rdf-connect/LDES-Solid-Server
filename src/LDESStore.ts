@@ -45,7 +45,7 @@ export class LDESStore implements ResourceStore {
     views: PrefixView[];
     freshDuration: number;
 
-    initPromise: Promise<any>;
+    initPromise: any;
 
     /**
      * @param id - The URI of the published LDES.
