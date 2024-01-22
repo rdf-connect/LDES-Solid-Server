@@ -101,8 +101,6 @@ export class LDESStore implements ResourceStore {
                 ));
             }
 
-            console.log(this.freshDuration);
-
             return new BasicRepresentation(
                 guardedStreamFrom(quads),
                 new RepresentationMetadata(this.getMetadata({
