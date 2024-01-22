@@ -50,32 +50,35 @@ export class MongoSDSView implements View {
   metaCollection!: Collection<MetaCollectionDocument>;
   indexCollection!: Collection<IndexCollectionDocument>;
   dataCollection!: Collection<DataCollectionDocument>;
-  root!: string;
+  roots!: string[];
 
   descriptionId?: string;
   streamId: string;
 
-  freshDuration: number;
+  freshDuration: number = 60;
 
 
-  constructor(db: DBConfig, streamId: string, descriptionId?: string, freshDuration?: number,) {
+  constructor(db: DBConfig, streamId: string, descriptionId?: string) {
     this.dbConfig = db;
     this.streamId = streamId;
     this.descriptionId = descriptionId;
-    this.freshDuration = freshDuration || 120;
+    this.roots = [];
   }
 
-  async init(base: string, prefix: string): Promise<void> {
+  async init(base: string, prefix: string, freshDuration: number): Promise<void> {
+    this.freshDuration = freshDuration;
     this.db = await this.dbConfig.db();
     this.metaCollection = this.db.collection(this.dbConfig.meta);
     this.indexCollection = this.db.collection(this.dbConfig.index);
     this.dataCollection = this.db.collection(this.dbConfig.data);
 
-    const root = await this.indexCollection.findOne({ root: true, streamId: this.streamId });
-    if (root) {
-      this.root = [base.replace(/^\/|\/$/g, ""), prefix.replace(/^\/|\/$/g, ""), root.id].join("/");
+    const roots = await this.indexCollection.find({ root: true, streamId: this.streamId }).toArray();
+    if ((await roots).length > 0) {
+      for (const root of roots) {
+        this.roots.push([base.replace(/^\/|\/$/g, ""), prefix.replace(/^\/|\/$/g, ""), root.id].join("/"));
+      }
     } else {
-      this.root = [base.replace(/^\/|\/$/g, ""), prefix.replace(/^\/|\/$/g, "")].join("/");
+      this.roots = [[base.replace(/^\/|\/$/g, ""), prefix.replace(/^\/|\/$/g, "")].join("/")];
     }
   }
 
@@ -89,18 +92,20 @@ export class MongoSDSView implements View {
     }
   }
 
-  getRoot(): string {
-    return this.root;
+  getRoots(): string[] {
+    return this.roots;
   }
 
   async getMetadata(ldes: string): Promise<[RDF.Quad[], RDF.Quad_Object]> {
     const quads = [];
     const blankId = this.descriptionId ? namedNode(this.descriptionId) : blankNode();
-    quads.push(
-      quad(blankId, RDFT.terms.type, TREE.terms.custom("ViewDescription")),
-      quad(blankId, DCAT.terms.endpointURL, namedNode(this.getRoot())),
-      quad(blankId, DCAT.terms.servesDataset, namedNode(ldes)),
-    );
+    for (const root of this.getRoots()) {
+      quads.push(
+        quad(blankId, RDFT.terms.type, TREE.terms.custom("ViewDescription")),
+        quad(blankId, DCAT.terms.endpointURL, namedNode(root)),
+        quad(blankId, DCAT.terms.servesDataset, namedNode(ldes)),
+      );
+    }
 
     const stream = await this.metaCollection.findOne({ "type": SDS.Stream, "id": this.streamId });
     if (stream) {
@@ -130,7 +135,7 @@ export class MongoSDSView implements View {
     const search: Filter<IndexCollectionDocument> = { streamId: this.streamId, id };
 
     if (timestampValue) {
-      search.timeStamp = { "$lte": timestampValue };
+      search.timeStamp = { "$lte": new Date(timestampValue) };
     }
 
     const fragment = await this.indexCollection.find(search).sort({ "timeStamp": -1 }).limit(1).next();
@@ -139,8 +144,8 @@ export class MongoSDSView implements View {
     } else {
       fragment.relations = fragment.relations || [];
 
-      const rels: RelationParameters[] = fragment!.relations.map(({ type, value, bucket, path, timestampRelation }) => {
-        const index: Parsed = timestampRelation ? { segs: segs.slice(), query: { timestamp: bucket } } : { segs: bucket.split("/"), query: {} };
+      const rels: RelationParameters[] = fragment!.relations.map(({ type, value, bucket, path }) => {
+        const index: Parsed = { segs: bucket.split("/"), query };
         const relation: RelationParameters = { type: <RelationType>type, nodeId: reconstructIndex(index) };
 
         if (value) {

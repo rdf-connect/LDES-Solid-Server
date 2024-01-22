@@ -24,7 +24,7 @@ export function parseIndex(index: string): Parsed {
     if (first.length == 0) {
         return { segs: [], query };
     }
-    return { segs: first.split("/"), query };
+    return { segs: decodeURIComponent(first).split("/"), query };
 }
 
 export function reconstructIndex({ segs, query }: Parsed): string {

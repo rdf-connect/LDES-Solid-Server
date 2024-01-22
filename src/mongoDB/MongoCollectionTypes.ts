@@ -18,6 +18,6 @@ export type IndexCollectionDocument = {
     relations: { type: RelationType, value: string, bucket: string, path: string, timestampRelation?: boolean }[],
     members?: string[],
     count: number,
-    timeStamp?: string
+    timeStamp?: Date,
     immutable?: boolean,
 };
