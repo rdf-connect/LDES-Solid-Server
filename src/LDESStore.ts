@@ -10,6 +10,7 @@ import {
     MetadataRecord,
     NotFoundHttpError,
     Patch,
+    RedirectHttpError,
     Representation,
     RepresentationMetadata,
     RepresentationPreferences,
@@ -107,7 +108,17 @@ export class LDESStore implements ResourceStore {
         const baseIdentifier = identifier.path.substring(0, idStart);
         let bucketIdentifier = identifier.path.substring(idStart);
 
-        const fragment = await view.view.getFragment(bucketIdentifier);
+        let fragment;
+        try {
+            fragment = await view.view.getFragment(bucketIdentifier);
+        } catch(ex) {
+            if(RedirectHttpError.isInstance(ex)) {
+              throw new RedirectHttpError(ex.statusCode, ex.name, baseIdentifier + ex.location);
+            } else {
+              throw ex;
+            }
+        }
+
         const quads: Array<RDF.Quad> = [];
         quads.push(quad(
            namedNode(this.id),
