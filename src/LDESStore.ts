@@ -123,7 +123,7 @@ export class LDESStore implements ResourceStore {
             idStart += 1;
         }
         const baseIdentifier = identifier.path.substring(0, idStart);
-        let bucketIdentifier = identifier.path.substring(idStart);
+        const bucketIdentifier = identifier.path.substring(idStart);
 
         const fragment = await view.view.getFragment(bucketIdentifier);
         const quads: Array<RDF.Quad> = [];
