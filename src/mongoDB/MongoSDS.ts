@@ -1,5 +1,5 @@
 import type * as RDF from '@rdfjs/types';
-import { createUriAndTermNamespace, getLoggerFor } from '@solid/community-server';
+import { createUriAndTermNamespace, getLoggerFor, RedirectHttpError } from '@solid/community-server';
 import { CacheDirectives, LDES, Member, RDF as RDFT, RelationParameters, RelationType, SDS, TREE } from "@treecg/types";
 import { Collection, Db, Filter } from "mongodb";
 import { DataFactory, Parser } from "n3";
@@ -142,6 +142,13 @@ export class MongoSDSView implements View {
     if (!fragment) {
       this.logger.error("No such bucket found! " + JSON.stringify(search));
     } else {
+      this.logger.info("No timestamp value was provided, but this view uses timestamps, thus redirecting");
+      if(!timestampValue && fragment.timeStamp) {
+        // Redirect to the correct resource, we now have the timestamp;
+        query["timestamp"] = fragment.timeStamp!;
+        const location = reconstructIndex({segs, query});
+        throw new RedirectHttpError(307, "moved", location);
+      }
       fragment.relations = fragment.relations || [];
 
       const rels: RelationParameters[] = fragment!.relations.map(({ type, value, bucket, path }) => {
