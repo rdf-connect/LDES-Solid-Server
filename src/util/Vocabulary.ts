@@ -1,4 +1,4 @@
-import {createUriAndTermNamespace} from "@solid/community-server";
+import {createUriAndTermNamespace} from "@treecg/types";
 
 export const HTTP = createUriAndTermNamespace('urn:npm:solid:community-server:http:',
     'cache_control',

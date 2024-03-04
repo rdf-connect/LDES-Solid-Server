@@ -19,8 +19,7 @@ import {
     trimLeadingSlashes
 } from "@solid/community-server";
 import * as RDF from "@rdfjs/types";
-import { CacheDirectives, Member, RelationParameters, TREE } from "@treecg/types";
-import { LDES, RDF as RDFT, VOID } from "@treecg/types/dist/lib/Vocabularies";
+import { CacheDirectives, Member, RelationParameters, TREE, LDES, RDF as RDFT, VOID } from "@treecg/types";
 import { cacheToLiteral } from "./util/utils";
 import { DataFactory, Quad_Object } from "n3";
 import { PrefixView } from "./PrefixView";

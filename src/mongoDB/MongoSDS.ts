@@ -1,6 +1,16 @@
 import type * as RDF from '@rdfjs/types';
-import { createUriAndTermNamespace, getLoggerFor, RedirectHttpError } from '@solid/community-server';
-import { CacheDirectives, LDES, Member, RDF as RDFT, RelationParameters, RelationType, SDS, TREE } from "@treecg/types";
+import { getLoggerFor, RedirectHttpError } from '@solid/community-server';
+import { 
+  CacheDirectives, 
+  LDES, 
+  Member, 
+  RDF as RDFT, 
+  RelationParameters, 
+  RelationType, 
+  SDS, 
+  TREE, 
+  createUriAndTermNamespace 
+} from "@treecg/types";
 import { Collection, Db, Filter } from "mongodb";
 import { DataFactory, Parser } from "n3";
 import { View } from "../ldes/View";
@@ -130,22 +140,22 @@ export class MongoSDSView implements View {
     const members = [] as string[];
     const relations = <RelationParameters[]>[];
 
-    const id = segs.join("/");
-    console.log("Finding fragment for ", { streamId: this.streamId, id });
+    const id = segs.length > 0 ? segs.join("/") : undefined;
     const search: Filter<IndexCollectionDocument> = { streamId: this.streamId, id };
 
     if (timestampValue) {
       search.timeStamp = { "$lte": new Date(timestampValue) };
     }
 
+    console.log("Finding fragment for ", search);
     const fragment = await this.indexCollection.find(search).sort({ "timeStamp": -1 }).limit(1).next();
     if (!fragment) {
       this.logger.error("No such bucket found! " + JSON.stringify(search));
     } else {
-      this.logger.info("No timestamp value was provided, but this view uses timestamps, thus redirecting");
       if(!timestampValue && fragment.timeStamp) {
+        this.logger.info("No timestamp value was provided, but this view uses timestamps, thus redirecting");
         // Redirect to the correct resource, we now have the timestamp;
-        query["timestamp"] = fragment.timeStamp!;
+        query["timestamp"] = fragment.timeStamp!.toISOString();
         const location = reconstructIndex({segs, query});
         throw new RedirectHttpError(307, "moved", location);
       }

@@ -76,6 +76,7 @@
                             "relativePath": {
                                 "@id": "urn:solid-server:default:relative-path"
                             },
+                            "freshDuration": 30,
                             "views": [
                                 {
                                     "@type": "PrefixView",
@@ -83,42 +84,7 @@
                                     "view": {
                                         "@type": "MongoSDSView",
                                         "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
-                                        "streamId": "http://me#csvStream",
-                                        "db": {
-                                            "@id": "urn:solid-server:default:OriginalMongoDBConfig"
-                                        }
-                                    }
-                                },
-                                {
-                                    "@type": "PrefixView",
-                                    "prefix": "mine",
-                                    "view": {
-                                        "@type": "MongoSDSView",
-                                        "streamId": "http://mine.org/rdfstream",
-                                        "db": {
-                                            "@id": "urn:solid-server:default:OriginalMongoDBConfig"
-                                        }
-                                    }
-                                },
-                                {
-                                    "@type": "PrefixView",
-                                    "prefix": "example",
-                                    "view": {
-                                        "@type": "MongoTSView",
-                                        "streamId": "http://example.org/myStream#eventStream",
-                                        "descriptionId": "http://example.org/myStream#viewDescription",
-                                        "db": {
-                                            "@id": "urn:solid-server:default:DBConfig"
-                                        }
-                                    }
-                                },
-                                {
-                                    "@type": "PrefixView",
-                                    "prefix": "ais",
-                                    "view": {
-                                        "@type": "MongoTSView",
-                                        "streamId": "http://example.org/aisStream#eventStream",
-                                        "descriptionId": "http://example.org/aisStream#description",
+                                        "streamId": "https://w3id.org/sds#Stream",
                                         "db": {
                                             "@id": "urn:solid-server:default:DBConfig"
                                         }
@@ -152,18 +118,10 @@
         {
             "@id": "urn:solid-server:default:DBConfig",
             "@type": "DBConfig",
-            "metaCollection": "meta",
-            "indexCollection": "index",
-            "membersCollection": "data",
+            "metaCollection": "BLUEBIKE_META",
+            "indexCollection": "BLUEBIKE_INDEX",
+            "membersCollection": "BLUEBIKE_DATA",
             "dbUrl": "mongodb://localhost:27017/ldes"
-        },
-        {
-            "@id": "urn:solid-server:default:OriginalMongoDBConfig",
-            "@type": "DBConfig",
-            "metaCollection": "meta",
-            "indexCollection": "index",
-            "membersCollection": "data",
-            "dbUrl": "mongodb://localhost:27017/ldes2"
         },
         {
             "@id": "urn:solid-server:default:relative-path",
