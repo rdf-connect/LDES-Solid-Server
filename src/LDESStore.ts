@@ -82,7 +82,7 @@ export class LDESStore implements ResourceStore {
         preferences: RepresentationPreferences,
         conditions?: Conditions
     ): Promise<Representation> => {
-        this.logger.info("Get representation");
+        console.log("Get representation: ", identifier);
         await this.initPromise;
 
         if (ensureTrailingSlash(identifier.path) === this.base) {
@@ -156,38 +156,41 @@ export class LDESStore implements ResourceStore {
             }
         }
 
+        // TODO: Check if this can be handled by the CSS instead
+        const normalizedIDPath = decodeURIComponent(identifier.path);
+
         quads.push(
             quad(
-                namedNode(identifier.path),
+                namedNode(normalizedIDPath),
                 RDFT.terms.type,
                 TREE.terms.custom("Node"),
             ),
             quad(
-                namedNode(identifier.path),
+                namedNode(normalizedIDPath),
                 TREE.terms.custom("viewDescription"),
                 viewDescriptionId,
             ),
         );
 
-        if (view.view.getRoots().includes(identifier.path)) {
+        if (view.view.getRoots().includes(normalizedIDPath)) {
             quads.push(quad(
                 namedNode(this.id),
                 TREE.terms.view,
-                namedNode(identifier.path)
+                namedNode(normalizedIDPath)
             ));
         } else {
             // This is not the case, you can access a subset of all members
             quads.push(quad(
                 namedNode(this.id),
                 VOID.terms.subset,
-                namedNode(identifier.path),
+                namedNode(normalizedIDPath),
             ));
         }
 
         const relations = await fragment.getRelations();
         const members = await fragment.getMembers();
 
-        relations.forEach(relation => this.addRelations(quads, identifier.path, baseIdentifier, relation));
+        relations.forEach(relation => this.addRelations(quads, normalizedIDPath, baseIdentifier, relation));
         members.forEach(m => this.addMember(quads, m));
 
         return new BasicRepresentation(
