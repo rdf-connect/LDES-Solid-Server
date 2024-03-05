@@ -3,17 +3,19 @@
   "import": [
     "css:config/ldp/metadata-writer/writers/allow-accept.json",
     "css:config/ldp/metadata-writer/writers/content-type.json",
+    "css:config/ldp/metadata-writer/writers/cookie.json",
     "css:config/ldp/metadata-writer/writers/link-rel.json",
     "css:config/ldp/metadata-writer/writers/link-rel-metadata.json",
     "css:config/ldp/metadata-writer/writers/mapped.json",
     "css:config/ldp/metadata-writer/writers/modified.json",
-    "css:config/ldp/metadata-writer/writers/wac-allow.json",
+    "css:config/ldp/metadata-writer/writers/range.json",
+    "css:config/ldp/metadata-writer/writers/storage-description.json",
     "css:config/ldp/metadata-writer/writers/www-auth.json"
   ],
   "@graph": [
     {
       "comment": "Converts all triples with the given predicate to headers of the given type.",
-      "@id": "urn:ldes-server:default:MetadataWriter_Mapped",
+      "@id": "urn:solid-server:default:MetadataWriter_Mapped",
       "@type": "MappedMetadataWriter",
       "headerMap": [
         {
@@ -44,13 +46,19 @@
           "@id": "urn:solid-server:default:MetadataWriter_LinkRelMetadata"
         },
         {
+          "@id": "urn:solid-server:default:MetadataWriter_Cookie"
+        },
+        {
+          "@id": "urn:solid-server:default:MetadataWriter_Mapped"
+        },
+        {
           "@id": "urn:solid-server:default:MetadataWriter_Modified"
         },
         {
-          "@id": "urn:solid-server:default:MetadataWriter_WacAllow"
+          "@id": "urn:solid-server:default:MetadataWriter_Range"
         },
         {
-          "@id": "urn:ldes-server:default:MetadataWriter_Mapped"
+          "@id": "urn:solid-server:default:MetadataWriter_StorageDescription"
         },
         {
           "@id": "urn:solid-server:default:MetadataWriter_WwwAuth"
