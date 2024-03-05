@@ -37,7 +37,7 @@ npm start
 # Install the server
 npm install ldes-solid-server
 # Start the server
-npx community-solid-server -c config.json -f ./data
+npx @solid/community-server -c config.json -f ./data
 ```
 
 #### Required Configuration
