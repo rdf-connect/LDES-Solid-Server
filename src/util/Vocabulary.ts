@@ -1,10 +1,10 @@
-import {createUriAndTermNamespace} from "@treecg/types";
+import { createVocabulary } from "@solid/community-server";
 
-export const HTTP = createUriAndTermNamespace('urn:npm:solid:community-server:http:',
+export const HTTP = createVocabulary('urn:npm:solid:community-server:http:',
     'cache_control',
 );
 
-export const DCAT = createUriAndTermNamespace('http://www.w3.org/ns/dcat#',
+export const DCAT = createVocabulary('http://www.w3.org/ns/dcat#',
     'Dataset',
     'DataService',
     'servesDataset',

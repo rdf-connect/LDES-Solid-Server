@@ -1,15 +1,14 @@
-import type * as RDF from '@rdfjs/types';
+import type { Quad, Quad_Object } from '@rdfjs/types';
 import { getLoggerFor, RedirectHttpError } from '@solid/community-server';
-import { 
-  CacheDirectives, 
-  LDES, 
-  Member, 
-  RDF as RDFT, 
-  RelationParameters, 
-  RelationType, 
-  SDS, 
-  TREE, 
-  createUriAndTermNamespace 
+import {
+  CacheDirectives,
+  LDES,
+  Member,
+  RDF,
+  RelationParameters,
+  RelationType,
+  SDS,
+  TREE
 } from "@treecg/types";
 import { Collection, Db, Filter } from "mongodb";
 import { DataFactory, Parser } from "n3";
@@ -18,8 +17,8 @@ import { Parsed, parseIndex, reconstructIndex } from '../util/utils';
 import { DBConfig } from "./MongoDBConfig";
 import { DataCollectionDocument, IndexCollectionDocument, MetaCollectionDocument } from "./MongoCollectionTypes";
 import { Fragment } from "../ldes/Fragment";
+import { DCAT } from '../util/Vocabulary';
 
-const DCAT = createUriAndTermNamespace("http://www.w3.org/ns/dcat#", "endpointURL", "servesDataset");
 const { namedNode, quad, blankNode, literal } = DataFactory;
 
 
@@ -106,12 +105,12 @@ export class MongoSDSView implements View {
     return this.roots;
   }
 
-  async getMetadata(ldes: string): Promise<[RDF.Quad[], RDF.Quad_Object]> {
+  async getMetadata(ldes: string): Promise<[Quad[], Quad_Object]> {
     const quads = [];
     const blankId = this.descriptionId ? namedNode(this.descriptionId) : blankNode();
     for (const root of this.getRoots()) {
       quads.push(
-        quad(blankId, RDFT.terms.type, TREE.terms.custom("ViewDescription")),
+        quad(blankId, RDF.terms.type, TREE.terms.custom("ViewDescription")),
         quad(blankId, DCAT.terms.endpointURL, namedNode(root)),
         quad(blankId, DCAT.terms.servesDataset, namedNode(ldes)),
       );
@@ -131,17 +130,16 @@ export class MongoSDSView implements View {
 
   async getFragment(identifier: string): Promise<Fragment> {
     const { segs, query } = parseIndex(identifier);
-
-    this.logger.error("ERROR ME");
-    this.logger.info(`Getting fragment for segs ${segs} query ${query}`);
-    console.log(`Getting fragment for segs ${JSON.stringify(segs)} query ${JSON.stringify(query)}`);
-
-    const timestampValue = query["timestamp"];
-    const members = [] as string[];
+    const members: string[] = [];
     const relations = <RelationParameters[]>[];
 
+    const search: Filter<IndexCollectionDocument> = { streamId: this.streamId };
     const id = segs.length > 0 ? segs.join("/") : undefined;
-    const search: Filter<IndexCollectionDocument> = { streamId: this.streamId, id };
+    const timestampValue = query["timestamp"];
+
+    if(id) {
+      search.id = id;
+    }
 
     if (timestampValue) {
       search.timeStamp = { "$lte": new Date(timestampValue) };
@@ -149,15 +147,12 @@ export class MongoSDSView implements View {
 
     console.log("Finding fragment for ", search);
     const fragment = await this.indexCollection.find(search).sort({ "timeStamp": -1 }).limit(1).next();
-    if (!fragment) {
-      this.logger.error("No such bucket found! " + JSON.stringify(search));
-    } else {
-      if(!timestampValue && fragment.timeStamp) {
-        this.logger.info("No timestamp value was provided, but this view uses timestamps, thus redirecting");
+
+    if (fragment) {
+      if (timestampValue && fragment.timeStamp) {
+        console.log("Redirect to proper fragment URL");
         // Redirect to the correct resource, we now have the timestamp;
-        query["timestamp"] = fragment.timeStamp!.toISOString();
-        const location = reconstructIndex({segs, query});
-        throw new RedirectHttpError(307, "moved", location);
+        throw new RedirectHttpError(302, "found", `/${fragment.id!}`);
       }
       fragment.relations = fragment.relations || [];
 
@@ -176,6 +171,10 @@ export class MongoSDSView implements View {
       });
       relations.push(...rels);
       members.push(...fragment.members || []);
+      console.log(`Retrieved fragment ${fragment.id} with ${fragment.members!.length}`);
+    } else {
+      console.error("No such bucket found! " + JSON.stringify(search));
+      throw new RedirectHttpError(404, "No fragment found", "");
     }
 
     return new MongoSDSFragment(members, relations, this.dataCollection, this.getCacheDirectives(fragment?.immutable));
