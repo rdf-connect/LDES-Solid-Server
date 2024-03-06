@@ -1,5 +1,5 @@
 {
-  "@context": "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^5.0.0/components/context.jsonld",
+  "@context": "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^7.0.0/components/context.jsonld",
   "import": [
     "css:config/ldp/handler/components/authorizer.json",
     "css:config/ldp/handler/components/error-handler.json",
@@ -14,7 +14,6 @@
       "@id": "urn:solid-server:default:LdpHandler",
       "@type": "ParsingHttpHandler",
       "args_requestParser": { "@id": "urn:solid-server:default:RequestParser" },
-      "args_metadataCollector": { "@id": "urn:solid-server:default:OperationMetadataCollector" },
       "args_errorHandler": { "@id": "urn:solid-server:default:ErrorHandler" },
       "args_responseWriter": { "@id": "urn:solid-server:default:ResponseWriter" },
       "args_operationHandler": {
@@ -38,7 +37,13 @@
       },
       "args_preferenceParser": { "@id": "urn:solid-server:default:PreferenceParser" },
       "args_metadataParser": { "@id": "urn:solid-server:default:MetadataParser" },
-      "args_conditionsParser": { "@type": "BasicConditionsParser" },
+      "args_conditionsParser": {
+        "@type": "BasicConditionsParser",
+        "eTagHandler": {
+          "@id": "urn:solid-server:default:ETagHandler",
+          "@type": "BasicETagHandler"
+        }
+      },
       "args_bodyParser": {
         "@type": "WaterfallHandler",
         "handlers": [

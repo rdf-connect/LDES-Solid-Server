@@ -10,6 +10,7 @@ import {
     MetadataRecord,
     NotFoundHttpError,
     Patch,
+    RedirectHttpError,
     Representation,
     RepresentationMetadata,
     RepresentationPreferences,
@@ -18,14 +19,13 @@ import {
     trimLeadingSlashes
 } from "@solid/community-server";
 import * as RDF from "@rdfjs/types";
-import {CacheDirectives, Member, RelationParameters, TREE} from "@treecg/types";
-import {LDES, RDF as RDFT, VOID} from "@treecg/types/dist/lib/Vocabularies";
-import {cacheToLiteral} from "./util/utils";
-import {DataFactory, Quad_Object} from "n3";
-import {PrefixView} from "./PrefixView";
-import {HTTP} from "./util/Vocabulary";
+import { CacheDirectives, Member, RelationParameters, TREE, LDES, RDF as RDFT, VOID } from "@treecg/types";
+import { cacheToLiteral } from "./util/utils";
+import { DataFactory, Quad_Object } from "n3";
+import { PrefixView } from "./PrefixView";
+import { HTTP } from "./util/Vocabulary";
 
-const {namedNode, quad, blankNode, literal} = DataFactory;
+const { namedNode, quad, blankNode, literal } = DataFactory;
 
 /**
  * ResourceStore which uses {@link PrefixView} for backend access.
@@ -43,6 +43,7 @@ export class LDESStore implements ResourceStore {
     base: string;
     shape?: string;
     views: PrefixView[];
+    freshDuration: number;
 
     initPromise: any;
 
@@ -51,45 +52,62 @@ export class LDESStore implements ResourceStore {
      * @param views - The mounted views that expose this LDES.
      * @param base - The base URI for the Solid Server.
      * @param relativePath - The relative path to the LDES.
+     * @param freshDuration - The number of seconds that a resource is guaranteed to be fresh.
      */
-    constructor(views: PrefixView[], base: string, relativePath: string, id?: string, shape?: string) {
+    constructor(
+        views: PrefixView[],
+        base: string,
+        relativePath: string,
+        freshDuration: number = 60,
+        id?: string,
+        shape?: string,
+    ) {
         this.base = ensureTrailingSlash(base + trimLeadingSlashes(relativePath));
         this.id = id || this.base;
         this.views = views;
         this.shape = shape;
+        this.freshDuration = freshDuration;
 
-        this.initPromise = Promise.all(views.map(async view =>
-            view.view.init(this.base, view.prefix)
-        ));
+        this.initPromise = Promise.all(views.map(async view => {
+            view.view.init(this.base, view.prefix, this.freshDuration)
+        }));
         this.logger.info(`The LDES descriptions can be found at ${this.base}`);
         console.log(`The LDES descriptions can be found at ${this.base}`);
         this.logger.info(`Mounting ${this.views.length} LDES views ${this.views.map(x => x.prefix).join(", ")}`);
         console.log(`Mounting ${this.views.length} LDES views ${this.views.map(x => x.prefix).join(", ")}`);
     }
 
-    getRepresentation = async (identifier: ResourceIdentifier, preferences: RepresentationPreferences, conditions?: Conditions): Promise<Representation> => {
-        this.logger.info("Get representation");
+    getRepresentation = async (
+        identifier: ResourceIdentifier,
+        preferences: RepresentationPreferences,
+        conditions?: Conditions
+    ): Promise<Representation> => {
+        console.log("Get representation: ", identifier);
         await this.initPromise;
 
         if (ensureTrailingSlash(identifier.path) === this.base) {
             // We got a base request, let's announce all mounted view
             const quads = await this.getViewDescriptions();
             quads.push(quad(
-               namedNode(this.id),
-               RDFT.terms.type,
-               LDES.terms.EventStream,
+                namedNode(this.id),
+                RDFT.terms.type,
+                LDES.terms.EventStream,
             ));
-            if(this.shape) {
+            if (this.shape) {
                 quads.push(quad(
-                   namedNode(this.id),
-                   TREE.terms.shape,
-                   namedNode(this.shape),
+                    namedNode(this.id),
+                    TREE.terms.shape,
+                    namedNode(this.shape),
                 ));
             }
 
             return new BasicRepresentation(
                 guardedStreamFrom(quads),
-                new RepresentationMetadata(this.getMetadata({pub: true, immutable: true}))
+                new RepresentationMetadata(this.getMetadata({
+                    pub: true,
+                    immutable: false,
+                    maxAge: this.freshDuration
+                }))
             );
         }
 
@@ -105,60 +123,74 @@ export class LDESStore implements ResourceStore {
             idStart += 1;
         }
         const baseIdentifier = identifier.path.substring(0, idStart);
-        let bucketIdentifier = identifier.path.substring(idStart);
+        const bucketIdentifier = identifier.path.substring(idStart);
 
-        const fragment = await view.view.getFragment(bucketIdentifier);
-        const quads: Array<RDF.Quad> = [];
-        quads.push(quad(
-           namedNode(this.id),
-           RDFT.terms.type,
-           LDES.terms.EventStream,
-        ));
-
-        const [viewDescriptionQuads, viewDescriptionId] = await view.view
-          .getMetadata(this.id);
-        quads.push(...viewDescriptionQuads);
-        const mRoot = view.view.getRoot();
-        if (mRoot) {
-          quads.push(quad(
-            namedNode(this.id),
-            TREE.terms.view,
-            namedNode(mRoot),
-          ));
+        let fragment;
+        try {
+            fragment = await view.view.getFragment(bucketIdentifier);
+        } catch(ex) {
+            if(RedirectHttpError.isInstance(ex)) {
+              throw new RedirectHttpError(ex.statusCode, ex.name, baseIdentifier + ex.location);
+            } else {
+              throw ex;
+            }
         }
 
-        quads.push(
-          quad(
-            namedNode(identifier.path),
+        const quads: Array<RDF.Quad> = [];
+        quads.push(quad(
+            namedNode(this.id),
             RDFT.terms.type,
-            TREE.terms.custom("Node"),
-          ),
-          quad(
-            namedNode(identifier.path),
-            TREE.terms.custom("viewDescription"),
-            viewDescriptionId,
-          ),
+            LDES.terms.EventStream,
+        ));
+
+        const [viewDescriptionQuads, viewDescriptionId] = await view.view.getMetadata(this.id);
+        quads.push(...viewDescriptionQuads);
+        const mRoots = view.view.getRoots();
+        if (mRoots) {
+            for (const mRoot of mRoots) {
+                quads.push(quad(
+                    namedNode(this.id),
+                    TREE.terms.view,
+                    namedNode(mRoot),
+                ));
+            }
+        }
+
+        // TODO: Check if this can be handled by the CSS instead
+        const normalizedIDPath = decodeURIComponent(identifier.path);
+
+        quads.push(
+            quad(
+                namedNode(normalizedIDPath),
+                RDFT.terms.type,
+                TREE.terms.custom("Node"),
+            ),
+            quad(
+                namedNode(normalizedIDPath),
+                TREE.terms.custom("viewDescription"),
+                viewDescriptionId,
+            ),
         );
 
-        if (view.view.getRoot() === identifier.path) {
+        if (view.view.getRoots().includes(normalizedIDPath)) {
             quads.push(quad(
                 namedNode(this.id),
                 TREE.terms.view,
-                namedNode(identifier.path)
+                namedNode(normalizedIDPath)
             ));
         } else {
-          // This is not the case, you can access a subset of all members
-          quads.push(quad(
-            namedNode(this.id),
-            VOID.terms.subset,
-            namedNode(identifier.path),
-          ));
+            // This is not the case, you can access a subset of all members
+            quads.push(quad(
+                namedNode(this.id),
+                VOID.terms.subset,
+                namedNode(normalizedIDPath),
+            ));
         }
 
         const relations = await fragment.getRelations();
         const members = await fragment.getMembers();
 
-        relations.forEach(relation => this.addRelations(quads, identifier.path, baseIdentifier, relation));
+        relations.forEach(relation => this.addRelations(quads, normalizedIDPath, baseIdentifier, relation));
         members.forEach(m => this.addMember(quads, m));
 
         return new BasicRepresentation(
@@ -171,30 +203,32 @@ export class LDESStore implements ResourceStore {
         const quads = [];
 
         for (let view of this.views) {
-            const [ metaQuads, id ] = await view.view.getMetadata(this.id);
+            const [metaQuads, id] = await view.view.getMetadata(this.id);
             quads.push(...metaQuads);
-            const mRoot = view.view.getRoot();
-            if (mRoot) {
-                quads.push(quad(
-                    namedNode(mRoot),
-                    TREE.terms.custom("viewDescription"),
-                    id
-                ));
-                quads.push(quad(
-                    namedNode(this.id),
-                    TREE.terms.view,
-                    namedNode(mRoot)
-                ));
+            const mRoots = view.view.getRoots();
+            if (mRoots.length > 0) {
+                for (const mRoot of mRoots) {
+                    quads.push(quad(
+                        namedNode(mRoot),
+                        TREE.terms.custom("viewDescription"),
+                        id
+                    ));
+                    quads.push(quad(
+                        namedNode(this.id),
+                        TREE.terms.view,
+                        namedNode(mRoot)
+                    ));
+                }
             }
         }
         return quads;
     }
 
     private getMetadata(cache?: CacheDirectives): MetadataRecord {
-        if (!cache) return {[CONTENT_TYPE]: INTERNAL_QUADS};
+        if (!cache) return { [CONTENT_TYPE]: INTERNAL_QUADS };
 
         const cacheLit = cacheToLiteral(cache);
-        return {[HTTP.cache_control]: literal(cacheLit), [CONTENT_TYPE]: INTERNAL_QUADS};
+        return { [HTTP.cache_control]: literal(cacheLit), [CONTENT_TYPE]: INTERNAL_QUADS };
     }
 
     private addRelations(quads: Array<RDF.Quad>, identifier: string, baseIdentifier: string, relation: RelationParameters) {

@@ -10,6 +10,7 @@ export function cacheToLiteral(instruction: CacheDirectives): string {
 }
 
 export type Parsed = { segs: string[], query: { [label: string]: string } };
+
 export function parseIndex(index: string): Parsed {
     const [first, second] = index.split('?', 2);
     const query: { [label: string]: string } = {};
@@ -24,7 +25,7 @@ export function parseIndex(index: string): Parsed {
     if (first.length == 0) {
         return { segs: [], query };
     }
-    return { segs: first.split("/"), query };
+    return { segs: decodeURIComponent(first).split("/"), query };
 }
 
 export function reconstructIndex({ segs, query }: Parsed): string {

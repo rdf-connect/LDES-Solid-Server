@@ -1,4 +1,6 @@
 node_modules
 dist
-
+.acl
+.meta
+index.html
 data

@@ -19,13 +19,12 @@
         "css:config/identity/ownership/token.json",
         "css:config/identity/pod/static.json",
         "css:config/ldp/authentication/dpop-bearer.json",
-        "css:config/ldp/authorization/webacl.json",
+        "css:config/ldp/authorization/allow-all.json",
         "lss:config/ldp/handler/default.json",
         "css:config/ldp/metadata-parser/default.json",
         "lss:config/ldp/metadata-writer/default.json",
         "css:config/ldp/modes/default.json",
         "css:config/storage/backend/data-accessors/memory.json",
-        "css:config/storage/backend/data-accessors/file.json",
         "css:config/storage/key-value/memory.json",
         "css:config/storage/location/root.json",
         "css:config/storage/middleware/default.json",
@@ -39,7 +38,7 @@
     ],
     "@graph": [
         {
-            "comment": "A complex resourceStore that uses a regex router rules to allow for WAC.",
+            "comment": "A more complex example with 3 different stores being routed to.",
             "@id": "urn:solid-server:default:ResourceStore_Backend",
             "@type": "RoutingResourceStore",
             "rule": {
@@ -47,7 +46,6 @@
             }
         },
         {
-            "comment": "A regex router rule that allows for the LDES Solid server to support WAC over a view using acl.",
             "@id": "urn:solid-server:default:RouterRule",
             "@type": "RegexRouterRule",
             "base": {
@@ -56,15 +54,18 @@
             "rules": [
                 {
                     "@type": "RegexRule",
-                    "regex": "^/(\\.acl)?$",
+                    "regex": "^/(\\.acl|\\.meta)?$",
                     "store": {
-                        "@id": "urn:solid-server:default:FileResourceStore"
+                        "@id": "urn:solid-server:default:MemoryResourceStore"
                     }
                 },
                 {
                     "@type": "RegexRule",
-                    "regex": "^/ldes/(?!.*acl$).*$",
+                    "regex": {
+                        "@id": "urn:solid-server:default:relative-path"
+                    },
                     "store": {
+                        "comment": "A more complex example with 3 different stores being routed to.",
                         "@type": "RepresentationConvertingStore",
                         "source": {
                             "@type": "LDESStore",
@@ -75,26 +76,15 @@
                             "relativePath": {
                                 "@id": "urn:solid-server:default:relative-path"
                             },
+                            "freshDuration": 30,
                             "views": [
                                 {
                                     "@type": "PrefixView",
-                                    "prefix": "example",
+                                    "prefix": "default",
                                     "view": {
-                                        "@type": "MongoTSView",
-                                        "streamId": "http://example.org/myStream#eventStream",
-                                        "descriptionId": "http://example.org/myStream#viewDescription",
-                                        "db": {
-                                            "@id": "urn:solid-server:default:DBConfig"
-                                        }
-                                    }
-                                },
-                                {
-                                    "@type": "PrefixView",
-                                    "prefix": "ais",
-                                    "view": {
-                                        "@type": "MongoTSView",
-                                        "streamId": "http://example.org/aisStream#eventStream",
-                                        "descriptionId": "http://example.org/aisStream#description",
+                                        "@type": "MongoSDSView",
+                                        "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
+                                        "streamId": "https://w3id.org/sds#Stream",
                                         "db": {
                                             "@id": "urn:solid-server:default:DBConfig"
                                         }
@@ -105,13 +95,6 @@
                         "options_outConverter": {
                             "@id": "urn:solid-server:default:RepresentationConverter"
                         }
-                    }
-                },
-                {
-                    "@type": "RegexRule",
-                    "regex": "/",
-                    "store": {
-                        "@id": "urn:solid-server:default:FileResourceStore"
                     }
                 }
             ]
@@ -133,27 +116,11 @@
             }
         },
         {
-            "@id": "urn:solid-server:default:FileResourceStore",
-            "@type": "DataAccessorBasedStore",
-            "identifierStrategy": {
-                "@id": "urn:solid-server:default:IdentifierStrategy"
-            },
-            "auxiliaryStrategy": {
-                "@id": "urn:solid-server:default:AuxiliaryStrategy"
-            },
-            "accessor": {
-                "@id": "urn:solid-server:default:FileDataAccessor"
-            },
-            "metadataStrategy": {
-                "@id": "urn:solid-server:default:MetadataStrategy"
-            }
-        },
-        {
             "@id": "urn:solid-server:default:DBConfig",
             "@type": "DBConfig",
-            "metaCollection": "meta",
-            "indexCollection": "index",
-            "membersCollection": "data",
+            "metaCollection": "BLUEBIKE_META",
+            "indexCollection": "BLUEBIKE_INDEX",
+            "membersCollection": "BLUEBIKE_DATA",
             "dbUrl": "mongodb://localhost:27017/ldes"
         },
         {

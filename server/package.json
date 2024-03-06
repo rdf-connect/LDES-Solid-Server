@@ -4,14 +4,14 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "start": "npx community-solid-server -c ./examples/config-ldes.json",
-        "start-file": "npx community-solid-server -c ./examples/config-ldes-file_locks.json -f ./data"
+        "start": "npx @solid/community-server -c ./examples/config-ldes.json -b http://localhost:3000",
+        "start-file": "npx @solid/community-server -c ./examples/config-ldes-file_locks.json -f ./data"
     },
     "keywords": [],
     "author": "",
-    "license": "ISC",
+    "license": "MIT",
     "dependencies": {
-        "@solid/community-server": "^5.0.0",
+        "@solid/community-server": "^7.0.4",
         "ldes-solid-server": "file:.."
     }
 }

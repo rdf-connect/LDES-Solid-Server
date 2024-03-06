@@ -48,7 +48,7 @@ export class MongoTSView implements View {
     metaCollection!: Collection<MetaCollectionDocument>;
     indexCollection!: Collection<IndexCollectionDocument>;
     dataCollection!: Collection<DataCollectionDocument>;
-    root!: string;
+    roots!: string[];
 
     descriptionId: string;
     streamId: string;
@@ -66,15 +66,15 @@ export class MongoTSView implements View {
         this.indexCollection = this.db.collection(this.dbConfig.index);
         this.dataCollection = this.db.collection(this.dbConfig.data);
 
-        this.root = base + ensureTrailingSlash(trimTrailingSlashes(prefix));
+        this.roots = [base + ensureTrailingSlash(trimTrailingSlashes(prefix))];
     }
 
     /**
      * The URL of the view of the LDES.
      * @returns {string}
      */
-    getRoot(): string {
-        return this.root;
+    getRoots(): string[] {
+        return this.roots;
     }
 
     async getMetadata(ldes: string): Promise<[Rdf.Quad[], Rdf.Quad_Object]> {
@@ -83,7 +83,7 @@ export class MongoTSView implements View {
         const meta = await this.metaCollection.findOne(query);
         if (meta) {
             const metaStore = new Store(new Parser().parse(meta.value))
-            const mongoTSVD = new MongoTSViewDescription(this.descriptionId, ldes, this.root);
+            const mongoTSVD = new MongoTSViewDescription(this.descriptionId, ldes, this.roots[0]);
             const viewDescription = mongoTSVD.parseViewDescription(metaStore)
             quads.push(...viewDescription.quads());
         } else {
@@ -92,7 +92,7 @@ export class MongoTSView implements View {
         }
 
         quads.push(quad(namedNode(ldes), RDF.terms.type, LDES.terms.EventStream));
-        quads.push(quad(namedNode(this.getRoot()), RDF.terms.type, TREE.terms.custom("Node"))); // TODO: verify if this makes sense
+        quads.push(quad(namedNode(this.getRoots()[0]), RDF.terms.type, TREE.terms.custom("Node"))); // TODO: verify if this makes sense
         return [quads, namedNode(this.descriptionId)];
     }
 
