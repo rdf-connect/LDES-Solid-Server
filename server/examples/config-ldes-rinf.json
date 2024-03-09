@@ -90,6 +90,10 @@
                                         }
                                     }
                                 }
+                            ],
+                            "shapes": [
+                                "examples/shape1.ttl",
+                                "examples/shape2.ttl"
                             ]
                         },
                         "options_outConverter": {
@@ -121,7 +125,7 @@
             "metaCollection": "METADATA",
             "indexCollection": "INDEX",
             "membersCollection": "DATA",
-            "dbUrl": "mongodb://localhost:27017/rinf-ldes"
+            "dbUrl": "mongodb://era:rinfldes@193.190.127.247:27017/rinf-ldes?authSource=admin"
         },
         {
             "@id": "urn:solid-server:default:relative-path",

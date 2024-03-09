@@ -18,10 +18,10 @@ import {
     ResourceStore,
     trimLeadingSlashes
 } from "@solid/community-server";
-import * as RDF from "@rdfjs/types";
-import { CacheDirectives, Member, RelationParameters, TREE, LDES, RDF as RDFT, VOID } from "@treecg/types";
-import { cacheToLiteral } from "./util/utils";
-import { DataFactory, Quad_Object } from "n3";
+import { Quad, Quad_Object } from "@rdfjs/types";
+import { CacheDirectives, Member, RelationParameters, TREE, LDES, RDF, VOID } from "@treecg/types";
+import { cacheToLiteral, getShapeQuads } from "./util/utils";
+import { DataFactory } from "n3";
 import { PrefixView } from "./PrefixView";
 import { HTTP } from "./util/Vocabulary";
 
@@ -41,7 +41,7 @@ export class LDESStore implements ResourceStore {
     protected readonly logger = getLoggerFor(this);
     id: string;
     base: string;
-    shape?: string;
+    shapes?: string[];
     views: PrefixView[];
     freshDuration: number;
 
@@ -60,12 +60,12 @@ export class LDESStore implements ResourceStore {
         relativePath: string,
         freshDuration: number = 60,
         id?: string,
-        shape?: string,
+        shapes?: string[],
     ) {
         this.base = ensureTrailingSlash(base + trimLeadingSlashes(relativePath));
         this.id = id || this.base;
         this.views = views;
-        this.shape = shape;
+        this.shapes = shapes;
         this.freshDuration = freshDuration;
 
         this.initPromise = Promise.all(views.map(async view => {
@@ -90,15 +90,11 @@ export class LDESStore implements ResourceStore {
             const quads = await this.getViewDescriptions();
             quads.push(quad(
                 namedNode(this.id),
-                RDFT.terms.type,
+                RDF.terms.type,
                 LDES.terms.EventStream,
             ));
-            if (this.shape) {
-                quads.push(quad(
-                    namedNode(this.id),
-                    TREE.terms.shape,
-                    namedNode(this.shape),
-                ));
+            if (this.shapes && this.shapes.length > 0) {
+                quads.push(...(await getShapeQuads(this.id, this.shapes)));
             }
 
             return new BasicRepresentation(
@@ -128,20 +124,24 @@ export class LDESStore implements ResourceStore {
         let fragment;
         try {
             fragment = await view.view.getFragment(bucketIdentifier);
-        } catch(ex) {
-            if(RedirectHttpError.isInstance(ex)) {
-              throw new RedirectHttpError(ex.statusCode, ex.name, baseIdentifier + ex.location);
+        } catch (ex) {
+            if (RedirectHttpError.isInstance(ex)) {
+                throw new RedirectHttpError(ex.statusCode, ex.name, baseIdentifier + ex.location);
             } else {
-              throw ex;
+                throw ex;
             }
         }
 
-        const quads: Array<RDF.Quad> = [];
+        const quads: Array<Quad> = [];
         quads.push(quad(
             namedNode(this.id),
-            RDFT.terms.type,
+            RDF.terms.type,
             LDES.terms.EventStream,
         ));
+
+        if (this.shapes && this.shapes.length > 0) {
+            quads.push(...(await getShapeQuads(this.id, this.shapes)));
+        }
 
         const [viewDescriptionQuads, viewDescriptionId] = await view.view.getMetadata(this.id);
         quads.push(...viewDescriptionQuads);
@@ -162,7 +162,7 @@ export class LDESStore implements ResourceStore {
         quads.push(
             quad(
                 namedNode(normalizedIDPath),
-                RDFT.terms.type,
+                RDF.terms.type,
                 TREE.terms.custom("Node"),
             ),
             quad(
@@ -199,7 +199,7 @@ export class LDESStore implements ResourceStore {
         );
     }
 
-    private async getViewDescriptions(): Promise<RDF.Quad[]> {
+    private async getViewDescriptions(): Promise<Quad[]> {
         const quads = [];
 
         for (let view of this.views) {
@@ -231,7 +231,7 @@ export class LDESStore implements ResourceStore {
         return { [HTTP.cache_control]: literal(cacheLit), [CONTENT_TYPE]: INTERNAL_QUADS };
     }
 
-    private addRelations(quads: Array<RDF.Quad>, identifier: string, baseIdentifier: string, relation: RelationParameters) {
+    private addRelations(quads: Array<Quad>, identifier: string, baseIdentifier: string, relation: RelationParameters) {
         const bn = blankNode();
         quads.push(quad(
             namedNode(identifier),
@@ -241,7 +241,7 @@ export class LDESStore implements ResourceStore {
 
         quads.push(quad(
             bn,
-            RDFT.terms.type,
+            RDF.terms.type,
             namedNode(relation.type)
         ))
 
@@ -255,7 +255,7 @@ export class LDESStore implements ResourceStore {
             quads.push(quad(
                 bn,
                 TREE.terms.path,
-                <RDF.Quad_Object>relation.path
+                <Quad_Object>relation.path
             ))
 
         if (relation.value)
@@ -263,12 +263,12 @@ export class LDESStore implements ResourceStore {
                 quads.push(quad(
                     bn,
                     TREE.terms.value,
-                    <RDF.Quad_Object>value
+                    <Quad_Object>value
                 ))
             )
     }
 
-    private addMember(quads: Array<RDF.Quad>, member: Member) {
+    private addMember(quads: Array<Quad>, member: Member) {
         quads.push(quad(
             namedNode(this.id),
             TREE.terms.member,
