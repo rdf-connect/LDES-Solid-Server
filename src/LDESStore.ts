@@ -41,7 +41,7 @@ export class LDESStore implements ResourceStore {
     protected readonly logger = getLoggerFor(this);
     id: string;
     base: string;
-    shapes?: string[];
+    shape?: string;
     views: PrefixView[];
     freshDuration: number;
 
@@ -53,6 +53,7 @@ export class LDESStore implements ResourceStore {
      * @param base - The base URI for the Solid Server.
      * @param relativePath - The relative path to the LDES.
      * @param freshDuration - The number of seconds that a resource is guaranteed to be fresh.
+     * @param shape - SHACL shape describing members of this LDES
      */
     constructor(
         views: PrefixView[],
@@ -60,12 +61,12 @@ export class LDESStore implements ResourceStore {
         relativePath: string,
         freshDuration: number = 60,
         id?: string,
-        shapes?: string[],
+        shape?: string,
     ) {
         this.base = ensureTrailingSlash(base + trimLeadingSlashes(relativePath));
         this.id = id || this.base;
         this.views = views;
-        this.shapes = shapes;
+        this.shape = shape;
         this.freshDuration = freshDuration;
 
         this.initPromise = Promise.all(views.map(async view => {
@@ -93,8 +94,8 @@ export class LDESStore implements ResourceStore {
                 RDF.terms.type,
                 LDES.terms.EventStream,
             ));
-            if (this.shapes && this.shapes.length > 0) {
-                quads.push(...(await getShapeQuads(this.id, this.shapes)));
+            if (this.shape) {
+                quads.push(...(await getShapeQuads(this.id, this.shape)));
             }
 
             return new BasicRepresentation(
@@ -139,8 +140,8 @@ export class LDESStore implements ResourceStore {
             LDES.terms.EventStream,
         ));
 
-        if (this.shapes && this.shapes.length > 0) {
-            quads.push(...(await getShapeQuads(this.id, this.shapes)));
+        if (this.shape) {
+            quads.push(...(await getShapeQuads(this.id, this.shape)));
         }
 
         const [viewDescriptionQuads, viewDescriptionId] = await view.view.getMetadata(this.id);
