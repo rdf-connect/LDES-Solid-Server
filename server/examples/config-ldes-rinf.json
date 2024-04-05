@@ -91,10 +91,7 @@
                                     }
                                 }
                             ],
-                            "shapes": [
-                                "examples/shape1.ttl",
-                                "examples/shape2.ttl"
-                            ]
+                            "shape": "examples/shape.ttl"
                         },
                         "options_outConverter": {
                             "@id": "urn:solid-server:default:RepresentationConverter"

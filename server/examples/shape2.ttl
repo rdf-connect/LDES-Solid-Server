@@ -1,5 +1,0 @@
-@prefix sh: <http://www.w3.org/ns/shacl#>.
-@prefix era: <http://data.europa.eu/949/>.
-
-[ ] a sh:NodeShape;
-    sh:targetClass era:SectionOfLine.

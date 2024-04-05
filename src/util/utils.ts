@@ -49,35 +49,34 @@ export function reconstructIndex({ segs, query }: Parsed): string {
     }
 }
 
-export async function getShapeQuads(id: string, shapes: string[]): Promise<Quad[]> {
+export async function getShapeQuads(id: string, shape: string): Promise<Quad[]> {
     const quads: Quad[] = [];
-    for (const shape of shapes) {
-        try {
-            // A remote shape reference was given
-            new URL(shape);
-            quads.push(
-                quad(
-                    namedNode(id),
-                    TREE.terms.shape,
-                    namedNode(shape)
-                )
-            );
-        } catch {
-            // A full local shape file was given
-            await access(shape, constants.F_OK);
-            const shapeStore = new Store(
-                new Parser().parse(await readFile(shape, { encoding: "utf8" }))
-            );
-            const shapeId = extractMainNodeShape(shapeStore);
-            quads.push(
-                quad(
-                    namedNode(id),
-                    TREE.terms.shape,
-                    shapeId
-                )
-            );
-            quads.push(...shapeStore.getQuads(null, null, null, null));
-        }
+
+    try {
+        // A remote shape reference was given
+        new URL(shape);
+        quads.push(
+            quad(
+                namedNode(id),
+                TREE.terms.shape,
+                namedNode(shape)
+            )
+        );
+    } catch {
+        // A full local shape file was given
+        await access(shape, constants.F_OK);
+        const shapeStore = new Store(
+            new Parser().parse(await readFile(shape, { encoding: "utf8" }))
+        );
+        const shapeId = extractMainNodeShape(shapeStore);
+        quads.push(
+            quad(
+                namedNode(id),
+                TREE.terms.shape,
+                shapeId
+            )
+        );
+        quads.push(...shapeStore.getQuads(null, null, null, null));
     }
 
     return quads;
