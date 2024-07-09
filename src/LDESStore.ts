@@ -158,8 +158,8 @@ export class LDESStore implements ResourceStore {
             }
         }
 
-        // TODO: Check if this can be handled by the CSS instead
-        const normalizedIDPath = decodeURIComponent(identifier.path);
+        // Note: this was before: const normalizedIDPath = decodeURIComponent(identifier.path);
+        const normalizedIDPath = identifier.path;
 
         quads.push(
             quad(
