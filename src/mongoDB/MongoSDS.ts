@@ -170,8 +170,8 @@ export class MongoSDSView implements View {
         return relation;
       });
       relations.push(...rels);
-      members.push(...fragment.members || []);
-      console.log(`Retrieved fragment ${fragment.id} with ${fragment.members!.length}`);
+      members.push(...(fragment.members || []));
+      console.log(`Retrieved fragment ${fragment.id} with ${fragment.members?.length || 0} members`);
     } else {
       console.error("No such bucket found! " + JSON.stringify(search));
       throw new RedirectHttpError(404, "No fragment found", "");

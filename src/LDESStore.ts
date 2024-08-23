@@ -24,6 +24,7 @@ import { cacheToLiteral, getShapeQuads } from "./util/utils";
 import { DataFactory } from "n3";
 import { PrefixView } from "./PrefixView";
 import { HTTP } from "./util/Vocabulary";
+import path from "node:path/posix";
 
 const { namedNode, quad, blankNode, literal } = DataFactory;
 
@@ -127,7 +128,7 @@ export class LDESStore implements ResourceStore {
             fragment = await view.view.getFragment(bucketIdentifier);
         } catch (ex) {
             if (RedirectHttpError.isInstance(ex)) {
-                throw new RedirectHttpError(ex.statusCode, ex.name, baseIdentifier + ex.location);
+                throw new RedirectHttpError(ex.statusCode, ex.name, path.posix.join(baseIdentifier, ex.location).replace(':/', '://'));
             } else {
                 throw ex;
             }
@@ -157,8 +158,8 @@ export class LDESStore implements ResourceStore {
             }
         }
 
-        // TODO: Check if this can be handled by the CSS instead
-        const normalizedIDPath = decodeURIComponent(identifier.path);
+        // Note: this was before: const normalizedIDPath = decodeURIComponent(identifier.path);
+        const normalizedIDPath = identifier.path;
 
         quads.push(
             quad(
@@ -249,7 +250,7 @@ export class LDESStore implements ResourceStore {
         quads.push(quad(
             bn,
             TREE.terms.node,
-            namedNode(baseIdentifier + relation.nodeId)
+            namedNode(path.posix.join(baseIdentifier, relation.nodeId).replace(':/', '://'))
         ))
 
         if (relation.path)
