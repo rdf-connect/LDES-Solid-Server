@@ -7,7 +7,7 @@ export class DBConfig {
     readonly index: string;
 
     _client: MongoClient;
-    _clientInit: Promise<unknown>;
+    _clientInit: unknown;
 
     constructor(
         metaCollection: string,

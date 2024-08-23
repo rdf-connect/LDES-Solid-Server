@@ -32,7 +32,7 @@ import { cacheToLiteral, getShapeQuads } from "./util/utils";
 import { DataFactory } from "n3";
 import { PrefixView } from "./PrefixView";
 import { HTTP } from "./util/Vocabulary";
-import path from "node:path/posix";
+import * as path from "path";
 
 const { namedNode, quad, blankNode, literal } = DataFactory;
 
@@ -53,7 +53,7 @@ export class LDESStore implements ResourceStore {
     views: PrefixView[];
     freshDuration: number;
 
-    initPromise: Promise<unknown>;
+    initPromise: unknown;
 
     /**
      * @param id - The URI of the published LDES.
