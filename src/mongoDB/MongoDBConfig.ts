@@ -1,4 +1,4 @@
-import {Db, MongoClient} from "mongodb";
+import { Db, MongoClient } from "mongodb";
 
 export class DBConfig {
     readonly url: string;
@@ -7,9 +7,14 @@ export class DBConfig {
     readonly index: string;
 
     _client: MongoClient;
-    _clientInit: any;
+    _clientInit: Promise<unknown>;
 
-    constructor(metaCollection: string, membersCollection: string, indexCollection: string, dbUrl?: string) {
+    constructor(
+        metaCollection: string,
+        membersCollection: string,
+        indexCollection: string,
+        dbUrl?: string,
+    ) {
         this.meta = metaCollection;
         this.data = membersCollection;
         this.index = indexCollection;
@@ -24,5 +29,3 @@ export class DBConfig {
         return this._client.db();
     }
 }
-
-

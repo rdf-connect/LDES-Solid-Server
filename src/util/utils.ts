@@ -1,4 +1,3 @@
-
 import { CacheDirectives, TREE } from "@treecg/types";
 import { Quad, Quad_Subject } from "@rdfjs/types";
 import { Store, DataFactory, Parser } from "n3";
@@ -15,17 +14,17 @@ export function cacheToLiteral(instruction: CacheDirectives): string {
     return [...pub, ...maxAge, ...immutable].join(", ");
 }
 
-export type Parsed = { segs: string[], query: { [label: string]: string } };
+export type Parsed = { segs: string[]; query: { [label: string]: string } };
 
 export function parseIndex(index: string): Parsed {
-    const [first, second] = index.split('?', 2);
+    const [first, second] = index.split("?", 2);
     const query: { [label: string]: string } = {};
 
     if (second) {
-        second.split("&").forEach(q => {
+        second.split("&").forEach((q) => {
             const [key, value] = q.split("=", 2);
             query[key] = decodeURIComponent(value);
-        })
+        });
     }
 
     if (first.length == 0) {
@@ -38,7 +37,7 @@ export function reconstructIndex({ segs, query }: Parsed): string {
     const path = segs.join("/");
     const queries = [];
 
-    for (let [key, value] of Object.entries(query)) {
+    for (const [key, value] of Object.entries(query)) {
         queries.push(`${key}=${value}`);
     }
 
@@ -49,33 +48,24 @@ export function reconstructIndex({ segs, query }: Parsed): string {
     }
 }
 
-export async function getShapeQuads(id: string, shape: string): Promise<Quad[]> {
+export async function getShapeQuads(
+    id: string,
+    shape: string,
+): Promise<Quad[]> {
     const quads: Quad[] = [];
 
     try {
         // A remote shape reference was given
         new URL(shape);
-        quads.push(
-            quad(
-                namedNode(id),
-                TREE.terms.shape,
-                namedNode(shape)
-            )
-        );
+        quads.push(quad(namedNode(id), TREE.terms.shape, namedNode(shape)));
     } catch {
         // A full local shape file was given
         await access(shape, constants.F_OK);
         const shapeStore = new Store(
-            new Parser().parse(await readFile(shape, { encoding: "utf8" }))
+            new Parser().parse(await readFile(shape, { encoding: "utf8" })),
         );
         const shapeId = extractMainNodeShape(shapeStore);
-        quads.push(
-            quad(
-                namedNode(id),
-                TREE.terms.shape,
-                shapeId
-            )
-        );
+        quads.push(quad(namedNode(id), TREE.terms.shape, shapeId));
         quads.push(...shapeStore.getQuads(null, null, null, null));
     }
 
@@ -87,28 +77,33 @@ export async function getShapeQuads(id: string, shape: string): Promise<Quad[]> 
  * We determine this by assuming that the main node shape
  * is not referenced by any other shape description.
  * If more than one is found an exception is thrown.
-**/
+ **/
 export function extractMainNodeShape(store: Store): Quad_Subject {
     const nodeShapes = store.getSubjects(RDF.type, SHACL.NodeShape, null);
     let mainNodeShape = null;
 
     if (nodeShapes && nodeShapes.length > 0) {
         for (const ns of nodeShapes) {
-            const isNotReferenced = store.getSubjects(null, ns, null).length === 0;
+            const isNotReferenced =
+                store.getSubjects(null, ns, null).length === 0;
 
             if (isNotReferenced) {
                 if (!mainNodeShape) {
                     mainNodeShape = ns;
                 } else {
-                    throw new Error("There are multiple main node shapes in a given shape graph."
-                        + "Unrelated shapes must be given as separate shapes");
+                    throw new Error(
+                        "There are multiple main node shapes in a given shape graph." +
+                            "Unrelated shapes must be given as separate shapes",
+                    );
                 }
             }
         }
         if (mainNodeShape) {
             return mainNodeShape;
         } else {
-            throw new Error("No main SHACL Node Shapes found in given shape graph");
+            throw new Error(
+                "No main SHACL Node Shapes found in given shape graph",
+            );
         }
     } else {
         throw new Error("No SHACL Node Shapes found in given shape graph");

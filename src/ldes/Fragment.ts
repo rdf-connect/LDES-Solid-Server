@@ -1,4 +1,4 @@
-import {CacheDirectives, Member, RelationParameters} from "@treecg/types";
+import { CacheDirectives, Member, RelationParameters } from "@treecg/types";
 
 /**
  * Interface representing a single Fragment.
