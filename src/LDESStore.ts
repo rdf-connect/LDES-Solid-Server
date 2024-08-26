@@ -282,6 +282,7 @@ export class LDESStore implements ResourceStore {
         baseIdentifier: string,
         relation: RelationParameters,
     ) {
+    console.log(relation);
         const bn = blankNode();
         quads.push(quad(namedNode(identifier), TREE.terms.relation, bn));
 
@@ -308,7 +309,7 @@ export class LDESStore implements ResourceStore {
 
         if (relation.value) {
             quads.push(
-                quad(bn, TREE.terms.path, <Quad_Object>relation.value.id),
+                quad(bn, TREE.terms.value, <Quad_Object>relation.value.id),
                 ...relation.value.quads,
             );
         }
