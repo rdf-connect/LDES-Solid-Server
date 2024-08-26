@@ -5,7 +5,6 @@ import {
     LDES,
     Member,
     RDF,
-    RelationParameters,
     RelationType,
     SDS,
     TREE,
@@ -20,7 +19,7 @@ import {
     IndexCollectionDocument,
     MetaCollectionDocument,
 } from "./MongoCollectionTypes";
-import { Fragment } from "../ldes/Fragment";
+import { Fragment, parseRdfThing, RelationParameters } from "../ldes/Fragment";
 import { DCAT } from "../util/Vocabulary";
 
 const { namedNode, quad, blankNode, literal } = DataFactory;
@@ -100,7 +99,7 @@ export class MongoSDSView implements View {
         const roots = await this.indexCollection
             .find({ root: true, streamId: this.streamId })
             .toArray();
-        if ((await roots).length > 0) {
+        if (roots.length > 0) {
             for (const root of roots) {
                 this.roots.push(
                     [
@@ -213,10 +212,10 @@ export class MongoSDSView implements View {
                     };
 
                     if (value) {
-                        relation.value = [literal(value)];
+                        relation.value = parseRdfThing(value);
                     }
                     if (path) {
-                        relation.path = namedNode(path);
+                        relation.path = parseRdfThing(path);
                     }
 
                     return relation;
@@ -225,7 +224,9 @@ export class MongoSDSView implements View {
             relations.push(...rels);
             members.push(...(fragment.members || []));
             console.log(
-                `Retrieved fragment ${fragment.id} with ${fragment.members?.length || 0} members`,
+                `Retrieved fragment ${fragment.id} with ${
+                    fragment.members?.length || 0
+                } members`,
             );
         } else {
             console.error("No such bucket found! " + JSON.stringify(search));
