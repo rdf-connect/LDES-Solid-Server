@@ -1,4 +1,36 @@
-import { CacheDirectives, Member, RelationParameters } from "@treecg/types";
+import { CacheDirectives, DC, Member, RelationType } from "@treecg/types";
+import type * as RDF from "@rdfjs/types";
+import { Parser } from "n3";
+
+export type RdfThing = {
+    id: RDF.Term;
+    quads: RDF.Quad[];
+};
+
+export function parseRdfThing(value: string): RdfThing {
+    const quads = new Parser().parse(value);
+
+    const subjectIdx = quads.findIndex(
+        (q) =>
+            q.subject.value === "" &&
+            q.predicate.value === "http://purl.org/dc/terms/subject",
+    );
+    if (subjectIdx < 0) throw "No valid subject found for RdfThing";
+    const [subject] = quads.splice(subjectIdx, 1);
+
+    return {
+        id: subject.object,
+        quads,
+    };
+}
+
+export interface RelationParameters {
+    nodeId: string;
+    type: RelationType;
+    value?: RdfThing;
+    path?: RdfThing;
+    remainingItems?: number;
+}
 
 /**
  * Interface representing a single Fragment.

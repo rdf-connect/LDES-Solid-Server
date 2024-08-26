@@ -19,20 +19,13 @@ import {
     trimLeadingSlashes,
 } from "@solid/community-server";
 import { Quad, Quad_Object } from "@rdfjs/types";
-import {
-    CacheDirectives,
-    LDES,
-    Member,
-    RDF,
-    RelationParameters,
-    TREE,
-    VOID,
-} from "@treecg/types";
+import { CacheDirectives, LDES, Member, RDF, TREE, VOID } from "@treecg/types";
 import { cacheToLiteral, getShapeQuads } from "./util/utils";
 import { DataFactory } from "n3";
 import { PrefixView } from "./PrefixView";
 import { HTTP } from "./util/Vocabulary";
 import * as path from "path";
+import { RelationParameters } from "./ldes/Fragment";
 
 const { namedNode, quad, blankNode, literal } = DataFactory;
 
@@ -307,12 +300,16 @@ export class LDESStore implements ResourceStore {
         );
 
         if (relation.path) {
-            quads.push(quad(bn, TREE.terms.path, <Quad_Object>relation.path));
+            quads.push(
+                quad(bn, TREE.terms.path, <Quad_Object>relation.path.id),
+                ...relation.path.quads,
+            );
         }
 
         if (relation.value) {
-            relation.value.forEach((value) =>
-                quads.push(quad(bn, TREE.terms.value, <Quad_Object>value)),
+            quads.push(
+                quad(bn, TREE.terms.path, <Quad_Object>relation.value.id),
+                ...relation.value.quads,
             );
         }
     }
