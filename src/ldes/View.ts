@@ -1,5 +1,5 @@
 import * as RDF from "@rdfjs/types";
-import {Fragment} from "../index";
+import { Fragment } from "../index";
 
 /**
  * Interface representing a LDES view. All mounted view should serve the same dataset.

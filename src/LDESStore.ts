@@ -16,15 +16,23 @@ import {
     RepresentationPreferences,
     ResourceIdentifier,
     ResourceStore,
-    trimLeadingSlashes
+    trimLeadingSlashes,
 } from "@solid/community-server";
 import { Quad, Quad_Object } from "@rdfjs/types";
-import { CacheDirectives, Member, RelationParameters, TREE, LDES, RDF, VOID } from "@treecg/types";
+import {
+    CacheDirectives,
+    LDES,
+    Member,
+    RDF,
+    RelationParameters,
+    TREE,
+    VOID,
+} from "@treecg/types";
 import { cacheToLiteral, getShapeQuads } from "./util/utils";
 import { DataFactory } from "n3";
 import { PrefixView } from "./PrefixView";
 import { HTTP } from "./util/Vocabulary";
-import path from "node:path/posix";
+import * as path from "path";
 
 const { namedNode, quad, blankNode, literal } = DataFactory;
 
@@ -36,7 +44,6 @@ const { namedNode, quad, blankNode, literal } = DataFactory;
  * There are two types of requests that can be executed:
  *  * Base request: A request to read all views stored in all databases,
  *  * Fragment request: A request to a fragment within a specific view.
- *
  */
 export class LDESStore implements ResourceStore {
     protected readonly logger = getLoggerFor(this);
@@ -46,7 +53,7 @@ export class LDESStore implements ResourceStore {
     views: PrefixView[];
     freshDuration: number;
 
-    initPromise: any;
+    initPromise: unknown;
 
     /**
      * @param id - The URI of the published LDES.
@@ -64,25 +71,37 @@ export class LDESStore implements ResourceStore {
         id?: string,
         shape?: string,
     ) {
-        this.base = ensureTrailingSlash(base + trimLeadingSlashes(relativePath));
+        this.base = ensureTrailingSlash(
+            base + trimLeadingSlashes(relativePath),
+        );
         this.id = id || this.base;
         this.views = views;
         this.shape = shape;
         this.freshDuration = freshDuration;
 
-        this.initPromise = Promise.all(views.map(async view => {
-            view.view.init(this.base, view.prefix, this.freshDuration)
-        }));
+        this.initPromise = Promise.all(
+            views.map(async (view) => {
+                view.view.init(this.base, view.prefix, this.freshDuration);
+            }),
+        );
         this.logger.info(`The LDES descriptions can be found at ${this.base}`);
         console.log(`The LDES descriptions can be found at ${this.base}`);
-        this.logger.info(`Mounting ${this.views.length} LDES views ${this.views.map(x => x.prefix).join(", ")}`);
-        console.log(`Mounting ${this.views.length} LDES views ${this.views.map(x => x.prefix).join(", ")}`);
+        this.logger.info(
+            `Mounting ${this.views.length} LDES views ${this.views
+                .map((x) => x.prefix)
+                .join(", ")}`,
+        );
+        console.log(
+            `Mounting ${this.views.length} LDES views ${this.views
+                .map((x) => x.prefix)
+                .join(", ")}`,
+        );
     }
 
     getRepresentation = async (
         identifier: ResourceIdentifier,
         preferences: RepresentationPreferences,
-        conditions?: Conditions
+        conditions?: Conditions,
     ): Promise<Representation> => {
         console.log("Get representation: ", identifier);
         await this.initPromise;
@@ -90,28 +109,36 @@ export class LDESStore implements ResourceStore {
         if (ensureTrailingSlash(identifier.path) === this.base) {
             // We got a base request, let's announce all mounted view
             const quads = await this.getViewDescriptions();
-            quads.push(quad(
-                namedNode(this.id),
-                RDF.terms.type,
-                LDES.terms.EventStream,
-            ));
+            quads.push(
+                quad(
+                    namedNode(this.id),
+                    RDF.terms.type,
+                    LDES.terms.EventStream,
+                ),
+            );
             if (this.shape) {
                 quads.push(...(await getShapeQuads(this.id, this.shape)));
             }
 
             return new BasicRepresentation(
                 guardedStreamFrom(quads),
-                new RepresentationMetadata(this.getMetadata({
-                    pub: true,
-                    immutable: false,
-                    maxAge: this.freshDuration
-                }))
+                new RepresentationMetadata(
+                    this.getMetadata({
+                        pub: true,
+                        immutable: false,
+                        maxAge: this.freshDuration,
+                    }),
+                ),
             );
         }
 
-        const view = this.views.find((pv) => identifier.path.indexOf(pv.prefix) >= 0);
+        const view = this.views.find(
+            (pv) => identifier.path.indexOf(pv.prefix) >= 0,
+        );
         if (!view) {
-            this.logger.info("No LDES view found for identifier " + identifier.path);
+            this.logger.info(
+                "No LDES view found for identifier " + identifier.path,
+            );
             throw new NotFoundHttpError("No LDES found!");
         }
 
@@ -128,33 +155,36 @@ export class LDESStore implements ResourceStore {
             fragment = await view.view.getFragment(bucketIdentifier);
         } catch (ex) {
             if (RedirectHttpError.isInstance(ex)) {
-                throw new RedirectHttpError(ex.statusCode, ex.name, path.posix.join(baseIdentifier, ex.location).replace(':/', '://'));
+                throw new RedirectHttpError(
+                    ex.statusCode,
+                    ex.name,
+                    path.posix
+                        .join(baseIdentifier, ex.location)
+                        .replace(":/", "://"),
+                );
             } else {
                 throw ex;
             }
         }
 
         const quads: Array<Quad> = [];
-        quads.push(quad(
-            namedNode(this.id),
-            RDF.terms.type,
-            LDES.terms.EventStream,
-        ));
+        quads.push(
+            quad(namedNode(this.id), RDF.terms.type, LDES.terms.EventStream),
+        );
 
         if (this.shape) {
             quads.push(...(await getShapeQuads(this.id, this.shape)));
         }
 
-        const [viewDescriptionQuads, viewDescriptionId] = await view.view.getMetadata(this.id);
+        const [viewDescriptionQuads, viewDescriptionId] =
+            await view.view.getMetadata(this.id);
         quads.push(...viewDescriptionQuads);
         const mRoots = view.view.getRoots();
         if (mRoots) {
             for (const mRoot of mRoots) {
-                quads.push(quad(
-                    namedNode(this.id),
-                    TREE.terms.view,
-                    namedNode(mRoot),
-                ));
+                quads.push(
+                    quad(namedNode(this.id), TREE.terms.view, namedNode(mRoot)),
+                );
             }
         }
 
@@ -175,51 +205,68 @@ export class LDESStore implements ResourceStore {
         );
 
         if (view.view.getRoots().includes(normalizedIDPath)) {
-            quads.push(quad(
-                namedNode(this.id),
-                TREE.terms.view,
-                namedNode(normalizedIDPath)
-            ));
+            quads.push(
+                quad(
+                    namedNode(this.id),
+                    TREE.terms.view,
+                    namedNode(normalizedIDPath),
+                ),
+            );
         } else {
             // This is not the case, you can access a subset of all members
-            quads.push(quad(
-                namedNode(this.id),
-                VOID.terms.subset,
-                namedNode(normalizedIDPath),
-            ));
+            quads.push(
+                quad(
+                    namedNode(this.id),
+                    VOID.terms.subset,
+                    namedNode(normalizedIDPath),
+                ),
+            );
         }
 
         const relations = await fragment.getRelations();
         const members = await fragment.getMembers();
 
-        relations.forEach(relation => this.addRelations(quads, normalizedIDPath, baseIdentifier, relation));
-        members.forEach(m => this.addMember(quads, m));
+        relations.forEach((relation) =>
+            this.addRelations(
+                quads,
+                normalizedIDPath,
+                baseIdentifier,
+                relation,
+            ),
+        );
+        members.forEach((m) => this.addMember(quads, m));
 
         return new BasicRepresentation(
             guardedStreamFrom(quads),
-            new RepresentationMetadata(this.getMetadata(await fragment.getCacheDirectives()))
+            new RepresentationMetadata(
+                this.getMetadata(await fragment.getCacheDirectives()),
+            ),
         );
-    }
+    };
 
     private async getViewDescriptions(): Promise<Quad[]> {
         const quads = [];
 
-        for (let view of this.views) {
+        for (const view of this.views) {
             const [metaQuads, id] = await view.view.getMetadata(this.id);
             quads.push(...metaQuads);
             const mRoots = view.view.getRoots();
             if (mRoots.length > 0) {
                 for (const mRoot of mRoots) {
-                    quads.push(quad(
-                        namedNode(mRoot),
-                        TREE.terms.custom("viewDescription"),
-                        id
-                    ));
-                    quads.push(quad(
-                        namedNode(this.id),
-                        TREE.terms.view,
-                        namedNode(mRoot)
-                    ));
+                    quads.push(
+                        quad(
+                            namedNode(mRoot),
+                            TREE.terms.custom("viewDescription"),
+                            id,
+                        ),
+                    );
+                    quads.push(
+                        quad(
+                            namedNode(this.id),
+                            TREE.terms.view,
+                            namedNode(mRoot),
+                        ),
+                    );
                 }
             }
         }
@@ -230,76 +277,102 @@ export class LDESStore implements ResourceStore {
         if (!cache) return { [CONTENT_TYPE]: INTERNAL_QUADS };
 
         const cacheLit = cacheToLiteral(cache);
-        return { [HTTP.cache_control]: literal(cacheLit), [CONTENT_TYPE]: INTERNAL_QUADS };
+        return {
+            [HTTP.cache_control]: literal(cacheLit),
+            [CONTENT_TYPE]: INTERNAL_QUADS,
+        };
     }
 
-    private addRelations(quads: Array<Quad>, identifier: string, baseIdentifier: string, relation: RelationParameters) {
+    private addRelations(
+        quads: Array<Quad>,
+        identifier: string,
+        baseIdentifier: string,
+        relation: RelationParameters,
+    ) {
         const bn = blankNode();
-        quads.push(quad(
-            namedNode(identifier),
-            TREE.terms.relation,
-            bn
-        ));
+        quads.push(quad(namedNode(identifier), TREE.terms.relation, bn));
 
-        quads.push(quad(
-            bn,
-            RDF.terms.type,
-            namedNode(relation.type)
-        ))
+        quads.push(quad(bn, RDF.terms.type, namedNode(relation.type)));
 
-        quads.push(quad(
-            bn,
-            TREE.terms.node,
-            namedNode(path.posix.join(baseIdentifier, relation.nodeId).replace(':/', '://'))
-        ))
-
-        if (relation.path)
-            quads.push(quad(
+        quads.push(
+            quad(
                 bn,
-                TREE.terms.path,
-                <Quad_Object>relation.path
-            ))
+                TREE.terms.node,
+                namedNode(
+                    path.posix
+                        .join(baseIdentifier, relation.nodeId)
+                        .replace(":/", "://"),
+                ),
+            ),
+        );
 
-        if (relation.value)
-            relation.value.forEach(value =>
-                quads.push(quad(
-                    bn,
-                    TREE.terms.value,
-                    <Quad_Object>value
-                ))
-            )
+        if (relation.path) {
+            quads.push(quad(bn, TREE.terms.path, <Quad_Object>relation.path));
+        }
+
+        if (relation.value) {
+            relation.value.forEach((value) =>
+                quads.push(quad(bn, TREE.terms.value, <Quad_Object>value)),
+            );
+        }
     }
 
     private addMember(quads: Array<Quad>, member: Member) {
-        quads.push(quad(
-            namedNode(this.id),
-            TREE.terms.member,
-            <Quad_Object>member.id
-        ));
+        quads.push(
+            quad(namedNode(this.id), TREE.terms.member, <Quad_Object>member.id),
+        );
         quads.push(...member.quads);
     }
 
-    setRepresentation = async (identifier: ResourceIdentifier, representation: Representation, conditions?: Conditions): Promise<ChangeMap> => {
-        console.log("Set representation", identifier, representation, conditions)
-        throw "Not implemented set"
-    }
+    setRepresentation = async (
+        identifier: ResourceIdentifier,
+        representation: Representation,
+        conditions?: Conditions,
+    ): Promise<ChangeMap> => {
+        console.log(
+            "Set representation",
+            identifier,
+            representation,
+            conditions,
+        );
+        throw "Not implemented set";
+    };
 
-    addResource = async (container: ResourceIdentifier, representation: Representation, conditions?: Conditions): Promise<ChangeMap> => {
-        console.log("Add representation", container, representation, conditions)
-        throw "Not implemented add"
-    }
+    addResource = async (
+        container: ResourceIdentifier,
+        representation: Representation,
+        conditions?: Conditions,
+    ): Promise<ChangeMap> => {
+        console.log(
+            "Add representation",
+            container,
+            representation,
+            conditions,
+        );
+        throw "Not implemented add";
+    };
 
-    deleteResource = async (identifier: ResourceIdentifier, conditions?: Conditions): Promise<ChangeMap> => {
-        console.log("Delete representation", identifier, conditions)
-        throw "Not implemented delete"
-    }
+    deleteResource = async (
+        identifier: ResourceIdentifier,
+        conditions?: Conditions,
+    ): Promise<ChangeMap> => {
+        console.log("Delete representation", identifier, conditions);
+        throw "Not implemented delete";
+    };
 
-    modifyResource = async (identifier: ResourceIdentifier, patch: Patch, conditions?: Conditions): Promise<ChangeMap> => {
-        console.log("Modify representation", identifier, patch, conditions)
-        throw "Not implemented modify"
-    }
+    modifyResource = async (
+        identifier: ResourceIdentifier,
+        patch: Patch,
+        conditions?: Conditions,
+    ): Promise<ChangeMap> => {
+        console.log("Modify representation", identifier, patch, conditions);
+        throw "Not implemented modify";
+    };
 
-    hasResource = async (_id: ResourceIdentifier, _conditions?: Conditions | undefined): Promise<boolean> => {
+    hasResource = async (
+        _id: ResourceIdentifier,
+        _conditions?: Conditions | undefined,
+    ): Promise<boolean> => {
         return false;
-    }
+    };
 }

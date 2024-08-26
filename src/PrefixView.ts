@@ -1,4 +1,4 @@
-import {View} from "./ldes/View";
+import { View } from "./ldes/View";
 
 /**
  *

@@ -86,8 +86,7 @@
                                         "streamId": "https://w3id.org/sds#Stream",
                                         "db": {
                                             "@id": "urn:solid-server:default:DBConfig"
-                                        },
-                                        "freshDuration": 240
+                                        }
                                     }
                                 },
                                 {
@@ -96,11 +95,10 @@
                                     "view": {
                                         "@type": "MongoSDSView",
                                         "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
-                                        "streamId": "http://example.com/test",
+                                        "streamId": "https://example.org/ns#",
                                         "db": {
                                             "@id": "urn:solid-server:default:DBConfig"
-                                        },
-                                        "freshDuration": 240
+                                        }
                                     }
                                 }
                             ]
@@ -131,10 +129,10 @@
         {
             "@id": "urn:solid-server:default:DBConfig",
             "@type": "DBConfig",
-            "metaCollection": "TEST_META",
-            "indexCollection": "TEST_INDEX",
-            "membersCollection": "TEST_DATA",
-            "dbUrl": "mongodb://localhost:27017/ldes"
+            "metaCollection": "META",
+            "indexCollection": "INDEX",
+            "membersCollection": "DATA",
+            "dbUrl": "mongodb://localhost:27017/mumotest"
         },
         {
             "@id": "urn:solid-server:default:relative-path",
