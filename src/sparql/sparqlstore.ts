@@ -4,6 +4,7 @@ import {
     ChangeMap,
     Conditions,
     CONTENT_TYPE,
+    getLoggerFor,
     guardedStreamFrom,
     INTERNAL_QUADS,
     Patch,
@@ -66,6 +67,8 @@ function compareGeneratedAtTime(x: Quad_Object, y: Quad_Object): Quad_Object {
 }
 
 export class SparqlStore implements ResourceStore {
+    protected readonly logger = getLoggerFor(this);
+
     host: string;
 
     metadata: Quad[];
@@ -125,7 +128,7 @@ export class SparqlStore implements ResourceStore {
         preferences: RepresentationPreferences,
         conditions?: Conditions,
     ): Promise<Representation> => {
-        console.log("Getting representation for " + identifier.path);
+        this.logger.info("Getting representation for " + identifier.path);
         const url = new URL(identifier.path);
         const page = url.searchParams.get("page");
         let quads;

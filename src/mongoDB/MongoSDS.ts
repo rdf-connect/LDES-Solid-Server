@@ -188,7 +188,7 @@ export class MongoSDSView implements View {
             search.timeStamp = { $lte: new Date(timestampValue) };
         }
 
-        console.log("Finding fragment for ", search);
+        this.logger.verbose("Finding fragment for " + JSON.stringify(search));
         const fragment = await this.indexCollection
             .find(search)
             .sort({ timeStamp: -1 })
@@ -197,7 +197,7 @@ export class MongoSDSView implements View {
 
         if (fragment) {
             if (timestampValue && fragment.timeStamp) {
-                console.log("Redirect to proper fragment URL");
+                this.logger.info("Redirect to proper fragment URL");
                 // Redirect to the correct resource, we now have the timestamp;
                 throw new RedirectHttpError(302, "found", `/${fragment.id!}`);
             }
@@ -223,13 +223,10 @@ export class MongoSDSView implements View {
             );
             relations.push(...rels);
             members.push(...(fragment.members || []));
-            console.log(
-                `Retrieved fragment ${fragment.id} with ${
-                    fragment.members?.length || 0
-                } members`,
-            );
         } else {
-            console.error("No such bucket found! " + JSON.stringify(search));
+            this.logger.error(
+                "No such bucket found! " + JSON.stringify(search),
+            );
             throw new RedirectHttpError(404, "No fragment found", "");
         }
 

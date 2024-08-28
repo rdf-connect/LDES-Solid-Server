@@ -113,8 +113,7 @@ export class MongoTSView implements View {
             const viewDescription = mongoTSVD.parseViewDescription(metaStore);
             quads.push(...viewDescription.quads());
         } else {
-            console.log("No ViewDescription found for", this.descriptionId);
-            console.log("tried following search query: ", query);
+            this.logger.info("No ViewDescription found for " + this.descriptionId);
         }
 
         quads.push(
@@ -134,9 +133,6 @@ export class MongoTSView implements View {
         this.logger.info(
             `Looking for fragment with id "${identifier}" in the Mongo Database. (streamID: "${this.streamId}")`,
         );
-        console.log(
-            `Looking for fragment with id "${identifier}" in the Mongo Database. (streamID: "${this.streamId}")`,
-        );
         const members = [] as string[];
         const relations = <RelationParameters[]>[];
         const search: Filter<IndexCollectionDocument> = {
@@ -154,7 +150,6 @@ export class MongoTSView implements View {
             this.logger.error(
                 "No such bucket found! " + JSON.stringify(search),
             );
-            console.log("No such bucket found! " + JSON.stringify(search));
         } else {
             members.push(...(dbFragment.members || []));
 

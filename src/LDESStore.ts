@@ -78,13 +78,7 @@ export class LDESStore implements ResourceStore {
             }),
         );
         this.logger.info(`The LDES descriptions can be found at ${this.base}`);
-        console.log(`The LDES descriptions can be found at ${this.base}`);
         this.logger.info(
-            `Mounting ${this.views.length} LDES views ${this.views
-                .map((x) => x.prefix)
-                .join(", ")}`,
-        );
-        console.log(
             `Mounting ${this.views.length} LDES views ${this.views
                 .map((x) => x.prefix)
                 .join(", ")}`,
@@ -96,7 +90,7 @@ export class LDESStore implements ResourceStore {
         preferences: RepresentationPreferences,
         conditions?: Conditions,
     ): Promise<Representation> => {
-        console.log("Get representation: ", identifier);
+        this.logger.info("Getting representation for " + identifier.path);
         await this.initPromise;
 
         if (ensureTrailingSlash(identifier.path) === this.base) {
@@ -282,7 +276,6 @@ export class LDESStore implements ResourceStore {
         baseIdentifier: string,
         relation: RelationParameters,
     ) {
-    console.log(relation);
         const bn = blankNode();
         quads.push(quad(namedNode(identifier), TREE.terms.relation, bn));
 
