@@ -11,7 +11,10 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
-        "@solid/community-server": "^7.0.5",
+        "@solid/community-server": "^7.1.2",
         "ldes-solid-server": "file:.."
+    },
+    "devDependencies": {
+        "componentsjs": "^5.5.1"
     }
 }

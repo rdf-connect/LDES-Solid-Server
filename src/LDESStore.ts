@@ -19,20 +19,13 @@ import {
     trimLeadingSlashes,
 } from "@solid/community-server";
 import { Quad, Quad_Object } from "@rdfjs/types";
-import {
-    CacheDirectives,
-    LDES,
-    Member,
-    RDF,
-    RelationParameters,
-    TREE,
-    VOID,
-} from "@treecg/types";
+import { CacheDirectives, LDES, Member, RDF, TREE, VOID } from "@treecg/types";
 import { cacheToLiteral, getShapeQuads } from "./util/utils";
 import { DataFactory } from "n3";
 import { PrefixView } from "./PrefixView";
 import { HTTP } from "./util/Vocabulary";
 import * as path from "path";
+import { RelationParameters } from "./ldes/Fragment";
 
 const { namedNode, quad, blankNode, literal } = DataFactory;
 
@@ -85,13 +78,7 @@ export class LDESStore implements ResourceStore {
             }),
         );
         this.logger.info(`The LDES descriptions can be found at ${this.base}`);
-        console.log(`The LDES descriptions can be found at ${this.base}`);
         this.logger.info(
-            `Mounting ${this.views.length} LDES views ${this.views
-                .map((x) => x.prefix)
-                .join(", ")}`,
-        );
-        console.log(
             `Mounting ${this.views.length} LDES views ${this.views
                 .map((x) => x.prefix)
                 .join(", ")}`,
@@ -103,7 +90,7 @@ export class LDESStore implements ResourceStore {
         preferences: RepresentationPreferences,
         conditions?: Conditions,
     ): Promise<Representation> => {
-        console.log("Get representation: ", identifier);
+        this.logger.info("Getting representation for " + identifier.path);
         await this.initPromise;
 
         if (ensureTrailingSlash(identifier.path) === this.base) {
@@ -307,12 +294,16 @@ export class LDESStore implements ResourceStore {
         );
 
         if (relation.path) {
-            quads.push(quad(bn, TREE.terms.path, <Quad_Object>relation.path));
+            quads.push(
+                quad(bn, TREE.terms.path, <Quad_Object>relation.path.id),
+                ...relation.path.quads,
+            );
         }
 
         if (relation.value) {
-            relation.value.forEach((value) =>
-                quads.push(quad(bn, TREE.terms.value, <Quad_Object>value)),
+            quads.push(
+                quad(bn, TREE.terms.value, <Quad_Object>relation.value.id),
+                ...relation.value.quads,
             );
         }
     }

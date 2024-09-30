@@ -9,7 +9,6 @@ import {
     LDES,
     Member,
     RDF,
-    RelationParameters,
     RelationType,
     TREE,
 } from "@treecg/types";
@@ -17,7 +16,7 @@ import { Collection, Db, Filter } from "mongodb";
 import { DataFactory, Parser, Store } from "n3";
 
 import { View } from "../ldes/View";
-import { Fragment } from "../ldes/Fragment";
+import { Fragment, RdfThing, RelationParameters } from "../ldes/Fragment";
 import { DBConfig } from "./MongoDBConfig";
 import {
     DataCollectionDocument,
@@ -114,8 +113,7 @@ export class MongoTSView implements View {
             const viewDescription = mongoTSVD.parseViewDescription(metaStore);
             quads.push(...viewDescription.quads());
         } else {
-            console.log("No ViewDescription found for", this.descriptionId);
-            console.log("tried following search query: ", query);
+            this.logger.info("No ViewDescription found for " + this.descriptionId);
         }
 
         quads.push(
@@ -135,9 +133,6 @@ export class MongoTSView implements View {
         this.logger.info(
             `Looking for fragment with id "${identifier}" in the Mongo Database. (streamID: "${this.streamId}")`,
         );
-        console.log(
-            `Looking for fragment with id "${identifier}" in the Mongo Database. (streamID: "${this.streamId}")`,
-        );
         const members = [] as string[];
         const relations = <RelationParameters[]>[];
         const search: Filter<IndexCollectionDocument> = {
@@ -155,25 +150,24 @@ export class MongoTSView implements View {
             this.logger.error(
                 "No such bucket found! " + JSON.stringify(search),
             );
-            console.log("No such bucket found! " + JSON.stringify(search));
         } else {
             members.push(...(dbFragment.members || []));
 
             const rels: RelationParameters[] = dbFragment!.relations.map(
                 ({ type, value, bucket, path }) => {
-                    const values: Rdf.Term[] = [
-                        literal(
-                            value,
-                            namedNode(
-                                "http://www.w3.org/2001/XMLSchema#dateTime",
-                            ),
-                        ),
-                    ];
                     return {
                         type: <RelationType>type,
-                        value: values,
+                        value: {
+                            id: literal(
+                                value,
+                                namedNode(
+                                    "http://www.w3.org/2001/XMLSchema#dateTime",
+                                ),
+                            ),
+                            quads: [],
+                        },
                         nodeId: bucket,
-                        path: namedNode(path),
+                        path: { id: namedNode(path), quads: [] },
                     };
                 },
             );
