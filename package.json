@@ -33,7 +33,8 @@
     "@rdfjs/types": "^1.1.0",
     "@treecg/types": "^0.4.6",
     "mongodb": "^6.8.0",
-    "n3": "^1.21.0"
+    "n3": "^1.21.0",
+    "redis": "^4.7.0"
   },
   "devDependencies": {
     "@solid/community-server": "^7.1.2",

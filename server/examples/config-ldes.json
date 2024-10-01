@@ -82,7 +82,7 @@
                   "@type": "PrefixView",
                   "prefix": "default",
                   "view": {
-                    "@type": "MongoSDSView",
+                    "@type": "SDSView",
                     "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
                     "streamId": "https://w3id.org/sds#Stream",
                     "db": {
@@ -94,7 +94,7 @@
                   "@type": "PrefixView",
                   "prefix": "indexed",
                   "view": {
-                    "@type": "MongoSDSView",
+                    "@type": "SDSView",
                     "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
                     "streamId": "https://example.org/ns#",
                     "db": {

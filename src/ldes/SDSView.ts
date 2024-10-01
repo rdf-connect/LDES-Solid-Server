@@ -1,111 +1,48 @@
-import type { Quad, Quad_Object } from "@rdfjs/types";
+import { View } from "./View";
 import { getLoggerFor, RedirectHttpError } from "@solid/community-server";
-import {
-    CacheDirectives,
-    LDES,
-    Member,
-    RDF,
-    RelationType,
-    SDS,
-    TREE,
-} from "@treecg/types";
-import { Collection, Db, Filter } from "mongodb";
+import { DBConfig } from "../DBConfig";
+import type { Quad, Quad_Object } from "@rdfjs/types";
+import { CacheDirectives, LDES, RDF, RelationType, SDS, TREE } from "@treecg/types";
 import { DataFactory, Parser } from "n3";
-import { View } from "../ldes/View";
-import { Parsed, parseIndex, reconstructIndex } from "../util/utils";
-import { DBConfig } from "./MongoDBConfig";
-import {
-    DataCollectionDocument,
-    IndexCollectionDocument,
-    MetaCollectionDocument,
-} from "./MongoCollectionTypes";
-import { Fragment, parseRdfThing, RelationParameters } from "../ldes/Fragment";
+import { Fragment, parseRdfThing, RelationParameters } from "./Fragment";
+import { getRepository, Repository } from "../repositories/Repository";
 import { DCAT } from "../util/Vocabulary";
+import { Parsed, parseIndex, reconstructIndex } from "../util/utils";
+import { SDSFragment } from "./SDSFragment";
+import quad = DataFactory.quad;
+import namedNode = DataFactory.namedNode;
+import blankNode = DataFactory.blankNode;
 
-const { namedNode, quad, blankNode, literal } = DataFactory;
+export class SDSView implements View {
+    dbConfig: DBConfig;
+    repository: Repository;
+    roots!: string[];
+    descriptionId: string;
 
-class MongoSDSFragment implements Fragment {
-    members: string[];
-    relations: RelationParameters[];
-    collection: Collection<DataCollectionDocument>;
-
-    cacheDirectives: CacheDirectives;
-    constructor(
-        members: string[],
-        relations: RelationParameters[],
-        collection: Collection<DataCollectionDocument>,
-        cacheDirectives: CacheDirectives,
-    ) {
-        this.collection = collection;
-        this.members = members;
-        this.relations = relations;
-        this.cacheDirectives = cacheDirectives;
-    }
-
-    async getMembers(): Promise<Member[]> {
-        return await this.collection
-            .find({ id: { $in: this.members } })
-            .map((row) => {
-                return <Member>{
-                    id: namedNode(row.id),
-                    quads: new Parser().parse(row.data),
-                };
-            })
-            .toArray();
-    }
-
-    async getRelations(): Promise<RelationParameters[]> {
-        return this.relations;
-    }
-
-    async getCacheDirectives(): Promise<CacheDirectives> {
-        return this.cacheDirectives;
-    }
-}
-
-export class MongoSDSView implements View {
+    streamId: string;
+    freshDuration: number = 60;
     protected readonly logger = getLoggerFor(this);
 
-    dbConfig: DBConfig;
-    db!: Db;
-    metaCollection!: Collection<MetaCollectionDocument>;
-    indexCollection!: Collection<IndexCollectionDocument>;
-    dataCollection!: Collection<DataCollectionDocument>;
-    roots!: string[];
-
-    descriptionId?: string;
-    streamId: string;
-
-    freshDuration: number = 60;
-
-    constructor(db: DBConfig, streamId: string, descriptionId?: string) {
+    constructor(db: DBConfig, streamId: string, descriptionId: string) {
         this.dbConfig = db;
+        this.repository = getRepository(this.dbConfig);
         this.streamId = streamId;
         this.descriptionId = descriptionId;
         this.roots = [];
     }
 
-    async init(
-        base: string,
-        prefix: string,
-        freshDuration: number,
-    ): Promise<void> {
+    async init(base: string, prefix: string, freshDuration: number): Promise<void> {
         this.freshDuration = freshDuration;
-        this.db = await this.dbConfig.db();
-        this.metaCollection = this.db.collection(this.dbConfig.meta);
-        this.indexCollection = this.db.collection(this.dbConfig.index);
-        this.dataCollection = this.db.collection(this.dbConfig.data);
+        await this.repository.open();
 
-        const roots = await this.indexCollection
-            .find({ root: true, streamId: this.streamId })
-            .toArray();
+        const roots = await this.repository.findRoots(this.streamId);
         if (roots.length > 0) {
             for (const root of roots) {
                 this.roots.push(
                     [
                         base.replace(/^\/|\/$/g, ""),
                         prefix.replace(/^\/|\/$/g, ""),
-                        root.id,
+                        root,
                     ].join("/"),
                 );
             }
@@ -150,10 +87,7 @@ export class MongoSDSView implements View {
             );
         }
 
-        const stream = await this.metaCollection.findOne({
-            type: SDS.Stream,
-            id: this.streamId,
-        });
+        const stream = await this.repository.findMetadata(SDS.Stream, this.streamId);
         if (stream) {
             quads.push(
                 quad(
@@ -163,7 +97,7 @@ export class MongoSDSView implements View {
                 ),
             );
 
-            quads.push(...new Parser().parse(stream.value));
+            quads.push(...new Parser().parse(stream));
         }
 
         return [quads, blankId];
@@ -174,26 +108,16 @@ export class MongoSDSView implements View {
         const members: string[] = [];
         const relations = <RelationParameters[]>[];
 
-        const search: Filter<IndexCollectionDocument> = {
-            streamId: this.streamId,
-        };
+        const search: any = {};
         const id = segs.length > 0 ? segs.join("/") : undefined;
         const timestampValue = query["timestamp"];
 
-        if (id) {
-            search.id = id;
-        }
-
         if (timestampValue) {
-            search.timeStamp = { $lte: new Date(timestampValue) };
+            search.timeStamp = new Date(timestampValue).getTime();
         }
 
         this.logger.verbose("Finding fragment for " + JSON.stringify(search));
-        const fragment = await this.indexCollection
-            .find(search)
-            .sort({ timeStamp: -1 })
-            .limit(1)
-            .next();
+        const fragment = await this.repository.findBucket(this.streamId, id, search);
 
         if (fragment) {
             if (timestampValue && fragment.timeStamp) {
@@ -230,10 +154,10 @@ export class MongoSDSView implements View {
             throw new RedirectHttpError(404, "No fragment found", "");
         }
 
-        return new MongoSDSFragment(
+        return new SDSFragment(
             members,
             relations,
-            this.dataCollection,
+            this.repository,
             this.getCacheDirectives(fragment?.immutable),
         );
     }

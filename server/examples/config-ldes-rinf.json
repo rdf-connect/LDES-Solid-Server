@@ -82,7 +82,7 @@
                                     "@type": "PrefixView",
                                     "prefix": "ldes",
                                     "view": {
-                                        "@type": "MongoSDSView",
+                                        "@type": "SDSView",
                                         "descriptionId": "http://localhost:3000/rinf/ldes/#timestampFragmentation",
                                         "streamId": "https://era.ilabt.imec.be/ldes/metadata#generation-stream",
                                         "db": {

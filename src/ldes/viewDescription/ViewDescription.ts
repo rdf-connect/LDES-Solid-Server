@@ -1,10 +1,10 @@
 import { DataFactory, Store } from "n3";
-import namedNode = DataFactory.namedNode;
 import { LDES, TREE } from "@treecg/types";
 import { RDF } from "@solid/community-server";
 import { DCAT } from "../../util/Vocabulary";
-import literal = DataFactory.literal;
 import type * as Rdf from "@rdfjs/types";
+import namedNode = DataFactory.namedNode;
+import literal = DataFactory.literal;
 
 export interface N3Support {
     getStore: () => Store;
@@ -64,11 +64,6 @@ export interface IBucketizeStrategy extends N3Support {
 }
 
 export class ViewDescription implements IViewDescription {
-    private _id: string;
-    private _managedBy: IIngestorClient;
-    private _servesDataset: string;
-    private _endpointURL: string;
-
     constructor(
         id: string,
         managedBy: IIngestorClient,
@@ -81,17 +76,25 @@ export class ViewDescription implements IViewDescription {
         this._endpointURL = rootNodeIdentifier;
     }
 
+    private _id: string;
+
     get id(): string {
         return this._id;
     }
+
+    private _managedBy: IIngestorClient;
 
     get managedBy(): IIngestorClient {
         return this._managedBy;
     }
 
+    private _servesDataset: string;
+
     get servesDataset(): string {
         return this._servesDataset;
     }
+
+    private _endpointURL: string;
 
     get endpointURL(): string {
         return this._endpointURL;
@@ -132,11 +135,6 @@ export class ViewDescription implements IViewDescription {
 }
 
 export class IngestorClient implements IIngestorClient {
-    private _bucketizeStrategy: IBucketizeStrategy;
-    private _id: string;
-
-    private _type: string;
-
     constructor(
         id: string,
         bucketizeStrategy: IBucketizeStrategy,
@@ -147,13 +145,19 @@ export class IngestorClient implements IIngestorClient {
         this._type = type;
     }
 
+    private _bucketizeStrategy: IBucketizeStrategy;
+
     get bucketizeStrategy(): IBucketizeStrategy {
         return this._bucketizeStrategy;
     }
 
+    private _id: string;
+
     get id(): string {
         return this._id;
     }
+
+    private _type: string;
 
     get type(): string {
         return this._type;
@@ -176,11 +180,6 @@ export class IngestorClient implements IIngestorClient {
 }
 
 export class BucketizeStrategy implements IBucketizeStrategy {
-    private _bucketType: string;
-    private _id: string;
-    private _pageSize: number | undefined;
-    private _path: string;
-
     constructor(
         id: string,
         bucketType: string,
@@ -193,17 +192,25 @@ export class BucketizeStrategy implements IBucketizeStrategy {
         this._path = path;
     }
 
+    private _bucketType: string;
+
     get bucketType(): string {
         return this._bucketType;
     }
+
+    private _id: string;
 
     get id(): string {
         return this._id;
     }
 
+    private _pageSize: number | undefined;
+
     get pageSize(): number | undefined {
         return this._pageSize;
     }
+
+    private _path: string;
 
     get path(): string {
         return this._path;
