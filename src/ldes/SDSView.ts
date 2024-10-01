@@ -113,6 +113,7 @@ export class SDSView implements View {
         const fragment = await this.repository.findBucket(this.streamId, id);
 
         if (fragment) {
+
             fragment.relations = fragment.relations || [];
 
             const rels: RelationParameters[] = fragment!.relations.map(

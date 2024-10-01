@@ -22,6 +22,7 @@ export type Relation = {
     timestampRelation?: boolean;
 };
 
+
 export interface Repository {
     open(): Promise<void>;
 
