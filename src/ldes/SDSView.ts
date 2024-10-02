@@ -108,23 +108,12 @@ export class SDSView implements View {
         const members: string[] = [];
         const relations = <RelationParameters[]>[];
 
-        const search: any = {};
-        const id = segs.length > 0 ? segs.join("/") : undefined;
-        const timestampValue = query["timestamp"];
+        const id = segs.length > 0 ? segs.join("/") : (await this.repository.findRoots(this.streamId))[0];
 
-        if (timestampValue) {
-            search.timeStamp = new Date(timestampValue).getTime();
-        }
-
-        this.logger.verbose("Finding fragment for " + JSON.stringify(search));
-        const fragment = await this.repository.findBucket(this.streamId, id, search);
+        this.logger.verbose(`Finding fragment for stream '${this.streamId}' and id '${id}'.`);
+        const fragment = await this.repository.findBucket(this.streamId, id);
 
         if (fragment) {
-            if (timestampValue && fragment.timeStamp) {
-                this.logger.info("Redirect to proper fragment URL");
-                // Redirect to the correct resource, we now have the timestamp;
-                throw new RedirectHttpError(302, "found", `/${fragment.id!}`);
-            }
             fragment.relations = fragment.relations || [];
 
             const rels: RelationParameters[] = fragment!.relations.map(
@@ -148,9 +137,7 @@ export class SDSView implements View {
             relations.push(...rels);
             members.push(...(fragment.members || []));
         } else {
-            this.logger.error(
-                "No such bucket found! " + JSON.stringify(search),
-            );
+            this.logger.error(`No such bucket found! (stream: '${this.streamId}', id: '${id}')`);
             throw new RedirectHttpError(404, "No fragment found", "");
         }
 

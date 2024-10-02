@@ -1,4 +1,4 @@
-import { Bucket, BucketSearch, Repository } from "./Repository";
+import { Bucket, Repository } from "./Repository";
 import { getLoggerFor } from "@solid/community-server";
 import { Db, MongoClient } from "mongodb";
 import { Member } from "@treecg/types";
@@ -49,17 +49,10 @@ export class MongoDBRepository implements Repository {
             .then((roots) => roots.map((root) => root.id)) ?? [];
     }
 
-    async findBucket(type: string, id?: string, search?: BucketSearch): Promise<Bucket | null> {
+    async findBucket(type: string, id: string): Promise<Bucket | null> {
         const filter: any = { streamId: type, id: id };
-        if (search?.leaf) {
-            filter.leaf = search.leaf;
-        }
-        if (search?.timeStamp) {
-            filter.timeStamp = { $lte: new Date(search.timeStamp) };
-        }
         return this.db?.collection(this.index)
             .find(filter)
-            .sort({ timeStamp: -1 })
             .limit(1)
             .next()
             .then((entry) => {
@@ -69,9 +62,8 @@ export class MongoDBRepository implements Repository {
                 return {
                     id: entry.id,
                     streamId: entry.streamId,
-                    leaf: entry.leaf,
+                    root: entry.root,
                     value: entry.value,
-                    timeStamp: entry.timeStamp,
                     immutable: entry.immutable,
                     members: entry.members,
                     relations: entry.relations,
