@@ -2,6 +2,7 @@
 export * from "./DBConfig";
 export * from "./repositories/Repository";
 export * from "./repositories/MongoDBRepository";
+export * from "./repositories/RedisRepository";
 
 // LDES interface implementations
 export * from "./ldes/SDSView";

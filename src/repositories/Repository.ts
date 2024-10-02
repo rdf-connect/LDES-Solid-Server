@@ -2,13 +2,13 @@ import { DBConfig } from "../DBConfig";
 import { env } from "process";
 import { MongoDBRepository } from "./MongoDBRepository";
 import { Member } from "@treecg/types";
+import { RedisRepository } from "./RedisRepository";
 
 export type Bucket = {
     id: string;
     streamId: string;
-    leaf: boolean;
+    root: boolean;
     value?: string;
-    timeStamp?: number;
     immutable?: boolean;
     members: string[];
     relations: Relation[];
@@ -22,11 +22,6 @@ export type Relation = {
     timestampRelation?: boolean;
 };
 
-export type BucketSearch = {
-    leaf?: boolean;
-    timeStamp?: number;
-};
-
 export interface Repository {
     open(): Promise<void>;
 
@@ -36,7 +31,7 @@ export interface Repository {
 
     findRoots(streamId: string): Promise<string[]>;
 
-    findBucket(type: string, id?: string, search?: BucketSearch): Promise<Bucket | null>;
+    findBucket(type: string, id: string): Promise<Bucket | null>;
 
     findMembers(members: string[]): Promise<Member[]>;
 }
@@ -45,8 +40,15 @@ export function getRepository(dbConfig: DBConfig): Repository {
     const url =
         dbConfig.url || env.DB_CONN_STRING || "mongodb://localhost:27017/ldes";
 
-    if (url.startsWith("mongodb://")) {
+    if (url.startsWith("mongodb")) {
         return new MongoDBRepository(
+            url,
+            dbConfig.meta,
+            dbConfig.data,
+            dbConfig.index,
+        );
+    } else if (url.startsWith("redis")) {
+        return new RedisRepository(
             url,
             dbConfig.meta,
             dbConfig.data,
