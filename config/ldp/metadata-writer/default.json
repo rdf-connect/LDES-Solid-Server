@@ -4,7 +4,6 @@
     "css:config/ldp/metadata-writer/writers/allow-accept.json",
     "css:config/ldp/metadata-writer/writers/content-type.json",
     "css:config/ldp/metadata-writer/writers/cookie.json",
-    "css:config/ldp/metadata-writer/writers/link-rel.json",
     "css:config/ldp/metadata-writer/writers/link-rel-metadata.json",
     "css:config/ldp/metadata-writer/writers/mapped.json",
     "css:config/ldp/metadata-writer/writers/modified.json",
@@ -13,6 +12,25 @@
     "css:config/ldp/metadata-writer/writers/www-auth.json"
   ],
   "@graph": [
+    {
+      "comment": "Converts all triples with the given predicates to Link headers.",
+      "@id": "urn:solid-server:default:MetadataWriter_LinkRel2",
+      "@type": "LinkRelMetadataWriter",
+      "linkRelMap": [
+        {
+          "LinkRelMetadataWriter:_linkRelMap_key": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+          "LinkRelMetadataWriter:_linkRelMap_value": "type"
+        },
+        {
+          "LinkRelMetadataWriter:_linkRelMap_key": "http://www.w3.org/ns/ldp#contains",
+          "LinkRelMetadataWriter:_linkRelMap_value": "http://www.w3.org/ns/ldp#contains"
+        },
+        {
+          "LinkRelMetadataWriter:_linkRelMap_key": "http://www.w3.org/ns/ldp#inbox",
+          "LinkRelMetadataWriter:_linkRelMap_value": "http://www.w3.org/ns/ldp#inbox"
+        }
+      ]
+    },
     {
       "comment": "Converts all triples with the given predicate to headers of the given type.",
       "@id": "urn:solid-server:default:MetadataWriter_Mapped",
@@ -40,7 +58,7 @@
           "@id": "urn:solid-server:default:MetadataWriter_ContentType"
         },
         {
-          "@id": "urn:solid-server:default:MetadataWriter_LinkRel"
+          "@id": "urn:solid-server:default:MetadataWriter_LinkRel2"
         },
         {
           "@id": "urn:solid-server:default:MetadataWriter_LinkRelMetadata"
