@@ -69,6 +69,9 @@ export class RedisRepository implements Repository {
     }
 
     async findMembers(members: string[]): Promise<Member[]> {
+        if (members.length === 0) {
+            return [];
+        }
         return (await this.client?.mGet(members.map((member) => `${this.data}:${encodeURIComponent(member)}`)) ?? [])
             .filter((entry) => entry !== null)
             .map((entry, i) => {
@@ -115,7 +118,7 @@ export class RedisRepository implements Repository {
     }
 
     encodeKey(key: string): string {
-        // Add \\ in front of ., :, /, -
-        return key.replace(/([.:\/-])/g, "\\$1");
+        // Add \\ in front of ., :, /, -, _, %
+        return key.replace(/([.:\/\-_%])/g, "\\$1");
     }
 }
