@@ -87,7 +87,6 @@ You will probably want to configure a `urn:solid-server:default:LDESConfig` and 
         - `value` of the relation
         - `bucket` is the target fragment id
         - `path` of the relation
-    - optional `timeStamp` specifies the starting timestamp of this fragment.
 - `metaCollection` specifies the metadata collection, this collection contains information about each ingested stream. JSON objects with following fields:
     - `id` the id of the ingested stream.
     - `type` specifies the metadata type. Often "https://w3id.org/sds#Stream".

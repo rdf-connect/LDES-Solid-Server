@@ -80,7 +80,7 @@
                                     "@type": "PrefixView",
                                     "prefix": "example",
                                     "view": {
-                                        "@type": "MongoTSView",
+                                        "@type": "SDSView",
                                         "streamId": "http://example.org/myStream#eventStream",
                                         "descriptionId": "http://example.org/myStream#viewDescription",
                                         "db": {
@@ -92,7 +92,7 @@
                                     "@type": "PrefixView",
                                     "prefix": "ais",
                                     "view": {
-                                        "@type": "MongoTSView",
+                                        "@type": "SDSView",
                                         "streamId": "http://example.org/aisStream#eventStream",
                                         "descriptionId": "http://example.org/aisStream#description",
                                         "db": {
