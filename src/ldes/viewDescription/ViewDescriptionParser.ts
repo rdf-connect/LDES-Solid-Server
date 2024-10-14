@@ -8,7 +8,8 @@ import {
 import { DataFactory, Literal, Store } from "n3";
 import { LDES, RDF, TREE } from "@treecg/types";
 import * as Rdf from "@rdfjs/types";
-import namedNode = DataFactory.namedNode;
+
+const { namedNode } = DataFactory;
 
 export class ViewDescriptionParser {
     private viewIdentifier: string;

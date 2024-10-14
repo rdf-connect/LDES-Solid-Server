@@ -3,7 +3,8 @@ import { getLoggerFor } from "@solid/community-server";
 import { Db, MongoClient } from "mongodb";
 import { Member } from "@treecg/types";
 import { DataFactory, Parser } from "n3";
-import namedNode = DataFactory.namedNode;
+
+const { namedNode } = DataFactory;
 
 export class MongoDBRepository implements Repository {
     protected url: string;

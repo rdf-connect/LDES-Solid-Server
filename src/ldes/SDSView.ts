@@ -9,9 +9,8 @@ import { getRepository, Repository } from "../repositories/Repository";
 import { DCAT } from "../util/Vocabulary";
 import { Parsed, parseIndex, reconstructIndex } from "../util/utils";
 import { SDSFragment } from "./SDSFragment";
-import quad = DataFactory.quad;
-import namedNode = DataFactory.namedNode;
-import blankNode = DataFactory.blankNode;
+
+const { quad, namedNode, blankNode } = DataFactory;
 
 export class SDSView implements View {
     dbConfig: DBConfig;

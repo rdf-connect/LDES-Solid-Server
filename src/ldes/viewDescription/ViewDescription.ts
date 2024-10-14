@@ -3,8 +3,8 @@ import { LDES, TREE } from "@treecg/types";
 import { RDF } from "@solid/community-server";
 import { DCAT } from "../../util/Vocabulary";
 import type * as Rdf from "@rdfjs/types";
-import namedNode = DataFactory.namedNode;
-import literal = DataFactory.literal;
+
+const { namedNode, literal } = DataFactory;
 
 export interface N3Support {
     getStore: () => Store;
