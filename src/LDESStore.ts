@@ -116,7 +116,7 @@ export class LDESStore implements ResourceStore {
             );
             this.addContainerTypes(md);
             // We got a base request, let's announce all mounted view
-            const quads = await this.getViewDescriptions(md);
+            const quads = await this.getViewDescriptions(md, identifier.path);
             md.add(
                 RDF.terms.type,
                 LDP.terms.Container,
@@ -250,7 +250,6 @@ export class LDESStore implements ResourceStore {
                 normalizedIDPath,
                 baseIdentifier,
                 relation,
-                md,
             ),
         );
 
@@ -270,6 +269,7 @@ export class LDESStore implements ResourceStore {
 
     private async getViewDescriptions(
         md: RepresentationMetadata,
+        url: string,
     ): Promise<Quad[]> {
         const quads = [];
 
@@ -296,7 +296,7 @@ export class LDESStore implements ResourceStore {
 
                     quads.push(
                         quad(
-                            namedNode(this.id),
+                            namedNode(url),
                             LDP.terms.contains,
                             namedNode(mRoot),
                         ),
@@ -336,7 +336,6 @@ export class LDESStore implements ResourceStore {
         identifier: string,
         baseIdentifier: string,
         relation: RelationParameters,
-        md: RepresentationMetadata,
     ) {
         const bn = blankNode();
         quads.push(quad(namedNode(identifier), TREE.terms.relation, bn));
@@ -351,12 +350,6 @@ export class LDESStore implements ResourceStore {
         quads.push(quad(bn, TREE.terms.node, relationTarget));
         quads.push(
             quad(namedNode(identifier), LDP.terms.contains, relationTarget),
-        );
-
-        md.add(
-            LDP.terms.contains,
-            relationTarget,
-            SOLID_META.terms.ResponseMetadata,
         );
 
         if (relation.path) {
