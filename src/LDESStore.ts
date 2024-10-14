@@ -33,14 +33,6 @@ import { Stream } from "stream";
 
 const { namedNode, quad, blankNode, literal } = DataFactory;
 
-function streamToString(stream: Stream) {
-    const chunks: Buffer[] = [];
-    return new Promise((resolve, reject) => {
-        stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
-        stream.on("error", (err) => reject(err));
-        stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-    });
-}
 /**
  * ResourceStore which uses {@link PrefixView} for backend access.
  *
@@ -401,6 +393,17 @@ export class LDESStore implements ResourceStore {
         representation: Representation,
         conditions?: Conditions,
     ): Promise<ChangeMap> => {
+        const streamToString = (stream: Stream) => {
+            const chunks: Buffer[] = [];
+            return new Promise((resolve, reject) => {
+                stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+                stream.on("error", (err) => reject(err));
+                stream.on("end", () =>
+                    resolve(Buffer.concat(chunks).toString("utf8")),
+                );
+            });
+        };
+
         console.log(
             "Add representation",
             container,
