@@ -5,7 +5,7 @@ import {
     IViewDescription,
     ViewDescription,
 } from "./ViewDescription";
-import { DataFactory, Literal, Parser, Store, Writer } from "n3";
+import { DataFactory, Literal, Store } from "n3";
 import { LDES, RDF, TREE } from "@treecg/types";
 import * as Rdf from "@rdfjs/types";
 import namedNode = DataFactory.namedNode;
@@ -18,6 +18,7 @@ export class ViewDescriptionParser {
         this.viewIdentifier = viewIdentifier;
         this.ldesIdentifier = ldesIdentifier;
     }
+
     /**
      * Parses a selection of an N3 Store to a {@link IViewDescription}.
      *
@@ -77,6 +78,7 @@ export class ViewDescriptionParser {
             this.viewIdentifier,
         );
     }
+
     protected parseBucketizeStrategy(
         store: Store,
         bucketizeStrategyNode: Rdf.Term,
