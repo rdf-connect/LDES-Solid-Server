@@ -68,6 +68,8 @@ export class MongoDBRepository implements Repository {
                     immutable: entry.immutable,
                     members: entry.members,
                     relations: entry.relations,
+                    created: entry.created,
+                    updated: entry.updated,
                 };
             }) ?? null;
     }

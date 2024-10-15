@@ -12,6 +12,8 @@ export type Bucket = {
     immutable?: boolean;
     members: string[];
     relations: Relation[];
+    created: number,
+    updated: number,
 };
 
 export type Relation = {
