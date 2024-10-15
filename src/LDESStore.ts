@@ -395,7 +395,7 @@ export class LDESStore implements ResourceStore {
     ): Promise<ChangeMap> => {
         const streamToString = (stream: Stream) => {
             const chunks: Buffer[] = [];
-            return new Promise((resolve, reject) => {
+            return new Promise<string>((resolve, reject) => {
                 stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
                 stream.on("error", (err) => reject(err));
                 stream.on("end", () =>
@@ -404,14 +404,11 @@ export class LDESStore implements ResourceStore {
             });
         };
 
-        console.log(
-            "Add representation",
-            container,
-            representation,
-            conditions,
-        );
         const data = await streamToString(representation.data);
-        console.log(data);
+        this.logger.info(
+            `Add representation ${container} ${representation} ${conditions}`,
+        );
+        this.logger.debug(data);
 
         return new IdentifierMap();
     };
@@ -420,7 +417,7 @@ export class LDESStore implements ResourceStore {
         identifier: ResourceIdentifier,
         conditions?: Conditions,
     ): Promise<ChangeMap> => {
-        console.log("Delete representation", identifier, conditions);
+        this.logger.info(`Delete representation ${identifier} ${conditions}`);
         throw "Not implemented delete";
     };
 
@@ -429,15 +426,17 @@ export class LDESStore implements ResourceStore {
         patch: Patch,
         conditions?: Conditions,
     ): Promise<ChangeMap> => {
-        console.log("Modify representation", identifier, patch, conditions);
+        this.logger.info(
+            `Modify representation ${identifier} ${patch} ${conditions}`,
+        );
         throw "Not implemented modify";
     };
 
     hasResource = async (
-        _id: ResourceIdentifier,
-        _conditions?: Conditions | undefined,
+        id: ResourceIdentifier,
+        conditions?: Conditions | undefined,
     ): Promise<boolean> => {
-        console.log("Has resource", _id, _conditions);
+        this.logger.info(`Has resource ${id} ${conditions}`);
         return true;
     };
 }
