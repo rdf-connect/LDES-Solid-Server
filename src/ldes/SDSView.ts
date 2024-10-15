@@ -145,6 +145,7 @@ export class SDSView implements View {
             relations,
             this.repository,
             this.getCacheDirectives(fragment?.immutable),
+            { created: fragment.created, updated: fragment.updated },
         );
     }
 }

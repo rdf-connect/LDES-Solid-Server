@@ -19,7 +19,7 @@ import {
     trimLeadingSlashes,
 } from "@solid/community-server";
 import { Quad, Quad_Object } from "@rdfjs/types";
-import { CacheDirectives, LDES, Member, RDF, TREE, VOID } from "@treecg/types";
+import { CacheDirectives, LDES, Member, RDF, TREE, VOID, XSD } from "@treecg/types";
 import { cacheToLiteral, getShapeQuads } from "./util/utils";
 import { DataFactory } from "n3";
 import { PrefixView } from "./PrefixView";
@@ -178,6 +178,7 @@ export class LDESStore implements ResourceStore {
         // Note: this was before: const normalizedIDPath = decodeURIComponent(identifier.path);
         const normalizedIDPath = identifier.path;
 
+        const timestamps = await fragment.getTimestamps();
         quads.push(
             quad(
                 namedNode(normalizedIDPath),
@@ -188,6 +189,16 @@ export class LDESStore implements ResourceStore {
                 namedNode(normalizedIDPath),
                 TREE.terms.custom("viewDescription"),
                 viewDescriptionId,
+            ),
+            quad(
+                namedNode(normalizedIDPath),
+                namedNode("http://purl.org/dc/terms/created"),
+                literal(new Date(timestamps.created).toISOString(), namedNode(XSD.dateTime)),
+            ),
+            quad(
+                namedNode(normalizedIDPath),
+                namedNode("http://purl.org/dc/terms/modified"),
+                literal(new Date(timestamps.updated).toISOString(), namedNode(XSD.dateTime)),
             ),
         );
 

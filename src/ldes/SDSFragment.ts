@@ -1,5 +1,5 @@
 import { CacheDirectives, Member } from "@treecg/types";
-import { Fragment, RelationParameters } from "./Fragment";
+import { Fragment, RelationParameters, Timestamps } from "./Fragment";
 import { Repository } from "../repositories/Repository";
 
 export class SDSFragment implements Fragment {
@@ -9,16 +9,20 @@ export class SDSFragment implements Fragment {
 
     cacheDirectives: CacheDirectives;
 
+    timestamps: Timestamps;
+
     constructor(
         members: string[],
         relations: RelationParameters[],
         repository: Repository,
         cacheDirectives: CacheDirectives,
+        timestamps: Timestamps,
     ) {
         this.repository = repository;
         this.members = members;
         this.relations = relations;
         this.cacheDirectives = cacheDirectives;
+        this.timestamps = timestamps;
     }
 
     async getMembers(): Promise<Member[]> {
@@ -31,5 +35,9 @@ export class SDSFragment implements Fragment {
 
     async getCacheDirectives(): Promise<CacheDirectives> {
         return this.cacheDirectives;
+    }
+
+    async getTimestamps(): Promise<Timestamps> {
+        return this.timestamps;
     }
 }

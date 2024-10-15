@@ -66,6 +66,8 @@ export class RedisRepository implements Repository {
             immutable: doc.value.immutable as unknown as boolean,
             members: members,
             relations: relations,
+            created: doc.value.created as number,
+            updated: doc.value.updated as number,
         };
     }
 
