@@ -2,7 +2,14 @@ import { View } from "./View";
 import { getLoggerFor, RedirectHttpError } from "@solid/community-server";
 import { DBConfig } from "../DBConfig";
 import type { Quad, Quad_Object } from "@rdfjs/types";
-import { CacheDirectives, LDES, RDF, RelationType, SDS, TREE } from "@treecg/types";
+import {
+    CacheDirectives,
+    LDES,
+    RDF,
+    RelationType,
+    SDS,
+    TREE,
+} from "@treecg/types";
 import { DataFactory, Parser } from "n3";
 import { Fragment, parseRdfThing, RelationParameters } from "./Fragment";
 import { getRepository, Repository } from "../repositories/Repository";
@@ -30,7 +37,11 @@ export class SDSView implements View {
         this.roots = [];
     }
 
-    async init(base: string, prefix: string, freshDuration: number): Promise<void> {
+    async init(
+        base: string,
+        prefix: string,
+        freshDuration: number,
+    ): Promise<void> {
         this.freshDuration = freshDuration;
         await this.repository.open();
 
@@ -86,7 +97,10 @@ export class SDSView implements View {
             );
         }
 
-        const stream = await this.repository.findMetadata(SDS.Stream, this.streamId);
+        const stream = await this.repository.findMetadata(
+            SDS.Stream,
+            this.streamId,
+        );
         if (stream) {
             quads.push(
                 quad(
@@ -113,6 +127,7 @@ export class SDSView implements View {
         const fragment = await this.repository.findBucket(this.streamId, id);
 
         if (fragment) {
+
             fragment.relations = fragment.relations || [];
 
             const rels: RelationParameters[] = fragment!.relations.map(

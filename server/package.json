@@ -5,6 +5,7 @@
     "main": "index.js",
     "scripts": {
         "start": "npx @solid/community-server -c ./examples/config-ldes.json -b http://localhost:3000",
+        "start-acl": "npx @solid/community-server -c ./examples/config-ldes-acl.json -b http://localhost:3000 -f ./data -p 3000",
         "start-file": "npx @solid/community-server -c ./examples/config-ldes-file_locks.json -f ./data"
     },
     "keywords": [],
