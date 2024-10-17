@@ -1,7 +1,6 @@
-import { Bucket, Repository } from "./Repository";
+import { Bucket, Member, Repository } from "./Repository";
 import { createClient, RedisClientType, RediSearchSchema, SchemaFieldTypes } from "redis";
 import { getLoggerFor } from "@solid/community-server";
-import { Member } from "@treecg/types";
 import { DataFactory, Parser } from "n3";
 
 const { namedNode } = DataFactory;
@@ -75,14 +74,18 @@ export class RedisRepository implements Repository {
         if (members.length === 0) {
             return [];
         }
-        return (await this.client?.mGet(members.map((member) => `${this.data}:${encodeURIComponent(member)}`)) ?? [])
-            .filter((entry) => entry !== null)
-            .map((entry, i) => {
-                return {
-                    id: namedNode(members[i]),
-                    quads: new Parser().parse(entry),
-                };
-            });
+        const valueList = await this.client?.mGet(members.map((member) => `${this.data}:${encodeURIComponent(member)}`)) ?? [];
+        const createdList = await this.client?.mGet(members.map((member) => `${this.data}:${encodeURIComponent(member)}:created`)) ?? [];
+        return members.map((member, i) => {
+            if (!valueList[i] || !createdList[i]) {
+                return undefined;
+            }
+            return {
+                id: namedNode(member),
+                quads: new Parser().parse(valueList[i]),
+                created: parseInt(createdList[i]),
+            };
+        }).filter((entry) => entry !== undefined);
     }
 
     async createSearchIndex(): Promise<void> {

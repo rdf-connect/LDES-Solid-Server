@@ -1,7 +1,6 @@
-import { Bucket, Repository } from "./Repository";
+import { Bucket, Member, Repository } from "./Repository";
 import { getLoggerFor } from "@solid/community-server";
 import { Db, MongoClient } from "mongodb";
-import { Member } from "@treecg/types";
 import { DataFactory, Parser } from "n3";
 
 const { namedNode } = DataFactory;
@@ -81,6 +80,7 @@ export class MongoDBRepository implements Repository {
                 return <Member>{
                     id: namedNode(row.id),
                     quads: new Parser().parse(row.data),
+                    created: row.created,
                 };
             })
             .toArray() ?? [];

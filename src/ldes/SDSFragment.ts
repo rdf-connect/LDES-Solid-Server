@@ -1,6 +1,6 @@
-import { CacheDirectives, Member } from "@treecg/types";
+import { CacheDirectives } from "@treecg/types";
 import { Fragment, RelationParameters, Timestamps } from "./Fragment";
-import { Repository } from "../repositories/Repository";
+import { Member, Repository } from "../repositories/Repository";
 
 export class SDSFragment implements Fragment {
     members: string[];
