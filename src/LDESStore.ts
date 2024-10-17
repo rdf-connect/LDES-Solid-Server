@@ -18,14 +18,15 @@ import {
     ResourceStore,
     trimLeadingSlashes,
 } from "@solid/community-server";
-import { Quad, Quad_Object } from "@rdfjs/types";
-import { CacheDirectives, LDES, Member, RDF, TREE, VOID, XSD } from "@treecg/types";
+import { Quad, Quad_Object, Quad_Subject } from "@rdfjs/types";
+import { CacheDirectives, DC, LDES, RDF, SDS, TREE, VOID, XSD } from "@treecg/types";
 import { cacheToLiteral, getShapeQuads } from "./util/utils";
 import { DataFactory } from "n3";
 import { PrefixView } from "./PrefixView";
 import { HTTP } from "./util/Vocabulary";
 import * as path from "path";
 import { RelationParameters } from "./ldes/Fragment";
+import { Member } from "./repositories/Repository";
 
 const { namedNode, quad, blankNode, literal } = DataFactory;
 
@@ -323,6 +324,7 @@ export class LDESStore implements ResourceStore {
         quads.push(
             quad(namedNode(this.id), TREE.terms.member, <Quad_Object>member.id),
         );
+        quads.push(quad(<Quad_Subject>member.id, DC.terms.custom("created"), literal(new Date(member.created).toISOString(), namedNode(XSD.dateTime)), namedNode(LDES.custom("IngestionMetadata"))));
         quads.push(...member.quads);
     }
 

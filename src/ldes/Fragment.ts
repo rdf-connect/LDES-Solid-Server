@@ -1,6 +1,7 @@
-import { CacheDirectives, Member, RelationType } from "@treecg/types";
+import { CacheDirectives, RelationType } from "@treecg/types";
 import type * as RDF from "@rdfjs/types";
 import { Parser } from "n3";
+import { Member } from "../repositories/Repository";
 
 export type RdfThing = {
     id: RDF.Term;
