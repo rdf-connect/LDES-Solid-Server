@@ -85,7 +85,7 @@ export class RedisRepository implements Repository {
                 quads: new Parser().parse(valueList[i]),
                 created: parseInt(createdList[i]),
             };
-        }).filter((entry) => entry !== undefined);
+        }).filter((entry) => entry !== undefined).sort((a, b) => a!.created - b!.created);
     }
 
     async createSearchIndex(): Promise<void> {
