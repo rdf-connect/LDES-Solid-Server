@@ -55,7 +55,7 @@ export class RedisRepository implements Repository {
         }
 
         const members = await this.client?.sMembers(`${this.index}:${encodeURIComponent(type)}:${encodeURIComponent(doc.value.id as string)}:members`) ?? [];
-        const relations = ((await this.client?.sMembers(`${this.index}:${encodeURIComponent(type)}:${encodeURIComponent(doc.value.id as string)}:relations`)) ?? []).map((relation) => JSON.parse(relation));
+        const relations = ((await this.client?.sMembers(`${this.index}:${encodeURIComponent(type)}:${encodeURIComponent(doc.value.id as string)}:relations`)) ?? []).map((relation) => JSON.parse(relation)).sort((a, b) => a.value <= b.value ? -1 : 1);
 
         return {
             id: doc.id,
