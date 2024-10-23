@@ -20,9 +20,10 @@ import {
     ResourceStore,
     SOLID_META,
     trimLeadingSlashes,
+    updateModifiedDate,
 } from "@solid/community-server";
 import { Quad, Quad_Object, Quad_Subject } from "@rdfjs/types";
-import { CacheDirectives, DC, LDES, RDF, SDS, TREE, VOID, XSD } from "@treecg/types";
+import { CacheDirectives, DC, LDES, RDF, TREE, VOID, XSD } from "@treecg/types";
 import { cacheToLiteral, getShapeQuads } from "./util/utils";
 import { DataFactory } from "n3";
 import { PrefixView } from "./PrefixView";
@@ -44,14 +45,13 @@ const { namedNode, quad, blankNode, literal } = DataFactory;
  *  * Fragment request: A request to a fragment within a specific view.
  */
 export class LDESStore implements ResourceStore {
-    protected readonly logger = getLoggerFor(this);
     id: string;
     base: string;
     shape?: string;
     views: PrefixView[];
     freshDuration: number;
-
     initPromise: unknown;
+    protected readonly logger = getLoggerFor(this);
 
     /**
      * @param id - The URI of the published LDES.
@@ -169,6 +169,8 @@ export class LDESStore implements ResourceStore {
             this.getMetadata(await fragment.getCacheDirectives()),
         );
         this.addContainerTypes(md);
+        const timestamps = await fragment.getTimestamps();
+        updateModifiedDate(md, new Date(timestamps.updated));
 
         const quads: Array<Quad> = [];
         quads.push(
@@ -194,7 +196,6 @@ export class LDESStore implements ResourceStore {
         // Note: this was before: const normalizedIDPath = decodeURIComponent(identifier.path);
         const normalizedIDPath = identifier.path;
 
-        const timestamps = await fragment.getTimestamps();
         quads.push(
             quad(
                 namedNode(normalizedIDPath),
@@ -259,6 +260,72 @@ export class LDESStore implements ResourceStore {
 
         members.forEach((m) => this.addMember(quads, m));
         return new BasicRepresentation(guardedStreamFrom(quads), md);
+    };
+
+    setRepresentation = async (
+        identifier: ResourceIdentifier,
+        representation: Representation,
+        conditions?: Conditions,
+    ): Promise<ChangeMap> => {
+        console.log(
+            "Set representation",
+            identifier,
+            representation,
+            conditions,
+        );
+        throw "Not implemented set";
+    };
+
+    addResource = async (
+        container: ResourceIdentifier,
+        representation: Representation,
+        conditions?: Conditions,
+    ): Promise<ChangeMap> => {
+        const streamToString = (stream: Stream) => {
+            const chunks: Buffer[] = [];
+            return new Promise<string>((resolve, reject) => {
+                stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+                stream.on("error", (err) => reject(err));
+                stream.on("end", () =>
+                    resolve(Buffer.concat(chunks).toString("utf8")),
+                );
+            });
+        };
+
+        const data = await streamToString(representation.data);
+        this.logger.info(
+            `Add representation ${container} ${representation} ${conditions}`,
+        );
+        this.logger.debug(data);
+
+        return new IdentifierMap();
+    };
+
+    deleteResource = async (
+        identifier: ResourceIdentifier,
+        conditions?: Conditions,
+    ): Promise<ChangeMap> => {
+        this.logger.info(`Delete representation ${identifier} ${conditions}`);
+        throw "Not implemented delete";
+    };
+
+    modifyResource = async (
+        identifier: ResourceIdentifier,
+        patch: Patch,
+        conditions?: Conditions,
+    ): Promise<ChangeMap> => {
+        this.logger.info(
+            `Modify representation ${identifier} ${patch} ${conditions}`,
+        );
+        throw "Not implemented modify";
+    };
+
+    hasResource = async (
+        id: ResourceIdentifier,
+        conditions?: Conditions | undefined,
+    ): Promise<boolean> => {
+        this.logger.info(`Has resource ${id} ${conditions}`);
+        return true;
     };
 
     private addContainerTypes(md: RepresentationMetadata) {
@@ -386,70 +453,4 @@ export class LDESStore implements ResourceStore {
         quads.push(quad(<Quad_Subject>member.id, DC.terms.custom("created"), literal(new Date(member.created).toISOString(), namedNode(XSD.dateTime)), namedNode(LDES.custom("IngestionMetadata"))));
         quads.push(...member.quads);
     }
-
-    setRepresentation = async (
-        identifier: ResourceIdentifier,
-        representation: Representation,
-        conditions?: Conditions,
-    ): Promise<ChangeMap> => {
-        console.log(
-            "Set representation",
-            identifier,
-            representation,
-            conditions,
-        );
-        throw "Not implemented set";
-    };
-
-    addResource = async (
-        container: ResourceIdentifier,
-        representation: Representation,
-        conditions?: Conditions,
-    ): Promise<ChangeMap> => {
-        const streamToString = (stream: Stream) => {
-            const chunks: Buffer[] = [];
-            return new Promise<string>((resolve, reject) => {
-                stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
-                stream.on("error", (err) => reject(err));
-                stream.on("end", () =>
-                    resolve(Buffer.concat(chunks).toString("utf8")),
-                );
-            });
-        };
-
-        const data = await streamToString(representation.data);
-        this.logger.info(
-            `Add representation ${container} ${representation} ${conditions}`,
-        );
-        this.logger.debug(data);
-
-        return new IdentifierMap();
-    };
-
-    deleteResource = async (
-        identifier: ResourceIdentifier,
-        conditions?: Conditions,
-    ): Promise<ChangeMap> => {
-        this.logger.info(`Delete representation ${identifier} ${conditions}`);
-        throw "Not implemented delete";
-    };
-
-    modifyResource = async (
-        identifier: ResourceIdentifier,
-        patch: Patch,
-        conditions?: Conditions,
-    ): Promise<ChangeMap> => {
-        this.logger.info(
-            `Modify representation ${identifier} ${patch} ${conditions}`,
-        );
-        throw "Not implemented modify";
-    };
-
-    hasResource = async (
-        id: ResourceIdentifier,
-        conditions?: Conditions | undefined,
-    ): Promise<boolean> => {
-        this.logger.info(`Has resource ${id} ${conditions}`);
-        return true;
-    };
 }
