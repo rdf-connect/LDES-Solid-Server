@@ -6,7 +6,9 @@ import {
     ensureTrailingSlash,
     getLoggerFor,
     guardedStreamFrom,
+    IdentifierMap,
     INTERNAL_QUADS,
+    LDP,
     MetadataRecord,
     NotFoundHttpError,
     Patch,
@@ -16,6 +18,7 @@ import {
     RepresentationPreferences,
     ResourceIdentifier,
     ResourceStore,
+    SOLID_META,
     trimLeadingSlashes,
 } from "@solid/community-server";
 import { Quad, Quad_Object, Quad_Subject } from "@rdfjs/types";
@@ -26,6 +29,7 @@ import { PrefixView } from "./PrefixView";
 import { HTTP } from "./util/Vocabulary";
 import * as path from "path";
 import { RelationParameters } from "./ldes/Fragment";
+import { Stream } from "stream";
 import { Member } from "./repositories/Repository";
 
 const { namedNode, quad, blankNode, literal } = DataFactory;
@@ -95,8 +99,22 @@ export class LDESStore implements ResourceStore {
         await this.initPromise;
 
         if (ensureTrailingSlash(identifier.path) === this.base) {
+            const md = new RepresentationMetadata(
+                namedNode(identifier.path),
+                this.getMetadata({
+                    pub: true,
+                    immutable: false,
+                    maxAge: this.freshDuration,
+                }),
+            );
+            this.addContainerTypes(md);
             // We got a base request, let's announce all mounted view
-            const quads = await this.getViewDescriptions();
+            const quads = await this.getViewDescriptions(md, identifier.path);
+            md.add(
+                RDF.terms.type,
+                LDP.terms.Container,
+                SOLID_META.terms.ResponseMetadata,
+            );
             quads.push(
                 quad(
                     namedNode(this.id),
@@ -108,16 +126,7 @@ export class LDESStore implements ResourceStore {
                 quads.push(...(await getShapeQuads(this.id, this.shape)));
             }
 
-            return new BasicRepresentation(
-                guardedStreamFrom(quads),
-                new RepresentationMetadata(
-                    this.getMetadata({
-                        pub: true,
-                        immutable: false,
-                        maxAge: this.freshDuration,
-                    }),
-                ),
-            );
+            return new BasicRepresentation(guardedStreamFrom(quads), md);
         }
 
         const view = this.views.find(
@@ -154,6 +163,12 @@ export class LDESStore implements ResourceStore {
                 throw ex;
             }
         }
+
+        const md = new RepresentationMetadata(
+            namedNode(identifier.path),
+            this.getMetadata(await fragment.getCacheDirectives()),
+        );
+        this.addContainerTypes(md);
 
         const quads: Array<Quad> = [];
         quads.push(
@@ -225,6 +240,14 @@ export class LDESStore implements ResourceStore {
         const relations = await fragment.getRelations();
         const members = await fragment.getMembers();
 
+        quads.push(
+            quad(
+                namedNode(normalizedIDPath),
+                RDF.terms.type,
+                LDP.terms.Container,
+            ),
+        );
+
         relations.forEach((relation) =>
             this.addRelations(
                 quads,
@@ -233,17 +256,25 @@ export class LDESStore implements ResourceStore {
                 relation,
             ),
         );
-        members.forEach((m) => this.addMember(quads, m));
 
-        return new BasicRepresentation(
-            guardedStreamFrom(quads),
-            new RepresentationMetadata(
-                this.getMetadata(await fragment.getCacheDirectives()),
-            ),
-        );
+        members.forEach((m) => this.addMember(quads, m));
+        return new BasicRepresentation(guardedStreamFrom(quads), md);
     };
 
-    private async getViewDescriptions(): Promise<Quad[]> {
+    private addContainerTypes(md: RepresentationMetadata) {
+        for (const ty of [
+            LDP.terms.Container,
+            LDP.terms.Resource,
+            LDP.terms.BasicContainer,
+        ]) {
+            md.add(RDF.terms.type, ty, SOLID_META.terms.ResponseMetadata);
+        }
+    }
+
+    private async getViewDescriptions(
+        md: RepresentationMetadata,
+        url: string,
+    ): Promise<Quad[]> {
         const quads = [];
 
         for (const view of this.views) {
@@ -266,6 +297,28 @@ export class LDESStore implements ResourceStore {
                             namedNode(mRoot),
                         ),
                     );
+
+                    quads.push(
+                        quad(
+                            namedNode(url),
+                            LDP.terms.contains,
+                            namedNode(mRoot),
+                        ),
+                    );
+
+                    md.add(
+                        LDP.terms.contains,
+                        namedNode(mRoot),
+                        SOLID_META.terms.ResponseMetadata,
+                    );
+
+                    for (const ty of [
+                        LDP.terms.Container,
+                        LDP.terms.Resource,
+                        LDP.terms.BasicContainer,
+                    ]) {
+                        quads.push(quad(namedNode(mRoot), RDF.terms.type, ty));
+                    }
                 }
             }
         }
@@ -293,16 +346,14 @@ export class LDESStore implements ResourceStore {
 
         quads.push(quad(bn, RDF.terms.type, namedNode(relation.type)));
 
+        const relationTarget = namedNode(
+            path.posix
+                .join(baseIdentifier, relation.nodeId)
+                .replace(":/", "://"),
+        );
+        quads.push(quad(bn, TREE.terms.node, relationTarget));
         quads.push(
-            quad(
-                bn,
-                TREE.terms.node,
-                namedNode(
-                    path.posix
-                        .join(baseIdentifier, relation.nodeId)
-                        .replace(":/", "://"),
-                ),
-            ),
+            quad(namedNode(identifier), LDP.terms.contains, relationTarget),
         );
 
         if (relation.path) {
@@ -317,6 +368,14 @@ export class LDESStore implements ResourceStore {
                 quad(bn, TREE.terms.value, <Quad_Object>relation.value.id),
                 ...relation.value.quads,
             );
+        }
+
+        for (const ty of [
+            LDP.terms.Container,
+            LDP.terms.Resource,
+            LDP.terms.BasicContainer,
+        ]) {
+            quads.push(quad(relationTarget, RDF.terms.type, ty));
         }
     }
 
@@ -347,20 +406,31 @@ export class LDESStore implements ResourceStore {
         representation: Representation,
         conditions?: Conditions,
     ): Promise<ChangeMap> => {
-        console.log(
-            "Add representation",
-            container,
-            representation,
-            conditions,
+        const streamToString = (stream: Stream) => {
+            const chunks: Buffer[] = [];
+            return new Promise<string>((resolve, reject) => {
+                stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+                stream.on("error", (err) => reject(err));
+                stream.on("end", () =>
+                    resolve(Buffer.concat(chunks).toString("utf8")),
+                );
+            });
+        };
+
+        const data = await streamToString(representation.data);
+        this.logger.info(
+            `Add representation ${container} ${representation} ${conditions}`,
         );
-        throw "Not implemented add";
+        this.logger.debug(data);
+
+        return new IdentifierMap();
     };
 
     deleteResource = async (
         identifier: ResourceIdentifier,
         conditions?: Conditions,
     ): Promise<ChangeMap> => {
-        console.log("Delete representation", identifier, conditions);
+        this.logger.info(`Delete representation ${identifier} ${conditions}`);
         throw "Not implemented delete";
     };
 
@@ -369,14 +439,17 @@ export class LDESStore implements ResourceStore {
         patch: Patch,
         conditions?: Conditions,
     ): Promise<ChangeMap> => {
-        console.log("Modify representation", identifier, patch, conditions);
+        this.logger.info(
+            `Modify representation ${identifier} ${patch} ${conditions}`,
+        );
         throw "Not implemented modify";
     };
 
     hasResource = async (
-        _id: ResourceIdentifier,
-        _conditions?: Conditions | undefined,
+        id: ResourceIdentifier,
+        conditions?: Conditions | undefined,
     ): Promise<boolean> => {
-        return false;
+        this.logger.info(`Has resource ${id} ${conditions}`);
+        return true;
     };
 }
