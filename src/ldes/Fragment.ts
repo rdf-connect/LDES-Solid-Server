@@ -1,6 +1,7 @@
-import { CacheDirectives, DC, Member, RelationType } from "@treecg/types";
+import { CacheDirectives, RelationType } from "@treecg/types";
 import type * as RDF from "@rdfjs/types";
 import { Parser } from "n3";
+import { Member } from "../repositories/Repository";
 
 export type RdfThing = {
     id: RDF.Term;
@@ -32,6 +33,11 @@ export interface RelationParameters {
     remainingItems?: number;
 }
 
+export interface Timestamps {
+    created: number,
+    updated: number,
+}
+
 /**
  * Interface representing a single Fragment.
  * A fragment contains zero or more members, zero or more relations and can be a view (all members are reachable from the current fragment)
@@ -41,12 +47,19 @@ export interface Fragment {
      * Fetch or return members from this fragment
      */
     getMembers(): Promise<Member[]>;
+
     /**
      * Fetch or return all relations starting from this fragment
      */
     getRelations(): Promise<RelationParameters[]>;
+
     /**
      * Fetch or return the cache directives concerning this fragment
      */
     getCacheDirectives(): Promise<CacheDirectives>;
+
+    /**
+     * Fetch or return timestamps for this fragment
+     */
+    getTimestamps(): Promise<Timestamps>;
 }

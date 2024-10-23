@@ -1,8 +1,8 @@
 import { DBConfig } from "../DBConfig";
 import { env } from "process";
 import { MongoDBRepository } from "./MongoDBRepository";
-import { Member } from "@treecg/types";
 import { RedisRepository } from "./RedisRepository";
+import { Quad, Term } from "@rdfjs/types";
 
 export type Bucket = {
     id: string;
@@ -12,6 +12,8 @@ export type Bucket = {
     immutable?: boolean;
     members: string[];
     relations: Relation[];
+    created: number,
+    updated: number,
 };
 
 export type Relation = {
@@ -20,6 +22,12 @@ export type Relation = {
     type: string;
     value: string;
     timestampRelation?: boolean;
+};
+
+export type Member = {
+    id: Term;
+    quads: Quad[];
+    created: number;
 };
 
 export interface Repository {

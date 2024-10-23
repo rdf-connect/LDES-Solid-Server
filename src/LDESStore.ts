@@ -21,8 +21,8 @@ import {
     SOLID_META,
     trimLeadingSlashes,
 } from "@solid/community-server";
-import { Quad, Quad_Object } from "@rdfjs/types";
-import { CacheDirectives, LDES, Member, RDF, TREE, VOID } from "@treecg/types";
+import { Quad, Quad_Object, Quad_Subject } from "@rdfjs/types";
+import { CacheDirectives, DC, LDES, RDF, SDS, TREE, VOID, XSD } from "@treecg/types";
 import { cacheToLiteral, getShapeQuads } from "./util/utils";
 import { DataFactory } from "n3";
 import { PrefixView } from "./PrefixView";
@@ -30,6 +30,7 @@ import { HTTP } from "./util/Vocabulary";
 import * as path from "path";
 import { RelationParameters } from "./ldes/Fragment";
 import { Stream } from "stream";
+import { Member } from "./repositories/Repository";
 
 const { namedNode, quad, blankNode, literal } = DataFactory;
 
@@ -193,6 +194,7 @@ export class LDESStore implements ResourceStore {
         // Note: this was before: const normalizedIDPath = decodeURIComponent(identifier.path);
         const normalizedIDPath = identifier.path;
 
+        const timestamps = await fragment.getTimestamps();
         quads.push(
             quad(
                 namedNode(normalizedIDPath),
@@ -203,6 +205,16 @@ export class LDESStore implements ResourceStore {
                 namedNode(normalizedIDPath),
                 TREE.terms.custom("viewDescription"),
                 viewDescriptionId,
+            ),
+            quad(
+                namedNode(normalizedIDPath),
+                namedNode("http://purl.org/dc/terms/created"),
+                literal(new Date(timestamps.created).toISOString(), namedNode(XSD.dateTime)),
+            ),
+            quad(
+                namedNode(normalizedIDPath),
+                namedNode("http://purl.org/dc/terms/modified"),
+                literal(new Date(timestamps.updated).toISOString(), namedNode(XSD.dateTime)),
             ),
         );
 
@@ -371,6 +383,7 @@ export class LDESStore implements ResourceStore {
         quads.push(
             quad(namedNode(this.id), TREE.terms.member, <Quad_Object>member.id),
         );
+        quads.push(quad(<Quad_Subject>member.id, DC.terms.custom("created"), literal(new Date(member.created).toISOString(), namedNode(XSD.dateTime)), namedNode(LDES.custom("IngestionMetadata"))));
         quads.push(...member.quads);
     }
 
