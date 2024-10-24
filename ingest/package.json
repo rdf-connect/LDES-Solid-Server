@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@solid/community-server": "^5.1.0",
-    "@types/node": "^20.16.11",
+    "@types/node": "^20.16.15",
     "ldes-solid-server": "file:..",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
