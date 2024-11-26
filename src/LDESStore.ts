@@ -79,7 +79,7 @@ export class LDESStore implements ResourceStore {
 
         this.initPromise = Promise.all(
             views.map(async (view) => {
-                view.view.init(this.base, view.prefix, this.freshDuration);
+                await view.view.init(this.base, view.prefix, this.freshDuration);
             }),
         );
         this.logger.info(`The LDES descriptions can be found at ${this.base}`);
@@ -258,7 +258,13 @@ export class LDESStore implements ResourceStore {
             ),
         );
 
-        members.forEach((m) => this.addMember(quads, m));
+        // Get Content-Type with the highest preference and check if it includes the `metadata+` request.
+        const highestPreferenceKey = !preferences.type ? '' : Object.entries(preferences.type!).reduce((maxKey, [key, value]) => {
+            return preferences.type![maxKey] > value ? maxKey : key;
+        }, Object.keys(preferences.type!)[0]);
+        const includeMetadata = highestPreferenceKey.includes('/metadata+');
+
+        members.forEach((m) => this.addMember(quads, m, includeMetadata));
         return new BasicRepresentation(guardedStreamFrom(quads), md);
     };
 
@@ -446,11 +452,13 @@ export class LDESStore implements ResourceStore {
         }
     }
 
-    private addMember(quads: Array<Quad>, member: Member) {
+    private addMember(quads: Array<Quad>, member: Member, includeMetadata: boolean) {
         quads.push(
             quad(namedNode(this.id), TREE.terms.member, <Quad_Object>member.id),
         );
-        quads.push(quad(<Quad_Subject>member.id, DC.terms.custom("created"), literal(new Date(member.created).toISOString(), namedNode(XSD.dateTime)), namedNode(LDES.custom("IngestionMetadata"))));
+        if (includeMetadata) {
+            quads.push(quad(<Quad_Subject>member.id, DC.terms.custom("created"), literal(new Date(member.created).toISOString(), namedNode(XSD.dateTime)), namedNode(LDES.custom("IngestionMetadata"))));
+        }
         quads.push(...member.quads);
     }
 }
