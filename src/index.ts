@@ -21,3 +21,6 @@ export * from "./LDESStore";
 export * from "./PrefixView";
 
 export * from "./sparql/sparqlstore";
+
+// Metadata for TREE profile
+export * from './metadata/ContentTypeMetadataWriterTREEProfile';
