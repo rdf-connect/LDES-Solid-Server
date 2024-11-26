@@ -11,7 +11,7 @@ export class RedisRepository implements Repository {
     protected data: string;
     protected index: string;
 
-    protected client: RedisClientType | undefined;
+    private client: RedisClientType | undefined;
 
     protected logger = getLoggerFor(this);
 
