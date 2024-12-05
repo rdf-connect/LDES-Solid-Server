@@ -258,11 +258,8 @@ export class LDESStore implements ResourceStore {
             ),
         );
 
-        // Get Content-Type with the highest preference and check if it includes the `metadata+` request.
-        const highestPreferenceKey = !preferences.type ? '' : Object.entries(preferences.type!).reduce((maxKey, [key, value]) => {
-            return preferences.type![maxKey] > value ? maxKey : key;
-        }, Object.keys(preferences.type!)[0]);
-        const includeMetadata = highestPreferenceKey.includes('/metadata+');
+        // Get Accept Content-Types with weight 1 and check if it includes the `metadata+` request.
+        const includeMetadata = Object.entries(preferences.type || {}).filter(([key, value]) => (preferences.type || {})[key] === 1).some(([key, value]) => key.includes("/metadata+"));
 
         members.forEach((m) => this.addMember(quads, m, includeMetadata));
         return new BasicRepresentation(guardedStreamFrom(quads), md);
