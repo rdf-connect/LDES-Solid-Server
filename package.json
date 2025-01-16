@@ -30,7 +30,7 @@
     "@solid/community-server": "7.x"
   },
   "dependencies": {
-    "@rdfjs/types": "^1.1.2",
+    "@rdfjs/types": "^2.0.1",
     "@treecg/types": "^0.4.6",
     "mongodb": "^6.11.0",
     "n3": "^1.23.1",
