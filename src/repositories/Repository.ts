@@ -1,6 +1,3 @@
-import { env } from "process";
-import { MongoDBRepository } from "./MongoDBRepository";
-import { RedisRepository } from "./RedisRepository";
 import { Quad, Term } from "@rdfjs/types";
 
 export type Bucket = {
