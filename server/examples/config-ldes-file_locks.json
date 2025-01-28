@@ -84,8 +84,8 @@
                                         "@type": "SDSView",
                                         "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
                                         "streamId": "http://me#csvStream",
-                                        "db": {
-                                            "@id": "urn:solid-server:default:DBConfig"
+                                        "repository": {
+                                            "@id": "urn:solid-server:default:repository"
                                         }
                                     }
                                 },
@@ -95,8 +95,8 @@
                                     "view": {
                                         "@type": "SDSView",
                                         "streamId": "http://mine.org/rdfstream",
-                                        "db": {
-                                            "@id": "urn:solid-server:default:DBConfig"
+                                        "repository": {
+                                            "@id": "urn:solid-server:default:repository"
                                         }
                                     }
                                 }
@@ -126,12 +126,12 @@
             }
         },
         {
-            "@id": "urn:solid-server:default:DBConfig",
-            "@type": "DBConfig",
-            "metaCollection": "meta",
-            "indexCollection": "index",
-            "membersCollection": "data",
-            "dbUrl": "mongodb://localhost:27017/ldes2"
+            "@id": "urn:solid-server:default:repository",
+            "@type": "MongoDBRepository",
+            "metadata": "meta",
+            "index": "index",
+            "data": "data",
+            "url": "mongodb://localhost:27017/ldes2"
         },
         {
             "@id": "urn:solid-server:default:relative-path",

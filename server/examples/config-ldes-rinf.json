@@ -85,8 +85,8 @@
                                         "@type": "SDSView",
                                         "descriptionId": "http://localhost:3000/rinf/ldes/#timestampFragmentation",
                                         "streamId": "https://era.ilabt.imec.be/ldes/metadata#generation-stream",
-                                        "db": {
-                                            "@id": "urn:solid-server:default:DBConfig"
+                                        "repository": {
+                                            "@id": "urn:solid-server:default:repository"
                                         }
                                     }
                                 }
@@ -117,12 +117,12 @@
             }
         },
         {
-            "@id": "urn:solid-server:default:DBConfig",
-            "@type": "DBConfig",
-            "metaCollection": "METADATA",
-            "indexCollection": "INDEX",
-            "membersCollection": "DATA",
-            "dbUrl": "mongodb://root:example@localhost:27017/rinf-ldes?authSource=admin"
+            "@id": "urn:solid-server:default:repository",
+            "@type": "=MongoDBRepository",
+            "metadata": "METADATA",
+            "index": "INDEX",
+            "data": "DATA",
+            "url": "mongodb://root:example@localhost:27017/rinf-ldes?authSource=admin"
         },
         {
             "@id": "urn:solid-server:default:relative-path",

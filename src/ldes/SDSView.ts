@@ -1,6 +1,5 @@
 import { View } from "./View";
 import { getLoggerFor, RedirectHttpError } from "@solid/community-server";
-import { DBConfig } from "../DBConfig";
 import type { Quad, Quad_Object } from "@rdfjs/types";
 import {
     CacheDirectives,
@@ -12,7 +11,7 @@ import {
 } from "@treecg/types";
 import { DataFactory, Parser } from "n3";
 import { Fragment, parseRdfThing, RelationParameters } from "./Fragment";
-import { getRepository, Repository } from "../repositories/Repository";
+import { Repository } from "../repositories/Repository";
 import { DCAT } from "../util/Vocabulary";
 import { Parsed, parseIndex, reconstructIndex } from "../util/utils";
 import { SDSFragment } from "./SDSFragment";
@@ -20,7 +19,6 @@ import { SDSFragment } from "./SDSFragment";
 const { quad, namedNode, blankNode } = DataFactory;
 
 export class SDSView implements View {
-    dbConfig: DBConfig;
     repository: Repository;
     roots!: string[];
     descriptionId: string;
@@ -29,9 +27,8 @@ export class SDSView implements View {
     freshDuration: number = 60;
     protected readonly logger = getLoggerFor(this);
 
-    constructor(db: DBConfig, streamId: string, descriptionId: string) {
-        this.dbConfig = db;
-        this.repository = getRepository(this.dbConfig);
+    constructor(repository: Repository, streamId: string, descriptionId: string) {
+        this.repository = repository;
         this.streamId = streamId;
         this.descriptionId = descriptionId;
         this.roots = [];
