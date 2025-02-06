@@ -34,6 +34,8 @@
     "@treecg/types": "^0.4.6",
     "mongodb": "^6.12.0",
     "n3": "^1.23.1",
+    "rdf-data-factory": "^2.0.2",
+    "rdf-stores": "^2.0.0",
     "redis": "^4.7.0"
   },
   "devDependencies": {
