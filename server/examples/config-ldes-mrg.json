@@ -38,7 +38,7 @@
     ],
     "@graph": [
         {
-            "comment": "CSS config for the routes of a RINF LDES",
+            "comment": "CSS config for the publication of an LDES",
             "@id": "urn:solid-server:default:ResourceStore_Backend",
             "@type": "RoutingResourceStore",
             "rule": {
@@ -65,11 +65,11 @@
                         "@id": "urn:solid-server:default:relative-path"
                     },
                     "store": {
-                        "comment": "Basic LDES route for a RINF LDES",
+                        "comment": "Basic LDES route",
                         "@type": "RepresentationConvertingStore",
                         "source": {
                             "@type": "LDESStore",
-                            "id": "http://localhost:3000/rinf/ldes",
+                            "id": "http://localhost:3000/marine-regions/mirror-ldes",
                             "base": {
                                 "@id": "urn:solid-server:default:variable:baseUrl"
                             },
@@ -80,11 +80,10 @@
                             "views": [
                                 {
                                     "@type": "PrefixView",
-                                    "prefix": "ldes",
+                                    "prefix": "timestampFragmentation",
                                     "view": {
                                         "@type": "SDSView",
-                                        "descriptionId": "http://localhost:3000/rinf/ldes/#timestampFragmentation",
-                                        "streamId": "https://era.ilabt.imec.be/ldes/metadata#generation-stream",
+                                        "streamId": "http://localhost:3000/marine-regions/mirror-ldes",
                                         "repository": {
                                             "@id": "urn:solid-server:default:repository"
                                         }
@@ -117,15 +116,15 @@
         },
         {
             "@id": "urn:solid-server:default:repository",
-            "@type": "=MongoDBRepository",
-            "metadata": "METADATA",
-            "index": "INDEX",
-            "data": "DATA",
-            "url": "mongodb://root:example@localhost:27017/rinf-ldes?authSource=admin"
+            "@type": "MongoDBRepository",
+            "url": "mongodb://localhost:27017/mr-ldes?authSource=admin",
+            "data": "MR_DATA",
+            "metadata": "MR_METADATA",
+            "index": "MR_INDEX"
         },
         {
             "@id": "urn:solid-server:default:relative-path",
-            "valueRaw": "/rinf/"
+            "valueRaw": "/marine-regions/mirror-ldes"
         }
     ]
 }

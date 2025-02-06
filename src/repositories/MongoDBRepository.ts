@@ -1,9 +1,10 @@
 import { Bucket, Member, Repository } from "./Repository";
 import { getLoggerFor } from "@solid/community-server";
 import { Db, MongoClient } from "mongodb";
-import { DataFactory, Parser } from "n3";
+import { Parser } from "n3";
+import { DataFactory } from "rdf-data-factory";
 
-const { namedNode } = DataFactory;
+const df = new DataFactory();
 
 export class MongoDBRepository implements Repository {
     protected url: string;
@@ -78,7 +79,7 @@ export class MongoDBRepository implements Repository {
             .find({ id: { $in: members } })
             .map((row) => {
                 return <Member>{
-                    id: namedNode(row.id),
+                    id: df.namedNode(row.id),
                     quads: new Parser().parse(row.data),
                     created: row.created,
                 };
