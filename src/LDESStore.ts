@@ -24,8 +24,8 @@ import {
 } from "@solid/community-server";
 import { Quad, Quad_Object, Quad_Subject } from "@rdfjs/types";
 import { CacheDirectives, DC, LDES, RDF, TREE, VOID, XSD } from "@treecg/types";
-import { cacheToLiteral, getShapeQuads } from "./util/utils";
-import { DataFactory } from "n3";
+import { cacheToLiteral } from "./util/utils";
+import { DataFactory } from "rdf-data-factory";
 import { PrefixView } from "./PrefixView";
 import { HTTP } from "./util/Vocabulary";
 import * as path from "path";
@@ -33,7 +33,7 @@ import { RelationParameters } from "./ldes/Fragment";
 import { Stream } from "stream";
 import { Member } from "./repositories/Repository";
 
-const { namedNode, quad, blankNode, literal } = DataFactory;
+const df = new DataFactory();
 
 /**
  * ResourceStore which uses {@link PrefixView} for backend access.
@@ -47,7 +47,6 @@ const { namedNode, quad, blankNode, literal } = DataFactory;
 export class LDESStore implements ResourceStore {
     id: string;
     base: string;
-    shape?: string;
     views: PrefixView[];
     freshDuration: number;
     initPromise: unknown;
@@ -66,15 +65,13 @@ export class LDESStore implements ResourceStore {
         base: string,
         relativePath: string,
         freshDuration: number = 60,
-        id?: string,
-        shape?: string,
+        id?: string
     ) {
         this.base = ensureTrailingSlash(
             base + trimLeadingSlashes(relativePath),
         );
         this.id = id || this.base;
         this.views = views;
-        this.shape = shape;
         this.freshDuration = freshDuration;
 
         this.initPromise = Promise.all(
@@ -99,8 +96,9 @@ export class LDESStore implements ResourceStore {
         await this.initPromise;
 
         if (ensureTrailingSlash(identifier.path) === this.base) {
+            // We got a base request, let's announce all mounted views
             const md = new RepresentationMetadata(
-                namedNode(identifier.path),
+                df.namedNode(identifier.path),
                 this.getMetadata({
                     pub: true,
                     immutable: false,
@@ -108,7 +106,6 @@ export class LDESStore implements ResourceStore {
                 }),
             );
             this.addContainerTypes(md);
-            // We got a base request, let's announce all mounted view
             const quads = await this.getViewDescriptions(md, identifier.path);
             md.add(
                 RDF.terms.type,
@@ -116,39 +113,41 @@ export class LDESStore implements ResourceStore {
                 SOLID_META.terms.ResponseMetadata,
             );
             quads.push(
-                quad(
-                    namedNode(this.id),
+                df.quad(
+                    df.namedNode(this.id),
                     RDF.terms.type,
                     LDES.terms.EventStream,
                 ),
             );
-            if (this.shape) {
-                quads.push(...(await getShapeQuads(this.id, this.shape)));
-            }
 
             return new BasicRepresentation(guardedStreamFrom(quads), md);
         }
 
+        const fragmentIRI = identifier.path;
+
+        // Get a reference to the requested view
         const view = this.views.find(
-            (pv) => identifier.path.indexOf(pv.prefix) >= 0,
+            (pv) => fragmentIRI.indexOf(pv.prefix) >= 0,
         );
         if (!view) {
             this.logger.info(
-                "No LDES view found for identifier " + identifier.path,
+                "No LDES view found for identifier " + fragmentIRI,
             );
             throw new NotFoundHttpError("No LDES found!");
         }
 
-        let idStart = identifier.path.indexOf(view.prefix) + view.prefix.length;
-        // pesky trailing slashes
-        if (identifier.path.charAt(idStart) == "/") {
+        // Deal with pesky trailing slashes
+        let idStart = fragmentIRI.indexOf(view.prefix) + view.prefix.length;
+        if (fragmentIRI.charAt(idStart) == "/") {
             idStart += 1;
         }
-        const baseIdentifier = identifier.path.substring(0, idStart);
-        const bucketIdentifier = identifier.path.substring(idStart);
+        // Split the request URL into the base identifier and the bucket identifier
+        const baseIdentifier = fragmentIRI.substring(0, idStart);
+        const bucketIdentifier = fragmentIRI.substring(idStart);
 
         let fragment;
         try {
+            // Get the requested fragment
             fragment = await view.view.getFragment(bucketIdentifier);
         } catch (ex) {
             if (RedirectHttpError.isInstance(ex)) {
@@ -164,104 +163,103 @@ export class LDESStore implements ResourceStore {
             }
         }
 
+        // Add fragment's cache directives to response metadata
         const md = new RepresentationMetadata(
-            namedNode(identifier.path),
+            df.namedNode(fragmentIRI),
             this.getMetadata(await fragment.getCacheDirectives()),
         );
+        // Add LDP/Solid types  
         this.addContainerTypes(md);
+        // Update fragment's last modified date (if necessary)
         const timestamps = await fragment.getTimestamps();
         updateModifiedDate(md, new Date(timestamps.updated));
 
+        // Quad array that will contain all the fragemnt's data
         const quads: Array<Quad> = [];
         quads.push(
-            quad(namedNode(this.id), RDF.terms.type, LDES.terms.EventStream),
+            df.quad(df.namedNode(this.id), RDF.terms.type, LDES.terms.EventStream),
         );
 
-        if (this.shape) {
-            quads.push(...(await getShapeQuads(this.id, this.shape)));
-        }
+        // Get LDES metadata quads from SDS metadata
+        const sdsMetadata = await view.view.getMetadata(this.id);
+        quads.push(...sdsMetadata.quads);
 
-        const [viewDescriptionQuads, viewDescriptionId] =
-            await view.view.getMetadata(this.id);
-        quads.push(...viewDescriptionQuads);
+        // Add all view references to the LDES
         const mRoots = view.view.getRoots();
         if (mRoots) {
             for (const mRoot of mRoots) {
                 quads.push(
-                    quad(namedNode(this.id), TREE.terms.view, namedNode(mRoot)),
+                    df.quad(df.namedNode(this.id), TREE.terms.view, df.namedNode(mRoot)),
                 );
             }
         }
 
-        // Note: this was before: const normalizedIDPath = decodeURIComponent(identifier.path);
-        const normalizedIDPath = identifier.path;
-
+        // Add the fragment's TREE metadata
         quads.push(
-            quad(
-                namedNode(normalizedIDPath),
+            df.quad(
+                df.namedNode(fragmentIRI),
                 RDF.terms.type,
                 TREE.terms.custom("Node"),
             ),
-            quad(
-                namedNode(normalizedIDPath),
+            df.quad(
+                df.namedNode(fragmentIRI),
                 TREE.terms.custom("viewDescription"),
-                viewDescriptionId,
+                sdsMetadata.viewDescriptionNode,
             ),
-            quad(
-                namedNode(normalizedIDPath),
-                namedNode("http://purl.org/dc/terms/created"),
-                literal(new Date(timestamps.created).toISOString(), namedNode(XSD.dateTime)),
+            df.quad(
+                df.namedNode(fragmentIRI),
+                df.namedNode("http://purl.org/dc/terms/created"),
+                df.literal(new Date(timestamps.created).toISOString(), df.namedNode(XSD.dateTime)),
             ),
-            quad(
-                namedNode(normalizedIDPath),
-                namedNode("http://purl.org/dc/terms/modified"),
-                literal(new Date(timestamps.updated).toISOString(), namedNode(XSD.dateTime)),
+            df.quad(
+                df.namedNode(fragmentIRI),
+                df.namedNode("http://purl.org/dc/terms/modified"),
+                df.literal(new Date(timestamps.updated).toISOString(), df.namedNode(XSD.dateTime)),
             ),
         );
-
-        if (view.view.getRoots().includes(normalizedIDPath)) {
-            quads.push(
-                quad(
-                    namedNode(this.id),
-                    TREE.terms.view,
-                    namedNode(normalizedIDPath),
-                ),
-            );
-        } else {
-            // This is not the case, you can access a subset of all members
-            quads.push(
-                quad(
-                    namedNode(this.id),
-                    VOID.terms.subset,
-                    namedNode(normalizedIDPath),
-                ),
-            );
-        }
-
-        const relations = await fragment.getRelations();
-        const members = await fragment.getMembers();
-
+        // Add the fragment's LDP metadata
         quads.push(
-            quad(
-                namedNode(normalizedIDPath),
+            df.quad(
+                df.namedNode(fragmentIRI),
                 RDF.terms.type,
                 LDP.terms.Container,
             ),
         );
 
+        if (!view.view.getRoots().includes(fragmentIRI)) {
+             // This is fragment is not a view, so you can access only a subset of all members
+            quads.push(
+                df.quad(
+                    df.namedNode(this.id),
+                    VOID.terms.subset,
+                    df.namedNode(fragmentIRI),
+                ),
+            );
+        }
+
+        // Append relations and members from data store
+        const [relations, members] = await Promise.all([
+            fragment.getRelations(),
+            fragment.getMembers(),
+        ]);
+
         relations.forEach((relation) =>
             this.addRelations(
                 quads,
-                normalizedIDPath,
+                fragmentIRI,
                 baseIdentifier,
                 relation,
             ),
         );
 
         // Get Accept Content-Types with weight 1 and check if it includes the `metadata+` request.
-        const includeMetadata = Object.entries(preferences.type || {}).filter(([key, value]) => (preferences.type || {})[key] === 1).some(([key, value]) => key.includes("/metadata+"));
+        // If true, this includes ingestion metadata for every member. 
+        const includeMetadata = Object.entries(preferences.type || {})
+            .filter(([key, value]) => (preferences.type || {})[key] === 1)
+            .some(([key, value]) => key.includes("/metadata+"));
 
         members.forEach((m) => this.addMember(quads, m, includeMetadata));
+        
         return new BasicRepresentation(guardedStreamFrom(quads), md);
     };
 
@@ -348,37 +346,37 @@ export class LDESStore implements ResourceStore {
         const quads = [];
 
         for (const view of this.views) {
-            const [metaQuads, id] = await view.view.getMetadata(this.id);
-            quads.push(...metaQuads);
+            const sdsMetadata = await view.view.getMetadata(this.id);
+            quads.push(...sdsMetadata.quads);
             const mRoots = view.view.getRoots();
             if (mRoots.length > 0) {
                 for (const mRoot of mRoots) {
                     quads.push(
-                        quad(
-                            namedNode(mRoot),
+                        df.quad(
+                            df.namedNode(mRoot),
                             TREE.terms.custom("viewDescription"),
-                            id,
+                            sdsMetadata.viewDescriptionNode,
                         ),
                     );
                     quads.push(
-                        quad(
-                            namedNode(this.id),
+                        df.quad(
+                            df.namedNode(this.id),
                             TREE.terms.view,
-                            namedNode(mRoot),
+                            df.namedNode(mRoot),
                         ),
                     );
 
                     quads.push(
-                        quad(
-                            namedNode(url),
+                        df.quad(
+                            df.namedNode(url),
                             LDP.terms.contains,
-                            namedNode(mRoot),
+                            df.namedNode(mRoot),
                         ),
                     );
 
                     md.add(
                         LDP.terms.contains,
-                        namedNode(mRoot),
+                        df.namedNode(mRoot),
                         SOLID_META.terms.ResponseMetadata,
                     );
 
@@ -387,7 +385,7 @@ export class LDESStore implements ResourceStore {
                         LDP.terms.Resource,
                         LDP.terms.BasicContainer,
                     ]) {
-                        quads.push(quad(namedNode(mRoot), RDF.terms.type, ty));
+                        quads.push(df.quad(df.namedNode(mRoot), RDF.terms.type, ty));
                     }
                 }
             }
@@ -400,7 +398,7 @@ export class LDESStore implements ResourceStore {
 
         const cacheLit = cacheToLiteral(cache);
         return {
-            [HTTP.cache_control]: literal(cacheLit),
+            [HTTP.cache_control]: df.literal(cacheLit),
             [CONTENT_TYPE]: INTERNAL_QUADS,
         };
     }
@@ -411,31 +409,31 @@ export class LDESStore implements ResourceStore {
         baseIdentifier: string,
         relation: RelationParameters,
     ) {
-        const bn = blankNode();
-        quads.push(quad(namedNode(identifier), TREE.terms.relation, bn));
+        const bn = df.blankNode();
+        quads.push(df.quad(df.namedNode(identifier), TREE.terms.relation, bn));
 
-        quads.push(quad(bn, RDF.terms.type, namedNode(relation.type)));
+        quads.push(df.quad(bn, RDF.terms.type, df.namedNode(relation.type)));
 
-        const relationTarget = namedNode(
+        const relationTarget = df.namedNode(
             path.posix
                 .join(baseIdentifier, relation.nodeId)
                 .replace(":/", "://"),
         );
-        quads.push(quad(bn, TREE.terms.node, relationTarget));
+        quads.push(df.quad(bn, TREE.terms.node, relationTarget));
         quads.push(
-            quad(namedNode(identifier), LDP.terms.contains, relationTarget),
+            df.quad(df.namedNode(identifier), LDP.terms.contains, relationTarget),
         );
 
         if (relation.path) {
             quads.push(
-                quad(bn, TREE.terms.path, <Quad_Object>relation.path.id),
+                df.quad(bn, TREE.terms.path, <Quad_Object>relation.path.id),
                 ...relation.path.quads,
             );
         }
 
         if (relation.value) {
             quads.push(
-                quad(bn, TREE.terms.value, <Quad_Object>relation.value.id),
+                df.quad(bn, TREE.terms.value, <Quad_Object>relation.value.id),
                 ...relation.value.quads,
             );
         }
@@ -445,16 +443,23 @@ export class LDESStore implements ResourceStore {
             LDP.terms.Resource,
             LDP.terms.BasicContainer,
         ]) {
-            quads.push(quad(relationTarget, RDF.terms.type, ty));
+            quads.push(df.quad(relationTarget, RDF.terms.type, ty));
         }
     }
 
     private addMember(quads: Array<Quad>, member: Member, includeMetadata: boolean) {
         quads.push(
-            quad(namedNode(this.id), TREE.terms.member, <Quad_Object>member.id),
+            df.quad(df.namedNode(this.id), TREE.terms.member, <Quad_Object>member.id),
         );
         if (includeMetadata) {
-            quads.push(quad(<Quad_Subject>member.id, DC.terms.custom("created"), literal(new Date(member.created).toISOString(), namedNode(XSD.dateTime)), namedNode(LDES.custom("IngestionMetadata"))));
+            quads.push(
+                df.quad(
+                    <Quad_Subject>member.id, 
+                    DC.terms.custom("created"), 
+                    df.literal(new Date(member.created).toISOString(), df.namedNode(XSD.dateTime)), 
+                    df.namedNode(LDES.custom("IngestionMetadata"))
+                )
+            );
         }
         quads.push(...member.quads);
     }

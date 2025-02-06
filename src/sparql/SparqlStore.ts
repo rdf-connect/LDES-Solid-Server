@@ -1,4 +1,4 @@
-import { Quad, Quad_Object, Term } from "@rdfjs/types";
+import { Quad, Quad_Object } from "@rdfjs/types";
 import {
     BasicRepresentation,
     ChangeMap,
@@ -8,7 +8,6 @@ import {
     guardedStreamFrom,
     INTERNAL_QUADS,
     Patch,
-    RdfPatcher,
     Representation,
     RepresentationMetadata,
     RepresentationPreferences,

@@ -1,6 +1,11 @@
 import * as RDF from "@rdfjs/types";
 import { Fragment } from "../index";
 
+export type SDSMetadata = {
+    quads: RDF.Quad[];
+    viewDescriptionNode: RDF.NamedNode | RDF.BlankNode;
+}
+
 /**
  * Interface representing a LDES view. All mounted view should serve the same dataset.
  */
@@ -26,7 +31,7 @@ export interface View {
      *
      * @param ldes - The URI of the LDES.
      */
-    getMetadata(ldes: string): Promise<[RDF.Quad[], RDF.Quad_Object]>;
+    getMetadata(ldes: string): Promise<SDSMetadata>;
 
     /**
      * Function requesting a single {@link Fragment}.

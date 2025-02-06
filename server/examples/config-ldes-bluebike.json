@@ -85,8 +85,8 @@
                                         "@type": "SDSView",
                                         "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
                                         "streamId": "https://w3id.org/sds#Stream",
-                                        "db": {
-                                            "@id": "urn:solid-server:default:DBConfig"
+                                        "repository": {
+                                            "@id": "urn:solid-server:default:repository"
                                         }
                                     }
                                 }
@@ -116,12 +116,12 @@
             }
         },
         {
-            "@id": "urn:solid-server:default:DBConfig",
-            "@type": "DBConfig",
-            "metaCollection": "BLUEBIKE_META",
-            "indexCollection": "BLUEBIKE_INDEX",
-            "membersCollection": "BLUEBIKE_DATA",
-            "dbUrl": "mongodb://localhost:27017/ldes"
+            "@id": "urn:solid-server:default:repository",
+            "@type": "MongoDBRepository",
+            "metadata": "BLUEBIKE_META",
+            "index": "BLUEBIKE_INDEX",
+            "data": "BLUEBIKE_DATA",
+            "url": "mongodb://localhost:27017/ldes"
         },
         {
             "@id": "urn:solid-server:default:relative-path",

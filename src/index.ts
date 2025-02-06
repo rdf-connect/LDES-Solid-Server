@@ -1,5 +1,4 @@
 // Database connections
-export * from "./DBConfig";
 export * from "./repositories/Repository";
 export * from "./repositories/MongoDBRepository";
 export * from "./repositories/RedisRepository";
@@ -20,7 +19,7 @@ export * from "./LDESStore";
 
 export * from "./PrefixView";
 
-export * from "./sparql/sparqlstore";
+export * from "./sparql/SparqlStore";
 
 // Metadata for TREE profile
 export * from './metadata/ContentTypeMetadataWriterTREEProfile';

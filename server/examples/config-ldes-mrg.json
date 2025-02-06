@@ -4,8 +4,8 @@
         "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
     ],
     "import": [
-        "css:config/app/init/initialize-intro.json",
         "css:config/app/main/default.json",
+        "css:config/app/init/initialize-root.json",
         "css:config/app/variables/default.json",
         "css:config/http/handler/default.json",
         "css:config/http/middleware/default.json",
@@ -38,7 +38,7 @@
     ],
     "@graph": [
         {
-            "comment": "A more complex example with 3 different stores being routed to.",
+            "comment": "CSS config for the publication of an LDES",
             "@id": "urn:solid-server:default:ResourceStore_Backend",
             "@type": "RoutingResourceStore",
             "rule": {
@@ -56,7 +56,7 @@
                     "@type": "RegexRule",
                     "regex": "^/(\\.acl|\\.meta)?$",
                     "store": {
-                        "@id": "urn:solid-server:default:FileResourceStore"
+                        "@id": "urn:solid-server:default:MemoryResourceStore"
                     }
                 },
                 {
@@ -65,36 +65,25 @@
                         "@id": "urn:solid-server:default:relative-path"
                     },
                     "store": {
-                        "comment": "A more complex example with 3 different stores being routed to.",
+                        "comment": "Basic LDES route",
                         "@type": "RepresentationConvertingStore",
                         "source": {
                             "@type": "LDESStore",
-                            "id": "http://localhost:3000/ldes/",
+                            "id": "http://localhost:3000/marine-regions/mirror-ldes",
                             "base": {
                                 "@id": "urn:solid-server:default:variable:baseUrl"
                             },
                             "relativePath": {
                                 "@id": "urn:solid-server:default:relative-path"
                             },
+                            "freshDuration": 30,
                             "views": [
                                 {
                                     "@type": "PrefixView",
-                                    "prefix": "default",
+                                    "prefix": "timestampFragmentation",
                                     "view": {
                                         "@type": "SDSView",
-                                        "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
-                                        "streamId": "http://me#csvStream",
-                                        "repository": {
-                                            "@id": "urn:solid-server:default:repository"
-                                        }
-                                    }
-                                },
-                                {
-                                    "@type": "PrefixView",
-                                    "prefix": "mine",
-                                    "view": {
-                                        "@type": "SDSView",
-                                        "streamId": "http://mine.org/rdfstream",
+                                        "streamId": "http://localhost:3000/marine-regions/mirror-ldes",
                                         "repository": {
                                             "@id": "urn:solid-server:default:repository"
                                         }
@@ -110,7 +99,7 @@
             ]
         },
         {
-            "@id": "urn:solid-server:default:FileResourceStore",
+            "@id": "urn:solid-server:default:MemoryResourceStore",
             "@type": "DataAccessorBasedStore",
             "identifierStrategy": {
                 "@id": "urn:solid-server:default:IdentifierStrategy"
@@ -119,7 +108,7 @@
                 "@id": "urn:solid-server:default:AuxiliaryStrategy"
             },
             "accessor": {
-                "@id": "urn:solid-server:default:FileDataAccessor"
+                "@id": "urn:solid-server:default:MemoryDataAccessor"
             },
             "metadataStrategy": {
                 "@id": "urn:solid-server:default:MetadataStrategy"
@@ -128,14 +117,14 @@
         {
             "@id": "urn:solid-server:default:repository",
             "@type": "MongoDBRepository",
-            "metadata": "meta",
-            "index": "index",
-            "data": "data",
-            "url": "mongodb://localhost:27017/ldes2"
+            "url": "mongodb://localhost:27017/mr-ldes?authSource=admin",
+            "data": "MR_DATA",
+            "metadata": "MR_METADATA",
+            "index": "MR_INDEX"
         },
         {
             "@id": "urn:solid-server:default:relative-path",
-            "valueRaw": "/ldes/"
+            "valueRaw": "/marine-regions/mirror-ldes"
         }
     ]
 }

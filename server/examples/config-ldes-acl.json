@@ -116,12 +116,12 @@
       }
     },
     {
-      "@id": "urn:solid-server:default:DBConfig",
-      "@type": "DBConfig",
-      "metaCollection": "META",
-      "indexCollection": "INDEX",
-      "membersCollection": "DATA",
-      "dbUrl": "mongodb://localhost:27017/mumotest"
+      "@id": "urn:solid-server:default:repository",
+      "@type": "MongoDBRepository",
+      "metadata": "META",
+      "index": "INDEX",
+      "data": "DATA",
+      "url": "mongodb://localhost:27017/mumotest"
     },
     {
       "@id": "urn:solid-server:default:relative-path",
@@ -146,8 +146,8 @@
             "@type": "SDSView",
             "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
             "streamId": "http://data.mumo.be/streams/buckets/2",
-            "db": {
-              "@id": "urn:solid-server:default:DBConfig"
+            "repository": {
+              "@id": "urn:solid-server:default:repository"
             }
           }
         },
@@ -158,8 +158,8 @@
             "@type": "SDSView",
             "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
             "streamId": "http://data.mumo.be/streams/buckets/1",
-            "db": {
-              "@id": "urn:solid-server:default:DBConfig"
+            "repository": {
+              "@id": "urn:solid-server:default:repository"
             }
           }
         }
