@@ -12,7 +12,7 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
-        "@solid/community-server": "^7.1.4",
+        "@solid/community-server": "^7.1.6",
         "ldes-solid-server": "file:.."
     },
     "devDependencies": {

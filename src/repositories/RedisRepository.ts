@@ -1,9 +1,10 @@
 import { Bucket, Member, Repository } from "./Repository";
 import { createClient, RedisClientType, RediSearchSchema, SchemaFieldTypes } from "redis";
 import { getLoggerFor } from "@solid/community-server";
-import { DataFactory, Parser } from "n3";
+import { Parser } from "n3";
+import { DataFactory } from "rdf-data-factory";
 
-const { namedNode } = DataFactory;
+const df = new DataFactory();
 
 export class RedisRepository implements Repository {
     protected url: string;
@@ -84,7 +85,7 @@ export class RedisRepository implements Repository {
                 return undefined;
             }
             return {
-                id: namedNode(member),
+                id: df.namedNode(member),
                 quads: new Parser().parse(valueList[i]),
                 created: parseInt(createdList[i]),
             };
