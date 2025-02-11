@@ -16,6 +16,6 @@
         "ldes-solid-server": "file:.."
     },
     "devDependencies": {
-        "componentsjs": "^5.5.1"
+        "componentsjs": "^6.3.0"
     }
 }
