@@ -17,14 +17,14 @@
     "@treecg/sds-storage-writer-mongo": "^0.1.1",
     "@types/n3": "^1.21.1",
     "js-runner": "github:ajuvercr/js-runner",
-    "n3": "^1.23.1",
+    "n3": "^1.23.2",
     "sds-processors": "^0.3.2"
   },
   "devDependencies": {
     "@solid/community-server": "^5.1.0",
-    "@types/node": "^20.17.19",
+    "@types/node": "^20.17.23",
     "ldes-solid-server": "file:..",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.2"
   }
 }
