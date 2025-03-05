@@ -21,7 +21,7 @@
     "sds-processors": "^0.3.2"
   },
   "devDependencies": {
-    "@solid/community-server": "^5.1.0",
+    "@solid/community-server": "^7.1.6",
     "@types/node": "^20.17.23",
     "ldes-solid-server": "file:..",
     "ts-node": "^10.9.2",
