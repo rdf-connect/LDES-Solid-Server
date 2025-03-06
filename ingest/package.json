@@ -17,7 +17,7 @@
     "@treecg/sds-storage-writer-mongo": "^0.1.1",
     "@types/n3": "^1.21.1",
     "js-runner": "github:ajuvercr/js-runner",
-    "n3": "^1.23.2",
+    "n3": "^1.24.0",
     "sds-processors": "^0.3.2"
   },
   "devDependencies": {

@@ -32,8 +32,8 @@
   "dependencies": {
     "@rdfjs/types": "^2.0.1",
     "@treecg/types": "^0.4.6",
-    "mongodb": "^6.14.1",
-    "n3": "^1.23.2",
+    "mongodb": "^6.14.2",
+    "n3": "^1.24.0",
     "rdf-data-factory": "^2.0.2",
     "rdf-stores": "^2.1.1",
     "redis": "^4.7.0"
