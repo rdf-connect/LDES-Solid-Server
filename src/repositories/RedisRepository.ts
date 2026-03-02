@@ -1,5 +1,5 @@
 import { Bucket, Member, Repository } from "./Repository";
-import { createClient, RedisClientType, RediSearchSchema, SchemaFieldTypes } from "redis";
+import { createClient, RedisClientType, RediSearchSchema, SCHEMA_FIELD_TYPE } from "redis";
 import { getLoggerFor } from "@solid/community-server";
 import { Parser } from "n3";
 import { DataFactory } from "rdf-data-factory";
@@ -96,23 +96,23 @@ export class RedisRepository implements Repository {
         try {
             const schema: RediSearchSchema = {
                 "$.streamId": {
-                    type: SchemaFieldTypes.TAG,
+                    type: SCHEMA_FIELD_TYPE.TAG,
                     AS: "streamId",
                 },
                 "$.id": {
-                    type: SchemaFieldTypes.TAG,
+                    type: SCHEMA_FIELD_TYPE.TAG,
                     AS: "id",
                 },
                 "$.root": {
-                    type: SchemaFieldTypes.TAG,
+                    type: SCHEMA_FIELD_TYPE.TAG,
                     AS: "root",
                 },
                 "$.value": {
-                    type: SchemaFieldTypes.TEXT,
+                    type: SCHEMA_FIELD_TYPE.TEXT,
                     AS: "value",
                 },
                 "$.immutable": {
-                    type: SchemaFieldTypes.TAG,
+                    type: SCHEMA_FIELD_TYPE.TAG,
                     AS: "immutable",
                 },
             };
