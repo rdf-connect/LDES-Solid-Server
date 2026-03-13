@@ -1,6 +1,6 @@
 import { Bucket, Member, Repository } from "./Repository";
 import { createClient, RedisClientType, RediSearchSchema, SchemaFieldTypes } from "redis";
-import { getLoggerFor } from "@solid/community-server";
+import { getLoggerFor } from "global-logger-factory";
 import { Parser } from "n3";
 import { DataFactory } from "rdf-data-factory";
 

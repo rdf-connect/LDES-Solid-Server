@@ -4,7 +4,6 @@ import {
     ChangeMap,
     Conditions,
     CONTENT_TYPE,
-    getLoggerFor,
     guardedStreamFrom,
     INTERNAL_QUADS,
     Patch,
@@ -14,6 +13,7 @@ import {
     ResourceIdentifier,
     ResourceStore,
 } from "@solid/community-server";
+import { getLoggerFor } from "global-logger-factory";
 import { LDES, RDF } from "@treecg/types";
 import { readFileSync } from "fs";
 import { Parser } from "n3";

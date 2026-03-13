@@ -4,7 +4,6 @@ import {
     Conditions,
     CONTENT_TYPE,
     ensureTrailingSlash,
-    getLoggerFor,
     guardedStreamFrom,
     IdentifierMap,
     INTERNAL_QUADS,
@@ -22,6 +21,7 @@ import {
     trimLeadingSlashes,
     updateModifiedDate,
 } from "@solid/community-server";
+import { getLoggerFor } from "global-logger-factory";
 import { Quad, Quad_Object, Quad_Subject } from "@rdfjs/types";
 import { CacheDirectives, DC, LDES, RDF, TREE, VOID, XSD } from "@treecg/types";
 import { cacheToLiteral } from "./util/utils";

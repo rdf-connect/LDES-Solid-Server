@@ -27,7 +27,7 @@
     "build:components": "componentsjs-generator -s src -c dist/components -i .componentsignore -r lss"
   },
   "peerDependency": {
-    "@solid/community-server": "7.x"
+    "@solid/community-server": "8.x"
   },
   "dependencies": {
     "@rdfjs/types": "^2.0.1",
@@ -39,14 +39,14 @@
     "redis": "^4.7.0"
   },
   "devDependencies": {
-    "@solid/community-server": "^7.1.6",
+    "@solid/community-server": "^8.0.0-alpha.3",
     "@tsconfig/node18": "^18.2.4",
     "@types/n3": "^1.24.0",
     "@types/node": "^22.13.10",
     "@typescript-eslint/eslint-plugin": "^8.26.0",
     "@typescript-eslint/parser": "^8.26.0",
     "@vitest/coverage-v8": "^3.0.8",
-    "componentsjs-generator": "^3.1.2",
+    "componentsjs-generator": "^4.3.0",
     "eslint": "^9.19.0",
     "eslint-config-prettier": "^10.1.1",
     "husky": "^9.1.7",

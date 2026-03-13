@@ -1,4 +1,4 @@
-import { createVocabulary } from "@solid/community-server";
+import { createVocabulary } from "rdf-vocabulary";
 
 export const HTTP = createVocabulary(
     "urn:npm:solid:community-server:http:",

@@ -1,23 +1,23 @@
 {
   "@context": [
-    "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^5.0.0/components/context.jsonld",
+    "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^8.0.0/components/context.jsonld",
     "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
   ],
   "import": [
+    "css:config/app/init/initialize-intro.json",
     "css:config/app/main/default.json",
-    "css:config/app/init/initialize-root.json",
-    "css:config/app/setup/disabled.json",
     "css:config/app/variables/default.json",
     "css:config/http/handler/default.json",
-    "css:config/http/middleware/websockets.json",
-    "css:config/http/server-factory/websockets.json",
+    "css:config/http/middleware/default.json",
+    "css:config/http/notifications/all.json",
+    "css:config/http/server-factory/http.json",
     "css:config/http/static/default.json",
     "css:config/identity/access/public.json",
     "css:config/identity/email/default.json",
     "css:config/identity/handler/default.json",
+    "css:config/identity/oidc/default.json",
     "css:config/identity/ownership/token.json",
     "css:config/identity/pod/static.json",
-    "css:config/identity/registration/enabled.json",
     "css:config/ldp/authentication/dpop-bearer.json",
     "css:config/ldp/authorization/allow-all.json",
     "lss:config/ldp/handler/default.json",
@@ -26,6 +26,7 @@
     "css:config/ldp/modes/default.json",
     "css:config/storage/backend/data-accessors/memory.json",
     "css:config/storage/key-value/memory.json",
+    "css:config/storage/location/root.json",
     "css:config/storage/middleware/default.json",
     "css:config/util/auxiliary/acl.json",
     "css:config/util/identifiers/suffix.json",
@@ -60,27 +61,45 @@
         },
         {
           "@type": "RegexRule",
-          "regex": { "@id": "urn:solid-server:default:relative-path" },
+          "regex": {
+            "@id": "urn:solid-server:default:relative-path"
+          },
           "store": {
             "comment": "A more complex example with 3 different stores being routed to.",
             "@type": "RepresentationConvertingStore",
             "source": {
               "@type": "LDESStore",
               "id": "http://mine.org/testing",
-              "base": { "@id": "urn:solid-server:default:variable:baseUrl" },
-              "relativePath":  { "@id": "urn:solid-server:default:relative-path" },
+              "freshDuration": 100,
+              "base": {
+                "@id": "urn:solid-server:default:variable:baseUrl"
+              },
+              "relativePath": {
+                "@id": "urn:solid-server:default:relative-path"
+              },
               "views": [
                 {
                   "@type": "PrefixView",
                   "prefix": "default",
                   "view": {
-                    "@type": "MongoSDSView",
-                    "descriptionId": "http://127.0.0.1:3000/ldes/#timestampFragmentation",
+                    "@type": "SDSView",
+                    "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
                     "streamId": "https://w3id.org/sds#Stream",
-                    "db": {
-                      "@id": "urn:solid-server:default:DBConfig"
-                    },
-                    "freshDuration": 240
+                    "repository": {
+                      "@id": "urn:solid-server:default:repository"
+                    }
+                  }
+                },
+                {
+                  "@type": "PrefixView",
+                  "prefix": "indexed",
+                  "view": {
+                    "@type": "SDSView",
+                    "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
+                    "streamId": "https://example.org/ns#",
+                    "repository": {
+                      "@id": "urn:solid-server:default:repository"
+                    }
                   }
                 }
               ]
@@ -109,12 +128,12 @@
       }
     },
     {
-      "@id": "urn:solid-server:default:DBConfig",
-      "@type": "DBConfig",
-      "metaCollection": "META",
-      "indexCollection": "INDEX",
-      "membersCollection": "DATA",
-      "dbUrl": "mongodb://127.0.0.1:27017/test"
+      "@id": "urn:solid-server:default:repository",
+      "@type": "MongoDBRepository",
+      "metadata": "META",
+      "index": "INDEX",
+      "data": "DATA",
+      "url": "mongodb://localhost:27017/mumotest"
     },
     {
       "@id": "urn:solid-server:default:relative-path",
@@ -122,4 +141,3 @@
     }
   ]
 }
-

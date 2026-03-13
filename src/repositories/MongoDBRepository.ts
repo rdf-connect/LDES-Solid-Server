@@ -1,5 +1,5 @@
 import { Bucket, Member, Repository } from "./Repository";
-import { getLoggerFor } from "@solid/community-server";
+import { getLoggerFor } from "global-logger-factory";
 import { Db, MongoClient } from "mongodb";
 import { Parser } from "n3";
 import { DataFactory } from "rdf-data-factory";

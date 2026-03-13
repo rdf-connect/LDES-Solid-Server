@@ -1,5 +1,5 @@
 {
-  "@context": "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^7.0.0/components/context.jsonld",
+  "@context": "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^8.0.0/components/context.jsonld",
   "import": [
     "css:config/ldp/handler/components/authorizer.json",
     "css:config/ldp/handler/components/error-handler.json",
@@ -45,7 +45,7 @@
         }
       },
       "args_bodyParser": {
-        "@type": "WaterfallHandler",
+        "@type": "StatusWaterfallHandler",
         "handlers": [
           { "@id": "urn:solid-server:default:PatchBodyParser" },
           { "@type": "RawBodyParser" }
@@ -58,7 +58,7 @@
       "@type": "MethodFilterHandler",
       "methods": [ "PATCH" ],
       "source": {
-        "@type": "WaterfallHandler",
+        "@type": "StatusWaterfallHandler",
         "handlers": [
           { "@type": "N3PatchBodyParser" },
           { "@type": "SparqlUpdateBodyParser" }

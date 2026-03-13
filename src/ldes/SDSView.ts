@@ -1,5 +1,6 @@
 import { type SDSMetadata, View } from "./View";
-import { getLoggerFor, RedirectHttpError } from "@solid/community-server";
+import { RedirectHttpError } from "@solid/community-server";
+import { getLoggerFor } from "global-logger-factory";
 import {
     CacheDirectives,
     LDES,
