@@ -22,7 +22,7 @@ import {
     updateModifiedDate,
 } from "@solid/community-server";
 import { getLoggerFor } from "global-logger-factory";
-import { Quad, Quad_Object, Quad_Subject } from "@rdfjs/types";
+import { BlankNode, NamedNode, Quad, Quad_Object, Quad_Subject, Variable } from "@rdfjs/types";
 import { CacheDirectives, DC, LDES, RDF, TREE, VOID, XSD } from "@treecg/types";
 import { cacheToLiteral } from "./util/utils";
 import { DataFactory } from "rdf-data-factory";
@@ -31,6 +31,7 @@ import { HTTP } from "./util/Vocabulary";
 import * as path from "path";
 import { RelationParameters } from "./ldes/Fragment";
 import { Stream } from "stream";
+import { createStore } from "member-extraction-algorithm";
 import { Member } from "./repositories/Repository";
 
 const df = new DataFactory();
@@ -49,6 +50,7 @@ export class LDESStore implements ResourceStore {
     base: string;
     views: PrefixView[];
     freshDuration: number;
+    namedGraphs: boolean;
     initPromise: unknown;
     protected readonly logger = getLoggerFor(this);
 
@@ -58,6 +60,7 @@ export class LDESStore implements ResourceStore {
      * @param base - The base URI for the Solid Server.
      * @param relativePath - The relative path to the LDES.
      * @param freshDuration - The number of seconds that a resource is guaranteed to be fresh.
+     * @param namedGraphs - Whether to serialize per-member quads into a member-centric named-graph layout.
      * @param shape - SHACL shape describing members of this LDES
      */
     constructor(
@@ -65,6 +68,7 @@ export class LDESStore implements ResourceStore {
         base: string,
         relativePath: string,
         freshDuration: number = 60,
+        namedGraphs: boolean = false,
         id?: string
     ) {
         this.base = ensureTrailingSlash(
@@ -73,6 +77,7 @@ export class LDESStore implements ResourceStore {
         this.id = id || this.base;
         this.views = views;
         this.freshDuration = freshDuration;
+        this.namedGraphs = namedGraphs;
 
         this.initPromise = Promise.all(
             views.map(async (view) => {
@@ -168,7 +173,7 @@ export class LDESStore implements ResourceStore {
             df.namedNode(fragmentIRI),
             this.getMetadata(await fragment.getCacheDirectives()),
         );
-        // Add LDP/Solid types  
+        // Add LDP/Solid types
         this.addContainerTypes(md);
         // Update fragment's last modified date (if necessary)
         const timestamps = await fragment.getTimestamps();
@@ -253,13 +258,33 @@ export class LDESStore implements ResourceStore {
         );
 
         // Get Accept Content-Types with weight 1 and check if it includes the `metadata+` request.
-        // If true, this includes ingestion metadata for every member. 
+        // If true, this includes ingestion metadata for every member.
         const includeMetadata = Object.entries(preferences.type || {})
             .filter(([key, value]) => (preferences.type || {})[key] === 1)
             .some(([key, value]) => key.includes("/metadata+"));
 
-        members.forEach((m) => this.addMember(quads, m, includeMetadata));
-        
+        if (this.namedGraphs) {
+            const memberQuads = members.map((m) => {
+                const quads = m.quads;
+                if (includeMetadata) {
+                    quads.push(
+                        df.quad(
+                            <Quad_Subject>m.id,
+                            DC.terms.custom("created"),
+                            df.literal(new Date(m.created).toISOString(), df.namedNode(XSD.dateTime)),
+                            df.namedNode(LDES.custom("IngestionMetadata")),
+                        ),
+                    );
+                }
+                return quads;
+            });
+            const memberIris = members.map((m) => m.id);
+            const membersStore = createStore(memberQuads, memberIris as (NamedNode | BlankNode | Variable)[], TREE.terms.member, df.namedNode(this.id));
+            quads.push(...membersStore.getQuads());
+        } else {
+            members.forEach((m) => this.addMember(quads, m, includeMetadata));
+        }
+
         return new BasicRepresentation(guardedStreamFrom(quads), md);
     };
 
@@ -454,9 +479,9 @@ export class LDESStore implements ResourceStore {
         if (includeMetadata) {
             quads.push(
                 df.quad(
-                    <Quad_Subject>member.id, 
-                    DC.terms.custom("created"), 
-                    df.literal(new Date(member.created).toISOString(), df.namedNode(XSD.dateTime)), 
+                    <Quad_Subject>member.id,
+                    DC.terms.custom("created"),
+                    df.literal(new Date(member.created).toISOString(), df.namedNode(XSD.dateTime)),
                     df.namedNode(LDES.custom("IngestionMetadata"))
                 )
             );
