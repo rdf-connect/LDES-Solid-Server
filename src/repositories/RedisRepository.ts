@@ -48,9 +48,9 @@ export class RedisRepository implements Repository {
     }
 
     async findBucket(type: string, id: string): Promise<Bucket | null> {
-        let query = `(@streamId:{${this.encodeKey(type)}) (@id:{${this.encodeKey(id)}})`;
+        let query = `(@streamId:{${this.encodeKey(type)}}) (@id:{${this.encodeKey(id)}})`;
         if (id === "") {
-            query = `(@streamId:{${this.encodeKey(type)}) (@root:{true})`;
+            query = `(@streamId:{${this.encodeKey(type)}}) (@root:{true})`;
         }
         const result = (await this.client?.ft.search(`idx:${this.index}`, query))?.documents ?? [];
         const doc = result.pop();
