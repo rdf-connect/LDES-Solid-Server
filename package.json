@@ -19,7 +19,7 @@
     "https://linkedsoftwaredependencies.org/bundles/npm/ldes-server/^0.0.0/dist/": "dist/"
   },
   "scripts": {
-    "start": "npx community-solid-server -c ./examples/config-ldes.json -f ./data",
+    "start": "npx community-solid-server -c ./server/examples/config-ldes.json -f ./data",
     "test": "vitest run --coverage --coverage.include src",
     "build": "npm run build:ts && npm run build:components",
     "build:ts": "tsc",
