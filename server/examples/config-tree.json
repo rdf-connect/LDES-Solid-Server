@@ -1,11 +1,11 @@
 {
     "@context": [
         "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^7.0.0/components/context.jsonld",
-        "https://linkedsoftwaredependencies.org/bundles/npm/ldes-server/^0.0.0/components/context.jsonld"
+        "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
     ],
     "import": [
-        "css:config/app/init/initialize-intro.json",
         "css:config/app/main/default.json",
+        "css:config/app/init/initialize-root.json",
         "css:config/app/variables/default.json",
         "css:config/http/handler/default.json",
         "css:config/http/middleware/default.json",
@@ -38,7 +38,7 @@
     ],
     "@graph": [
         {
-            "comment": "A more complex example with 3 different stores being routed to.",
+            "comment": "CSS config for the publication of an TREE collection",
             "@id": "urn:solid-server:default:ResourceStore_Backend",
             "@type": "RoutingResourceStore",
             "rule": {
@@ -65,11 +65,11 @@
                         "@id": "urn:solid-server:default:relative-path"
                     },
                     "store": {
-                        "comment": "A more complex example with 3 different stores being routed to.",
+                        "comment": "Basic TREE collection route",
                         "@type": "RepresentationConvertingStore",
                         "source": {
                             "@type": "LDESStore",
-                            "id": "http://mine.org/testing",
+                            "id": "http://localhost:3000/eurobis-geo-tree",
                             "base": {
                                 "@id": "urn:solid-server:default:variable:baseUrl"
                             },
@@ -80,13 +80,12 @@
                             "views": [
                                 {
                                     "@type": "PrefixView",
-                                    "prefix": "default",
+                                    "prefix": "fragments",
                                     "view": {
                                         "@type": "SDSView",
-                                        "descriptionId": "http://localhost:3000/ldes/#timestampFragmentation",
-                                        "streamId": "https://w3id.org/sds#Stream",
+                                        "streamId": "http://localhost:3000/eurobis-geo-tree",
                                         "repository": {
-                                            "@id": "urn:solid-server:default:repository"
+                                            "@id": "urn:solid-server:default:repository-redis"
                                         }
                                     }
                                 }
@@ -116,16 +115,24 @@
             }
         },
         {
-            "@id": "urn:solid-server:default:repository",
+            "@id": "urn:solid-server:default:repository-redis",
+            "@type": "RedisRepository",
+            "url": "redis://localhost:6379",
+            "data": "TREE_DATA",
+            "metadata": "TREE_METADATA",
+            "index": "TREE_INDEX"
+        },
+        {
+            "@id": "urn:solid-server:default:repository-mongodb",
             "@type": "MongoDBRepository",
-            "metadata": "BLUEBIKE_META",
-            "index": "BLUEBIKE_INDEX",
-            "data": "BLUEBIKE_DATA",
-            "url": "mongodb://localhost:27017/ldes"
+            "url": "${STORE_TYPE}://${STORE_URL}",
+            "data": "TREE_DATA",
+            "metadata": "TREE_METADATA",
+            "index": "TREE_INDEX"
         },
         {
             "@id": "urn:solid-server:default:relative-path",
-            "valueRaw": "/ldes/"
+            "valueRaw": "eurobis-geo-tree"
         }
     ]
 }
