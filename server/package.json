@@ -13,7 +13,7 @@
     "license": "MIT",
     "dependencies": {
         "@solid/community-server": "^7.1.6",
-        "ldes-solid-server": "file:.."
+        "ldes-server": "file:.."
     },
     "devDependencies": {
         "componentsjs": "^5.5.1"
