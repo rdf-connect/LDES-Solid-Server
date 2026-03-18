@@ -442,9 +442,11 @@ export class LDESStore implements ResourceStore {
                 .replace(":/", "://"),
         );
         quads.push(df.quad(bn, TREE.terms.node, relationTarget));
-        quads.push(
-            df.quad(df.namedNode(identifier), LDP.terms.contains, relationTarget),
-        );
+        if (this.withLDPMetadata) {
+            quads.push(
+                df.quad(df.namedNode(identifier), LDP.terms.contains, relationTarget),
+            );
+        }
 
         if (relation.path) {
             quads.push(
