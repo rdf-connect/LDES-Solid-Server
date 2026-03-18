@@ -71,6 +71,8 @@
               "@type": "LDESStore",
               "id": "http://mine.org/testing",
               "freshDuration": 100,
+              "withLDPMetadata": false,
+              "withSDSMetadata": true,
               "base": {
                 "@id": "urn:solid-server:default:variable:baseUrl"
               },
