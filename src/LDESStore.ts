@@ -50,6 +50,8 @@ export class LDESStore implements ResourceStore {
     views: PrefixView[];
     freshDuration: number;
     initPromise: unknown;
+    withSDSMetadata?: boolean;
+    withLDPMetadata?: boolean;
     protected readonly logger = getLoggerFor(this);
 
     /**
@@ -65,7 +67,9 @@ export class LDESStore implements ResourceStore {
         base: string,
         relativePath: string,
         freshDuration: number = 60,
-        id?: string
+        id?: string,
+        withSDSMetadata?: boolean,
+        withLDPMetadata?: boolean,
     ) {
         this.base = ensureTrailingSlash(
             base + trimLeadingSlashes(relativePath),
@@ -73,6 +77,8 @@ export class LDESStore implements ResourceStore {
         this.id = id || this.base;
         this.views = views;
         this.freshDuration = freshDuration;
+        this.withSDSMetadata = withSDSMetadata;
+        this.withLDPMetadata = withLDPMetadata;
 
         this.initPromise = Promise.all(
             views.map(async (view) => {
@@ -99,19 +105,21 @@ export class LDESStore implements ResourceStore {
             // We got a base request, let's announce all mounted views
             const md = new RepresentationMetadata(
                 df.namedNode(identifier.path),
-                this.getMetadata({
+                this.getCacheMetadata({
                     pub: true,
                     immutable: false,
                     maxAge: this.freshDuration,
                 }),
             );
-            this.addContainerTypes(md);
+            if (this.withLDPMetadata) {
+                this.addContainerTypes(md);
+                md.add(
+                    RDF.terms.type,
+                    LDP.terms.Container,
+                    SOLID_META.terms.ResponseMetadata,
+                );
+            }
             const quads = await this.getViewDescriptions(md, identifier.path);
-            md.add(
-                RDF.terms.type,
-                LDP.terms.Container,
-                SOLID_META.terms.ResponseMetadata,
-            );
             quads.push(
                 df.quad(
                     df.namedNode(this.id),
@@ -166,10 +174,13 @@ export class LDESStore implements ResourceStore {
         // Add fragment's cache directives to response metadata
         const md = new RepresentationMetadata(
             df.namedNode(fragmentIRI),
-            this.getMetadata(await fragment.getCacheDirectives()),
+            this.getCacheMetadata(await fragment.getCacheDirectives()),
         );
-        // Add LDP/Solid types  
-        this.addContainerTypes(md);
+
+        if (this.withLDPMetadata) {
+            // Add LDP/Solid types  
+            this.addContainerTypes(md);
+        }
         // Update fragment's last modified date (if necessary)
         const timestamps = await fragment.getTimestamps();
         updateModifiedDate(md, new Date(timestamps.updated));
@@ -180,9 +191,18 @@ export class LDESStore implements ResourceStore {
             df.quad(df.namedNode(this.id), RDF.terms.type, LDES.terms.EventStream),
         );
 
-        // Get LDES metadata quads from SDS metadata
-        const sdsMetadata = await view.view.getMetadata(this.id);
-        quads.push(...sdsMetadata.quads);
+        if (this.withSDSMetadata) {
+            // Get LDES metadata quads from SDS metadata
+            const sdsMetadata = await view.view.getMetadata(this.id);
+            quads.push(
+                ...sdsMetadata.quads,
+                df.quad(
+                    df.namedNode(fragmentIRI),
+                    TREE.terms.custom("viewDescription"),
+                    sdsMetadata.viewDescriptionNode,
+                ),
+            );
+        }
 
         // Add all view references to the LDES
         const mRoots = view.view.getRoots();
@@ -203,11 +223,6 @@ export class LDESStore implements ResourceStore {
             ),
             df.quad(
                 df.namedNode(fragmentIRI),
-                TREE.terms.custom("viewDescription"),
-                sdsMetadata.viewDescriptionNode,
-            ),
-            df.quad(
-                df.namedNode(fragmentIRI),
                 df.namedNode("http://purl.org/dc/terms/created"),
                 df.literal(new Date(timestamps.created).toISOString(), df.namedNode(XSD.dateTime)),
             ),
@@ -217,17 +232,20 @@ export class LDESStore implements ResourceStore {
                 df.literal(new Date(timestamps.updated).toISOString(), df.namedNode(XSD.dateTime)),
             ),
         );
-        // Add the fragment's LDP metadata
-        quads.push(
-            df.quad(
-                df.namedNode(fragmentIRI),
-                RDF.terms.type,
-                LDP.terms.Container,
-            ),
-        );
+
+        if (this.withLDPMetadata) {
+            // Add the fragment's LDP metadata
+            quads.push(
+                df.quad(
+                    df.namedNode(fragmentIRI),
+                    RDF.terms.type,
+                    LDP.terms.Container,
+                ),
+            );
+        }
 
         if (!view.view.getRoots().includes(fragmentIRI)) {
-             // This is fragment is not a view, so you can access only a subset of all members
+            // This is fragment is not a view, so you can access only a subset of all members
             quads.push(
                 df.quad(
                     df.namedNode(this.id),
@@ -259,7 +277,7 @@ export class LDESStore implements ResourceStore {
             .some(([key, value]) => key.includes("/metadata+"));
 
         members.forEach((m) => this.addMember(quads, m, includeMetadata));
-        
+
         return new BasicRepresentation(guardedStreamFrom(quads), md);
     };
 
@@ -346,18 +364,14 @@ export class LDESStore implements ResourceStore {
         const quads = [];
 
         for (const view of this.views) {
-            const sdsMetadata = await view.view.getMetadata(this.id);
-            quads.push(...sdsMetadata.quads);
+            let sdsMetadata;
+            if (this.withSDSMetadata) {
+                sdsMetadata = await view.view.getMetadata(this.id);
+                quads.push(...sdsMetadata.quads);
+            }
             const mRoots = view.view.getRoots();
             if (mRoots.length > 0) {
                 for (const mRoot of mRoots) {
-                    quads.push(
-                        df.quad(
-                            df.namedNode(mRoot),
-                            TREE.terms.custom("viewDescription"),
-                            sdsMetadata.viewDescriptionNode,
-                        ),
-                    );
                     quads.push(
                         df.quad(
                             df.namedNode(this.id),
@@ -365,27 +379,35 @@ export class LDESStore implements ResourceStore {
                             df.namedNode(mRoot),
                         ),
                     );
-
-                    quads.push(
-                        df.quad(
-                            df.namedNode(url),
+                    if (this.withSDSMetadata) {
+                        quads.push(
+                            df.quad(
+                                df.namedNode(mRoot),
+                                TREE.terms.custom("viewDescription"),
+                                sdsMetadata!.viewDescriptionNode,
+                            ),
+                        );
+                    }
+                    if (this.withLDPMetadata) {
+                        quads.push(
+                            df.quad(
+                                df.namedNode(url),
+                                LDP.terms.contains,
+                                df.namedNode(mRoot),
+                            ),
+                        );
+                        for (const ty of [
+                            LDP.terms.Container,
+                            LDP.terms.Resource,
+                            LDP.terms.BasicContainer,
+                        ]) {
+                            quads.push(df.quad(df.namedNode(mRoot), RDF.terms.type, ty));
+                        }
+                        md.add(
                             LDP.terms.contains,
                             df.namedNode(mRoot),
-                        ),
-                    );
-
-                    md.add(
-                        LDP.terms.contains,
-                        df.namedNode(mRoot),
-                        SOLID_META.terms.ResponseMetadata,
-                    );
-
-                    for (const ty of [
-                        LDP.terms.Container,
-                        LDP.terms.Resource,
-                        LDP.terms.BasicContainer,
-                    ]) {
-                        quads.push(df.quad(df.namedNode(mRoot), RDF.terms.type, ty));
+                            SOLID_META.terms.ResponseMetadata,
+                        );
                     }
                 }
             }
@@ -393,7 +415,7 @@ export class LDESStore implements ResourceStore {
         return quads;
     }
 
-    private getMetadata(cache?: CacheDirectives): MetadataRecord {
+    private getCacheMetadata(cache?: CacheDirectives): MetadataRecord {
         if (!cache) return { [CONTENT_TYPE]: INTERNAL_QUADS };
 
         const cacheLit = cacheToLiteral(cache);
@@ -454,9 +476,9 @@ export class LDESStore implements ResourceStore {
         if (includeMetadata) {
             quads.push(
                 df.quad(
-                    <Quad_Subject>member.id, 
-                    DC.terms.custom("created"), 
-                    df.literal(new Date(member.created).toISOString(), df.namedNode(XSD.dateTime)), 
+                    <Quad_Subject>member.id,
+                    DC.terms.custom("created"),
+                    df.literal(new Date(member.created).toISOString(), df.namedNode(XSD.dateTime)),
                     df.namedNode(LDES.custom("IngestionMetadata"))
                 )
             );
