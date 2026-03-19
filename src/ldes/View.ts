@@ -2,7 +2,8 @@ import * as RDF from "@rdfjs/types";
 import { Fragment } from "../index";
 
 export type SDSMetadata = {
-    quads: RDF.Quad[];
+    sdsQuads: RDF.Quad[];
+    mandatoryQuads: RDF.Quad[];
     viewDescriptionNode: RDF.NamedNode | RDF.BlankNode;
 }
 
