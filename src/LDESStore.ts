@@ -191,15 +191,18 @@ export class LDESStore implements ResourceStore {
             df.quad(df.namedNode(this.id), RDF.terms.type, LDES.terms.EventStream),
         );
 
+        const metadata = await view.view.getMetadata(this.id);
+        // Add all mandatory metadata quads
+        quads.push(...metadata.mandatoryQuads);
+        // Add optional SDS metadata quads
         if (this.withSDSMetadata) {
             // Get LDES metadata quads from SDS metadata
-            const sdsMetadata = await view.view.getMetadata(this.id);
             quads.push(
-                ...sdsMetadata.quads,
+                ...metadata.sdsQuads,
                 df.quad(
                     df.namedNode(fragmentIRI),
                     TREE.terms.custom("viewDescription"),
-                    sdsMetadata.viewDescriptionNode,
+                    metadata.viewDescriptionNode,
                 ),
             );
         }
@@ -364,10 +367,12 @@ export class LDESStore implements ResourceStore {
         const quads = [];
 
         for (const view of this.views) {
-            let sdsMetadata;
+            const metadata = await view.view.getMetadata(this.id);
+            // Add all mandatory metadata quads
+            quads.push(...metadata.mandatoryQuads);
+            // Add optional SDS metadata quads
             if (this.withSDSMetadata) {
-                sdsMetadata = await view.view.getMetadata(this.id);
-                quads.push(...sdsMetadata.quads);
+                quads.push(...metadata.sdsQuads);
             }
             const mRoots = view.view.getRoots();
             if (mRoots.length > 0) {
@@ -384,7 +389,7 @@ export class LDESStore implements ResourceStore {
                             df.quad(
                                 df.namedNode(mRoot),
                                 TREE.terms.custom("viewDescription"),
-                                sdsMetadata!.viewDescriptionNode,
+                                metadata.viewDescriptionNode,
                             ),
                         );
                     }

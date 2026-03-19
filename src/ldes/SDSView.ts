@@ -79,22 +79,23 @@ export class SDSView implements View {
     }
 
     async getMetadata(ldes: string): Promise<SDSMetadata> {
-        const metadataStore = RdfStore.createDefault();
+        const sdsStore = RdfStore.createDefault();
+        const mandatoryStore = RdfStore.createDefault();
 
         const viewDescription = this.descriptionId
             ? df.namedNode(this.descriptionId)
             : df.blankNode();
 
         for (const root of this.getRoots()) {
-            metadataStore.addQuad(
+            mandatoryStore.addQuad(
                 df.quad(
                     viewDescription,
                     RDF.terms.type,
                     TREE.terms.custom("ViewDescription"),
                 )
             );
-            metadataStore.addQuad(df.quad(viewDescription, DCAT.terms.endpointURL, df.namedNode(root)));
-            metadataStore.addQuad(df.quad(viewDescription, DCAT.terms.servesDataset, df.namedNode(ldes)));
+            mandatoryStore.addQuad(df.quad(viewDescription, DCAT.terms.endpointURL, df.namedNode(root)));
+            mandatoryStore.addQuad(df.quad(viewDescription, DCAT.terms.servesDataset, df.namedNode(ldes)));
         }
 
         const streamMetadata = await this.repository.findMetadata(
@@ -102,32 +103,33 @@ export class SDSView implements View {
             this.streamId,
         );
         if (streamMetadata) {
-            new Parser().parse(streamMetadata).forEach((quad) => metadataStore.addQuad(quad));
+            new Parser().parse(streamMetadata).forEach((quad) => sdsStore.addQuad(quad));
             // Get sds:Dataset reference
-            const dataset = metadataStore.getQuads(null, SDS.terms.dataset, null)[0];
+            const dataset = sdsStore.getQuads(null, SDS.terms.dataset, null)[0];
 
             if (dataset) {
                 // Extract shape, timestampPath and versionOfPath (if available)
-                const shape = metadataStore.getQuads(dataset.object, TREE.terms.shape, null)[0];
-                const timestampPath = metadataStore.getQuads(dataset.object, LDES.terms.timestampPath, null)[0];
-                const versionOfPath = metadataStore.getQuads(dataset.object, LDES.terms.versionOfPath, null)[0];
+                const shape = sdsStore.getQuads(dataset.object, TREE.terms.shape, null)[0];
+                const timestampPath = sdsStore.getQuads(dataset.object, LDES.terms.timestampPath, null)[0];
+                const versionOfPath = sdsStore.getQuads(dataset.object, LDES.terms.versionOfPath, null)[0];
 
                 if (shape) {
-                    metadataStore.addQuad(df.quad(df.namedNode(ldes), TREE.terms.shape, shape.object));
+                    mandatoryStore.addQuad(df.quad(df.namedNode(ldes), TREE.terms.shape, shape.object));
                 }
 
                 if (timestampPath) {
-                    metadataStore.addQuad(df.quad(df.namedNode(ldes), LDES.terms.timestampPath, timestampPath.object));
+                    mandatoryStore.addQuad(df.quad(df.namedNode(ldes), LDES.terms.timestampPath, timestampPath.object));
                 }
 
                 if (versionOfPath) {
-                    metadataStore.addQuad(df.quad(df.namedNode(ldes), LDES.terms.versionOfPath, versionOfPath.object));
+                    mandatoryStore.addQuad(df.quad(df.namedNode(ldes), LDES.terms.versionOfPath, versionOfPath.object));
                 }
             }
         }
 
         return {
-            quads: metadataStore.getQuads(),
+            sdsQuads: sdsStore.getQuads(),
+            mandatoryQuads: mandatoryStore.getQuads(),
             viewDescriptionNode: viewDescription,
         };
     }

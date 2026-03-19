@@ -24,7 +24,8 @@
     "build": "npm run build:ts && npm run build:components",
     "build:ts": "tsc",
     "live": "tsc -w",
-    "build:components": "componentsjs-generator -s src -c dist/components -i .componentsignore -r lss"
+    "build:components": "componentsjs-generator -s src -c dist/components -i .componentsignore -r lss",
+    "prepublishOnly": "npm run build"
   },
   "peerDependency": {
     "@solid/community-server": "7.x"
