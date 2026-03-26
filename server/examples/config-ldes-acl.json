@@ -1,7 +1,7 @@
 {
   "@context": [
     "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^8.0.0/components/context.jsonld",
-    "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
+    "https://linkedsoftwaredependencies.org/bundles/npm/ldes-server/^0.0.0/components/context.jsonld"
   ],
   "import": [
     "css:config/app/main/default.json",
@@ -74,7 +74,7 @@
             "comment": "A more complex example with 3 different stores being routed to.",
             "@type": "RepresentationConvertingStore",
             "source": {
-                "@id": "urn:solid-server:default:ldes"
+              "@id": "urn:solid-server:default:ldes"
             },
             "options_outConverter": {
               "@id": "urn:solid-server:default:RepresentationConverter"

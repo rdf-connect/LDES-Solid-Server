@@ -1,7 +1,7 @@
 {
   "@context": [
     "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^8.0.0/components/context.jsonld",
-    "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
+    "https://linkedsoftwaredependencies.org/bundles/npm/ldes-server/^0.0.0/components/context.jsonld"
   ],
   "import": [
     "css:config/app/main/default.json",
@@ -98,6 +98,8 @@
                 "@id": "urn:solid-server:default:relative-path"
               },
               "freshDuration": 30,
+              "withLDPMetadata": false,
+              "withSDSMetadata": true,
               "views": [
                 {
                   "@type": "PrefixView",

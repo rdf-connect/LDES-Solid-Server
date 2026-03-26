@@ -1,10 +1,10 @@
-# ldes-solid-server
+# ldes-server
 
-[![npm](https://img.shields.io/npm/v/ldes-solid-server)](https://www.npmjs.com/package/ldes-solid-server)
+[![npm](https://img.shields.io/npm/v/ldes-server)](https://www.npmjs.com/package/ldes-server)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7702103.svg)](https://doi.org/10.5281/zenodo.7702103)
 
 Linked data event stream components to configure a community solid server that exposes a LDES.
-Currently, only a MongoDB backend is supported.
+Currently, MongoDB and Redis backends are supported.
 
 ### What is a Linked Data Event Stream
 
@@ -31,18 +31,18 @@ npm install
 npm start
 ```
 
-### Use ldes-solid-server as Community Solid Server
+### Use ldes-server as Community Solid Server
 
 ```bash
 # Install the server
-npm install ldes-solid-server
+npm install ldes-server
 # Start the server
 npx @solid/community-server -c config.json -f ./data
 ```
 
 #### Required Configuration
 
-See config/default.json for an example ldes-solid-server configuration.
+See config/default.json for an example ldes-server configuration.
 
 You will probably want to configure a `urn:solid-server:default:LDESConfig` and a `urn:solid-server:default:LDESDBConfig` yourself.
 

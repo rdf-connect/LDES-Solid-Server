@@ -14,7 +14,7 @@
     "license": "MIT",
     "dependencies": {
         "@solid/community-server": "^8.0.0-alpha.3",
-        "ldes-solid-server": "file:.."
+        "ldes-server": "file:.."
     },
     "devDependencies": {
         "componentsjs": "^6.4.0"

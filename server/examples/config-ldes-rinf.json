@@ -1,7 +1,7 @@
 {
     "@context": [
         "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^8.0.0/components/context.jsonld",
-        "https://linkedsoftwaredependencies.org/bundles/npm/ldes-solid-server/^0.0.0/components/context.jsonld"
+        "https://linkedsoftwaredependencies.org/bundles/npm/ldes-server/^0.0.0/components/context.jsonld"
     ],
     "import": [
         "css:config/app/main/default.json",
@@ -117,7 +117,7 @@
         },
         {
             "@id": "urn:solid-server:default:repository",
-            "@type": "=MongoDBRepository",
+            "@type": "MongoDBRepository",
             "metadata": "METADATA",
             "index": "INDEX",
             "data": "DATA",
