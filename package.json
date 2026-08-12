@@ -37,7 +37,7 @@
     "n3": "^2.0.3",
     "rdf-data-factory": "^2.0.2",
     "rdf-stores": "^2.2.0",
-    "redis": "^5.11.0"
+    "redis": "^6.2.1"
   },
   "devDependencies": {
     "@solid/community-server": "^7.1.6",
